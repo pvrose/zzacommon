@@ -7,18 +7,18 @@
 
 
 #include "utils.h"
-//#include "drawing.h"
 
-#include <string>
-#include <stdexcept>
 #include <cmath>
+#include <cstring>
+#include <ctime>
+#include <stdexcept>
+#include <string>
 
 #include <FL/Fl.H>
-#include <FL/Fl_Widget.H>
-#include <FL/Fl_Input_Choice.H>
-#include <FL/Fl_Native_File_Chooser.H>
+#include <FL/Fl_Choice.H>
 #include <FL/Fl_Tree.H>
 #include <FL/Fl_Tree_Item.H>
+#include <FL/Fl_Widget.H>
 
 extern bool DEBUG_ERRORS;
 
@@ -49,6 +49,7 @@ extern bool DEBUG_ERRORS;
 		DATA* target = (DATA*)v;
 		*target = value;
 	}
+
 	//! Template callback to get text as a DATA item from a WIDGET widget
 	template <class WIDGET, class DATA>
 	static void cb_text(Fl_Widget* w, void* v) {

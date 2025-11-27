@@ -9,6 +9,7 @@ utils.h - various utility methods
 #define __UTILS__
 
 #include <string>
+#include <cstdint>
 #include <ctime>
 #include <vector>
 #include <cmath>
@@ -25,7 +26,7 @@ utils.h - various utility methods
 		double longitude{ 0.0 };   //!< longitude (positive = E)
 
 		//! Return NAN if either coordinate is not a valid number.
-		bool is_nan() {
+		bool is_nan() const {
 			return std::isnan(latitude) || std::isnan(longitude);
 		}
 
@@ -174,7 +175,7 @@ utils.h - various utility methods
 	//! Returns the terminal part of a filename.
 	std::string terminal(std::string filename);
 	//! Returns a simple 8-bit hash of \p src (zero-terminated)
-	uchar hash8(const char* src);
+	uint8_t hash8(const char* src);
 	//! Performs "XOR" encrypt/decrypt
 	 
 	//! \param str std::string of chaarcters to encrypt/decrypt in-place.

@@ -7,7 +7,7 @@
 
 #include <map>
 
-#include<FL/fl_draw.H>
+#include<FL/Enumerations.H>
 
 
 // Default font-size to use (& override FLTK defaults?)

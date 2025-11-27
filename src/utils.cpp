@@ -7,19 +7,30 @@ utils.h - Utility methods
 */
 #include "utils.h"
 
+#include <FL/Enumerations.H>
 #include <FL/fl_draw.H>
 #include <FL/Fl_Multiline_Output.H>
 #include <FL/Fl_Tooltip.H>
+#include <FL/fl_utf8.h>
 #include <FL/Fl_Window.H>
 
-#include <string>
-#include <stdexcept>
-#include <vector>
-#include <map>
-#include <ctime>
-#include <cmath>
+#include <cctype>
 #include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <map>
 #include <random>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#ifdef _WIN32
+#include <corecrt.h>
+#endif
 
 
 // Split the line into its separate words with specified separator
@@ -119,7 +130,7 @@ bool string_to_tm(std::string source, tm& time, std::string format) {
 						// %b: 3 letter month
 						// Get the locale's month names by generating twelve dates and seeing what %b returns
 						std::map<std::string, int> month_map;
-						tm date;
+						tm date{};
 						date.tm_year = 70;
 						date.tm_mday = 1;
 						date.tm_hour = 0;
@@ -628,7 +639,7 @@ std::string latlong_to_grid(lat_long_t location, int num_chars) {
 	double norm_long = location.longitude + 180.0;
 	double inc_lat = 10;
 	double inc_long = 20;
-	for (int i = 0; i < num_chars; i += 2) {
+	for (size_t i = 0; i < num_chars; i += 2) {
 		switch (i) {
 		case 0:
 		case 4:
@@ -662,7 +673,7 @@ lat_long_t grid_to_latlong(std::string gridsquare) {
 	int8_t cg;
 	int8_t ct;
 	lat_long_t lat_long = { 0.0, 0.0 };
-	for (unsigned int i = 0; i < gridsquare.length(); i += 2) {
+	for (size_t i = 0; i < gridsquare.length(); i += 2) {
 		switch (i) {
 		case 0:
 			// First two letters - 18 * 18 squares - 10 * 20 degress
@@ -1055,8 +1066,8 @@ std::string terminal(std::string filename) {
 }
 
 // 8-bit hash - XOR all the characters in src std::string
-uchar hash8(const char* src) {
-	uchar result = '\x00';
+uint8_t hash8(const char* src) {
+	uint8_t result = '\x00';
 	// Hash in the next character and increment the pointer
 	while (*src != '\x00') result ^= *(src++);
 	return result;
@@ -1100,7 +1111,7 @@ std::time_t convert_iso_datetime(std::string value) {
 	double resolution = difftime(then, now);
 
 	// YYY-MM-DDTHH:MM:SS+HH:MM
-	tm tv;
+	tm tv{};
 	tv.tm_year = std::stoi(value.substr(0, 4)) - 1900;
 	tv.tm_mon = std::stoi(value.substr(5, 2)) - 1;
 	tv.tm_mday = std::stoi(value.substr(8, 2));
