@@ -6,23 +6,19 @@ All Rights Reserved
 utils.h - Utility methods
 */
 #include "utils.h"
-#include "drawing.h"
 
-#include <FL/fl_ask.H>
 #include <FL/fl_draw.H>
 #include <FL/Fl_Multiline_Output.H>
 #include <FL/Fl_Tooltip.H>
 #include <FL/Fl_Window.H>
 
 #include <string>
-#include <exception>
 #include <stdexcept>
 #include <vector>
 #include <map>
 #include <ctime>
 #include <cmath>
 #include <chrono>
-#include <set>
 #include <random>
 
 
