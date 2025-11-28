@@ -183,11 +183,11 @@ utils.h - various utility methods
 	//! as an encrypted value may contain them.
 	//! \param seed Seed to generate a pseudo-random sequence of characters to use as an encryption key.
 	//! \param offset Offset into generated pseudo-random sequence to start process.
-	void xor_crypt(char* str, int len, uint32_t seed, uchar offset);
+	void xor_crypt(char* str, int len, uint32_t seed, uint8_t offset);
 	//! Performs "XOR" encrypt/decrypt using std::string data and returns encrypted std::string.
 	
 	//! \see xor_crypt.
-	std::string xor_crypt(std::string, uint32_t seed, uchar offset);
+	std::string xor_crypt(std::string, uint32_t seed, uint8_t offset);
 
 	//! Convert ISO date-time format to time_t
 	std::time_t convert_iso_datetime(std::string value);
