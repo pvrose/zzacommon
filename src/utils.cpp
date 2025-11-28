@@ -28,10 +28,6 @@ utils.h - Utility methods
 #include <string>
 #include <vector>
 
-#ifdef _WIN32
-#include <corecrt.h>
-#endif
-
 
 // Split the line into its separate words with specified separator
 void split_line(const std::string& line, std::vector<std::string>& words, const char separator) {
