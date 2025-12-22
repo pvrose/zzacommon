@@ -27,6 +27,18 @@ else()
   set(CMAKE_INSTALL_RPATH /etc/${VENDOR}/${PROGRAMID})
 endif()
 
+# Find fltk
+set(FLTK_DIR "C:\\Users\\pvros\\source\\repos\\fltk\\build")
+set(CMAKE_MODULE_PATH ../ ./)
+find_package(FLTK CONFIG REQUIRED)
+if (FLTK_FOUND)
+  message(STATUS "FLTK found: ${FLTK_VERSION}")
+  message(STATUS "FLTK include dir: ${FLTK_INCLUDE_DIR}")
+#     set(FLTK_LIBRARIES fltk::fltk fltk::fltk_images)
+else()
+  message(FATAL_ERROR "FLTK not found")
+endif()
+
 set(CMAKE_MODULE_PATH ../)
 
 set(CMAKE_BUILD_RPATH ${CMAKE_CURRENT_BINARY_DIR})
