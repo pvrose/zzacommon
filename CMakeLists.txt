@@ -32,7 +32,7 @@ endif()
 set(CMAKE_MODULE_PATH ../)
 
 set(CMAKE_BUILD_RPATH ${CMAKE_CURRENT_BINARY_DIR})
-add_library(${TARGET})
+add_library(${TARGET} STATIC)
 target_include_directories(${TARGET} PRIVATE 
   ./include
   ${FLTK_INCLUDE_DIR}
