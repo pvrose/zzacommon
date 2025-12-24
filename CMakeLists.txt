@@ -7,9 +7,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(VENDOR "GM3ZZA")
-set(PROGRAMID "ZZALOG")
-
 set(CPPFILES 
   src/utils.cpp
 )
@@ -47,7 +44,6 @@ target_include_directories(${TARGET} PRIVATE
   ./include
   ${FLTK_INCLUDE_DIR}
 )
-# Add QBS_logo.h to ensure it gets generated
 target_sources(${TARGET} 
   PRIVATE 
     ${CPPFILES}
