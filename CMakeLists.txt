@@ -17,13 +17,6 @@ set(HPPFILES
   include/utils.h
 )
 
-# set document directory
-if(MSVC)
-  set(CMAKE_INSTALL_RPATH C:/ProgramData/${VENDOR}/${PROGRAMID})
-else()
-  set(CMAKE_INSTALL_RPATH /etc/${VENDOR}/${PROGRAMID})
-endif()
-
 # Find fltk
 set(FLTK_DIR "C:\\Users\\pvros\\source\\repos\\fltk\\build")
 set(CMAKE_MODULE_PATH ../ ./)
