@@ -169,6 +169,7 @@ void status::callback(Fl_Window* w, void(*close)(Fl_Window*, void*)) {
 
 // SEt Cloisng
 void status::close() {
+	banner_->close();
 	banner_->show();
 	banner_->redraw();
 }
