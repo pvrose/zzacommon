@@ -18,7 +18,9 @@ set(CPPFILES
   src/password_input.cpp
   src/settings.cpp
   src/status.cpp
+  src/symbols.cpp
   src/tabs_nonav.cpp
+  src/ticker.cpp
   src/utils.cpp
 )
 
@@ -28,15 +30,17 @@ set(HPPFILES
   include/calendar.h
   include/calendar_input.h
   include/calendar_table.h
+  include/callback.h
+  include/drawing.h
   include/file_holder.h
   include/filename_input.h
   include/input_hierch.h
   include/password_input.h
   include/settings.h
   include/status.h
+  include/symbols.h
   include/tabs_nonav.h
-  include/callback.h
-  include/drawing.h
+  include/ticker.h
   include/utils.h
 )
 
