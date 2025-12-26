@@ -8,24 +8,32 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CPPFILES 
+  src/banner.cpp
   src/calendar.cpp
   src/calendar_input.cpp
   src/calendar_table.cpp
+  src/file_holder.cpp
   src/filename_input.cpp
   src/input_hierch.cpp
   src/password_input.cpp
+  src/settings.cpp
+  src/status.cpp
   src/tabs_nonav.cpp
   src/utils.cpp
 )
 
 set(HPPFILES
+  include/banner.h
   include/button_input.h
   include/calendar.h
   include/calendar_input.h
   include/calendar_table.h
+  include/file_holder.h
   include/filename_input.h
   include/input_hierch.h
   include/password_input.h
+  include/settings.h
+  include/status.h
   include/tabs_nonav.h
   include/callback.h
   include/drawing.h
