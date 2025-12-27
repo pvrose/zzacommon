@@ -64,6 +64,13 @@ target_include_directories(${TARGET} PRIVATE
   ./include
   ${FLTK_INCLUDE_DIR}
 )
+if (MSVC)
+  target_include_directories(${TARGET} PRIVATE 
+    "C:\\Users\\pvros\\source\\repos\\json\\include"
+  )
+endif()
+
+# Add QBS_logo.h to ensure it gets generated
 target_sources(${TARGET} 
   PRIVATE 
     ${CPPFILES}
