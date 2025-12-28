@@ -239,3 +239,13 @@ void calendar::change_date() {
 	redraw();
 }
 
+// Set format
+void calendar::format(const char* value) {
+	format_ = value;
+}
+
+// Get format
+const char* calendar::format() {
+	return format_;
+}
+
