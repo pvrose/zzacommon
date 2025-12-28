@@ -44,6 +44,13 @@ set(HPPFILES
   ${CMAKE_SOURCE_DIR}/include/utils.h
 )
 
+# ser compiler options
+if (MSVC)
+#  add_compile_options(/MD)
+else()
+  add_compile_options(-g)
+endif()
+
 # Find fltk
 set(FLTK_DIR "C:\\Users\\pvros\\source\\repos\\fltk\\build")
 set(CMAKE_MODULE_PATH ../ ./)
