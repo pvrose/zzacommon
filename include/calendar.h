@@ -27,9 +27,9 @@ class calendar_table;
 		//! Destructor
 		virtual ~calendar();
 
-		//! Set the date value of the calendar in ADIF_DATEFORMAT.
+		//! Set the date value of the calendar in specified format
 		void value(const char * data);
-		//! Get the date value of the calendar in ADIF_DATEFORMAT.
+		//! Get the date value of the calendar in specified format
 		const char * value();
 
         //! Set the date format
