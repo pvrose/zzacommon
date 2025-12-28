@@ -6,8 +6,7 @@
 
 
 
-//! This class provides a central timer to control all the real time activity.
-
+//! \brief This class provides a central timer to control all the real time activity.
 //! It is clocked every 100 milliseconds. Any object that wants a regular tick
 //! registers a callback and period.
 class ticker {
@@ -30,21 +29,24 @@ class ticker {
     ticker();
     //! Destructor
     ~ticker();
-    //! Set ticker
-    
+
+    //! \brief Set ticker.    
     //! \param object Pointer to the object requesting a tick.
     //! \param cb Method to use as callback.
     //! \param interval Tick period in units of 100 milliseconds.
-    //! \param immediate If true, immediately issues a callback to the requesting unit.
+    //! \param immediate If true, immediately issues a callback to the requesting unit and 
+    //! subsequenly every \p interval.
     void add_ticker(void* object, callback* cb, unsigned int interval, bool immediate = true);
+
     //! Remove ticker for \p object.
     void remove_ticker(void* object);
-    //! Suspend/restart ticker.
-    
+
+    //! \brief Suspend/restart ticker.    
     //! \param object Pointer to the requesting object.
     //! \param active If true restart the ticker otherwise suspend it.
     void activate_ticker(void* object, bool active);
-    //! Stop all tickers
+
+    //! Stop all tickers.
     void stop_all();
     
     protected:
@@ -54,6 +56,7 @@ class ticker {
 
     //! The register of tick requests.
     std::vector<ticker_entry*> tickers_;
+    
     //! Current time (in units of 100 milliseconds since started).
     unsigned int tick_count_;
     

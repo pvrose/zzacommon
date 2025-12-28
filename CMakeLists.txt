@@ -25,23 +25,23 @@ set(CPPFILES
 )
 
 set(HPPFILES
-  include/banner.h
-  include/button_input.h
-  include/calendar.h
-  include/calendar_input.h
-  include/calendar_table.h
-  include/callback.h
-  include/drawing.h
-  include/file_holder.h
-  include/filename_input.h
-  include/input_hierch.h
-  include/password_input.h
-  include/settings.h
-  include/status.h
-  include/symbols.h
-  include/tabs_nonav.h
-  include/ticker.h
-  include/utils.h
+  ${CMAKE_SOURCE_DIR}/include/banner.h
+  ${CMAKE_SOURCE_DIR}/include/button_input.h
+  ${CMAKE_SOURCE_DIR}/include/calendar.h
+  ${CMAKE_SOURCE_DIR}/include/calendar_input.h
+  ${CMAKE_SOURCE_DIR}/include/calendar_table.h
+  ${CMAKE_SOURCE_DIR}/include/callback.h
+  ${CMAKE_SOURCE_DIR}/include/drawing.h
+  ${CMAKE_SOURCE_DIR}/include/file_holder.h
+  ${CMAKE_SOURCE_DIR}/include/filename_input.h
+  ${CMAKE_SOURCE_DIR}/include/input_hierch.h
+  ${CMAKE_SOURCE_DIR}/include/password_input.h
+  ${CMAKE_SOURCE_DIR}/include/settings.h
+  ${CMAKE_SOURCE_DIR}/include/status.h
+  ${CMAKE_SOURCE_DIR}/include/symbols.h
+  ${CMAKE_SOURCE_DIR}/include/tabs_nonav.h
+  ${CMAKE_SOURCE_DIR}/include/ticker.h
+  ${CMAKE_SOURCE_DIR}/include/utils.h
 )
 
 # Find fltk
@@ -73,6 +73,12 @@ target_sources(${TARGET}
     BASE_DIRS ./include
     FILES ${HPPFILES}
 )
+
+# generate docus
+message(STATUS "Adding API documentation")
+add_subdirectory(api)
+add_dependencies(${TARGET} api_html)
+
 
 install(TARGETS ${TARGET})
 

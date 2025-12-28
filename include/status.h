@@ -12,16 +12,16 @@
 #include <cstdint>
 
 
-
+//! Forwrad declaration.
 class banner;
 
 	//! The colours used for a particular status_t value.
 	struct colours_t {
 		Fl_Color fg;          //!< Foreground colour
-		Fl_Color bg;          //!< BAncground colour
+		Fl_Color bg;          //!< Background colour
 	};
 
-	//! The status of the various messages
+	//! The status of the various messages.
 	enum status_t : char {
 		ST_NONE,             //!< Uninitialised
 		ST_LOG,              //!< Only log the message, do not display it in status
@@ -35,7 +35,7 @@ class banner;
 		ST_FATAL             //!< A fatal (non-recoverable) error has been signaled
 	};
 
-	//! MAp the values of status_t to the colours used to display them.
+	//! Map the values of status_t to the colours used to display them.
 	const std::map<status_t, colours_t> STATUS_COLOURS = {
 		{ ST_NONE, { FL_WHITE, FL_BLACK } },
 		{ ST_LOG, { fl_lighter(FL_BLUE), FL_BLACK } },
@@ -66,44 +66,54 @@ class banner;
 	// 
 	enum object_t : char;
 
-	//! This class provides the means of managing status and progress for ZZALOG.
+	//! This class provides the means of managing status and progress for the user application.
 	class status 
 	{
 	public:
 
-		//! Constructor.
+		//! \brief Constructor.
+		//! \param features The features supported. The options currently are:
+		//! \par HAS_BANNER: 
+		//! Open a window of class banner.
+		//! \par HAS_LOGFILE: 
+		//! Write status messages to a file.
+		//! \par HAS_CONSOLE: 
+		//! Write status messages to the console.
 		status(uint8_t features);
 		static const uint8_t HAS_BANNER = 1;          //!< Opens a banner window
 		static const uint8_t HAS_LOGFILE = 2;         //!< Writes to a log file
 		static const uint8_t HAS_CONSOLE = 4;         //!< Displays on the console
+
      	//! Destructor.
 		~status();
 
-		//! Initialise progress
-		
+		//! \brief Initialise progress.
 		//! \param max_value Maximum value of items being used to monitor progress.
 		//! \param object An identifier for the what is being measured
 		//! \param description Textual description of what is being measured.
 		//! \param suffix Indicates units of items being measured.
 		void progress(uint64_t max_value, object_t object, const char* description, const char* suffix);
-		//! Update progress
 		
+		//! \brief Update progress.		
 		//! \param value Current number of items being measured.
 		//! \param object Identifier.
 		void progress(uint64_t value, object_t object);
-		//! Update progress with a text message and mark complete.
-		
+
+		//! \brief Update progress with a text message and mark complete.		
 		//! \param message Message indicating why it is complete.
 		//! \param object Identifier.
 		void progress(const char* message, object_t object);
+
 		//! Output message \p label with \p status.
 		void misc_status(status_t status, const char* label);
 
-		//! Set closedown callback
+		//! \brief Set close-down callback.
+		//! \param w Pointer to the widget that will action the close-down.
+		//! \param close Pointer to the function that will action the close-down.
 		void callback(Fl_Window* w, void(*close)(Fl_Window* w, void* v));
 
 
-		//! Closing
+		//! \brief Initiate a close-down (from banner).
 		void close();
 
 	protected:
@@ -112,14 +122,14 @@ class banner;
 
 
 	protected:
-		//! Status report file
+		//! Status report file.
 		std::string report_filename_ = nullptr;
 		//! Output stream for report file.
 		std::ofstream* report_file_ = nullptr; 
-		//! Report file unusable
+		//! Report file unusable.
 		bool file_unusable_ = false;
 
-		//! Callback
+		//! Callback to initiate close-down.
 		friend class banner;
 		void(*close_)(Fl_Window* w, void* v);
 		//! Closing window

@@ -120,7 +120,7 @@ void calendar::cb_bn_cal(Fl_Widget* w, void* v) {
 	case BN_OK:
 		// Get the display date from the calendar and convert it to text
 		char temp[25];
-		strftime(temp, 25, ADIF_DATEFORMAT, &that->table_->value());
+		strftime(temp, 25, that->format_, &that->table_->value());
 		that->value_ = temp;
 		that->display_date_ = that->table_->value();
 		// Tell instancing view and delete this
@@ -129,7 +129,7 @@ void calendar::cb_bn_cal(Fl_Widget* w, void* v) {
 		break;
 	case BN_CANCEL:
 		// Restore to original value std::set.
-		string_to_tm(that->value_, that->display_date_, ADIF_DATEFORMAT);
+		string_to_tm(that->value_, that->display_date_, that->format_);
 		// Tell instancing view and delete this
 		that->do_callback();
 		Fl::delete_widget(that);
@@ -213,7 +213,7 @@ void calendar::value(const char* date) {
 	// Set the date
 	value_ = date;
 	// Update associated 
-	string_to_tm(date, display_date_, ADIF_DATEFORMAT);
+	string_to_tm(date, display_date_, format_);
 	// now try and std::set the date into calendar - it may fail so read back defaulted
 	change_date();
 	display_date_ = table_->value();

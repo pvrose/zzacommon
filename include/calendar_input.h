@@ -19,12 +19,13 @@ public:
     //! \param H height
     //! \param L label
     calendar_input(int X, int Y, int W, int H, const char* L = nullptr);
-    //! Desctructor.
+
+    //! Destructor.
     ~calendar_input();
 
     //! Override button_input::callback to intercept any value returned by it.
     virtual void callback(Fl_Callback* cb, void* v);
-    //! Override button_input::user_data(void*) to forward user daat to components.
+    //! Override button_input::user_data(void*) to forward user data to components.
     virtual void user_data(void* v);
 
     //! Callback for the button.
@@ -37,5 +38,15 @@ public:
 
     //! Callback for the calendar
     static void cb_calendar(Fl_Widget* w, void* v);
+
+    //! Set format to \p value.
+    void format(const char* value);
+
+    //! Get format.
+    const char* format();
+
+protected:
+    //! Date display format - defaults to (eg) 20251228.
+    const char* format_ = "%Y%m%d";
 };
 

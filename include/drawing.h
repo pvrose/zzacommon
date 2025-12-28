@@ -1,4 +1,5 @@
-﻿/*! Standard drawing types and constants for use in views and dialogs
+﻿/*! \file 
+Standard drawing types and constants for use in views and dialogs.
 
 */
 
@@ -50,7 +51,8 @@ const Fl_Color COLOUR_CLARET = 80;       /*!< R=3/4, B=0/4, G=0/4 */
 const Fl_Color COLOUR_GREY = fl_color_average(FL_FOREGROUND_COLOR, FL_BACKGROUND_COLOR, 0.33F);
 	//!< One third between fotreground and background colours.
 
-//! the various views and data objects
+//! \brief The various views and data objects.
+//! \todo This is a ZZALOG specific datatype. Consider moving back to ZZALOG.
 enum object_t : char {
 	OT_NONE,             //!< No object (for default use)
 	OT_MAIN,             //!< The main log view (book & view)
@@ -72,7 +74,8 @@ enum object_t : char {
 	OT_EQSL_IMAGE,       //!< Downloading eQSL iamges
 };
 
-//! Default colours to use in tab view labels and/or progress bar
+//! \brief Default colours to use in tab view labels and/or progress clock.
+//! \todo This is a ZZALOG specific object. Consider moving back to ZZALOG.
 const std::map<object_t, Fl_Color> OBJECT_COLOURS = {
 	{ OT_NONE, FL_BACKGROUND_COLOR },
 	{ OT_MAIN, FL_GREEN },
@@ -93,7 +96,8 @@ const std::map<object_t, Fl_Color> OBJECT_COLOURS = {
 	{ OT_EQSL_IMAGE, fl_darker(FL_YELLOW) },
 };
 
-//! Names of the objects
+//! \brief ames of the objects.
+//! \todo This is a ZZALOG specific object. Consider moving back to ZZALOG.
 const std::map<object_t, const char*> OBJECT_NAMES = {
 	{ OT_NONE, "NOTHING" },
 	{ OT_MAIN, "LOG" },
@@ -114,8 +118,10 @@ const std::map<object_t, const char*> OBJECT_NAMES = {
 };
 
 //! Default width for main window
+//! \todo This is a ZZALOG specific object. Consider moving back to ZZALOG.
 const unsigned int WIDTH = 1000;
-//! Defaulr height for main window
+//! Default height for main window
+//! \todo This is a ZZALOG specific object. Consider moving back to ZZALOG.
 const unsigned int HEIGHT = 650;
 
 

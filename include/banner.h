@@ -14,7 +14,13 @@ class Fl_Multiline_Output;
 class Fl_Output;
 class Fl_Text_Display;
 
-//!  A banner display to show progress and report events to the user.
+//!  \brief This class provides a banner launched at start-up and shows the progress 
+//!  of various activities during the execution of the app.
+//!
+//! This is a separate window from the main window of the app.
+//! It works better with the class status to act as an interface
+//! and control the look and feel of the banner display.
+//! \todo Merge status and banner classes.
 class banner :
     public Fl_Double_Window
 {
@@ -25,14 +31,19 @@ public:
     //! \param H height.
     //! \param L label.
     banner(int W, int H, const char* L = nullptr);
+
     //! Destructor
     ~banner();
+
     //! Overload of Fl_Double_Window::handle.
 
-    //! This takes focus events so that clicking and typing F1 opens userguide.
+    //! \todo This originally had code to handle F1. Check whether this can
+    //! be reinstated or the overload of handle removed.
     virtual int handle(int event);
-    //! Instantiates all the component widgets.
+
+    //! This method builds the banner object from the component widgets.
     void create_form();
+
     //! Enables and/or configures the compoment widgets in response to a change of conditions.
     void enable_widgets();
 
@@ -43,6 +54,7 @@ public:
     //! \param msg the message to display.
 	//! \param ts timestamp string to prefix the message with.
     void add_message(status_t type, const char* msg, const char* ts);
+
     //! Start a progress clock.
     
     //! \param max_value the maximum count of object_t items expected.
@@ -50,36 +62,39 @@ public:
     //! \param msg message to accompany any display of progress.
     //! \param suffix textual description of the objecy (eg bytes or records).
     void start_progress(uint64_t max_value, object_t object, const char* msg, const char* suffix);
+
     //! Report on progress - update the clock.
     
     //! \param value the current progress value. The display is only updated if the 
     //! change in progress in greater than one hundredth of the maximum value.
     void add_progress(uint64_t value);
+
     //! \brief End a progress report normally. 
    
     //! However if add_progress indicates 100% complete then
     //! the progress report will indicate complete.
     void end_progress();
+
     //! Cancel a progress report if an abnormal condition occurred.
     
     //! \param msg message to indicate the reason for the cancellation.
     void cancel_progress(const char* msg);
 
-
-    //! Callback - system close button.
-    
-    //! The callback normally ignores the click of this button, but can
-    //! be configured to action the normal window close action.
+    //! \brief The callback is triggered by the system close button.
+    //! This action calls status::close_. This in itself is a callback
+    //! that the main app has set up to invoke a closure.
+    //! \param w The invoking widget.
+    //! \param v User data: expected to be nullptr.
     static void cb_close(Fl_Widget* w, void* v);
 
     //! Override Fl_Double_Window::draw().
     
-    //! When ZZALOG is closing, the word "CLOSING" is displayed across the banner.
-    //! This provides an indication to the user that ZZALOG is, in fact, closing as
+    //! When the main app is closing, the word "CLOSING" is displayed across the banner.
+    //! This provides an indication to the user that the app is, in fact, closing as
     //! this can in some cases take a noticeable time.
     virtual void draw();
 
-    //! Set closing
+    //! Called indirectly through status when the main app is closing.
     void close();
 
 protected:
@@ -99,21 +114,28 @@ protected:
 
     //! Progress maximum value
     uint64_t max_value_;
+
     //! Delta value to trigger update of progress. Set to a fixed fraction of the maximum value.
+    //! \todo This is currently hard-coded as 1.0%. Consider making it a compile-time
+    //! configuration parameter.
     uint64_t delta_;
-    //! Previous progress value.
-    
+
+    //! \brief Previous progress value.
     //! The progress clock is updated if the new value is greater than
     //! prev_value_ + delta_.
     uint64_t prev_value_;
-    //! Progress unit. Eg bytes or records.
+
+    //! Progress unit. A word or phrase indicating how progress is being counted.
     const char* prg_unit_;
+
     //! Progress message.
     const char* prg_msg_;
-    //! Progress object - affects the colour of the progress clock.
+
+    //! \brief Progress object - affects the colour of the progress clock.
+    //! \todo This is a ZZALOG specific item. Needs considering how to generalise it.
     object_t prg_object_;
 
-    //! Closing
+    //! Display "CLOSING" across the window.
     bool closing_ = false;
 
 };

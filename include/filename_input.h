@@ -5,14 +5,15 @@
 #include <FL/Fl_Widget.H>
 
 
-//! This class implements a combination of input widget and a button which opens a file browser.
+//! \brief This class implements a combination of input widget and a button which opens a file browser.
+//! The file browser is of type Fl_Native_File_Chooser.
 class filename_input :
     public button_input
 {
 
 public:
 
-    //! Defines browser type to open
+    //! Defines browser type to open.
     enum type_t : uint8_t {
         FILE,            //!< Opens a file browser
         DIRECTORY        //!< Opens a directory browser
@@ -39,7 +40,7 @@ public:
 protected:
 
     //! \brief Callback from clicking button: opens file or directory browser, 
-    //! and selected object transferred to input widget.
+    //! The selected object's name will be transferred to input widget.
     static void cb_button(Fl_Widget* w, void* v);
 
     //! Browser label.

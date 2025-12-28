@@ -18,23 +18,21 @@ public:
 	//! Destructor.
 	~input_hierch();
 
-	//! Overload inherited value - strips hierarchic path.
+	//! Overload inherited value - strips hierarchic path after calling Fl_Input_Choice::value().
 	const char* value();
-	//! Overload inherited value - mutates the value name by adding a hierarchic path
+	//! Overload inherited value - adds the hierarchic path before writing value().
 	void value(const char* val);
 
-	//! Overload Fl_Input_Choice::add(const char* s) - adds hierarchic path
+	//! Overload Fl_Input_Choice::add(const char* s) - adds hierarchic path.
 	void add(const char* val);
 
-	//! Set the hierarchy description 
-	
+	//! \brief Set the hierarchy description ,
 	//! \param start Position in value to start adding hierarchy
 	//! \param end Position in value to end adding hierarchy
 	//! For example if start is set to 0 and end to 2, the value "GM3ZZA" will be
-	//! changed to "G/GM/GM3ZZA" to give a two-level hierarchic menu.
+	//! changed to "G/GM/GM3ZZA" to give a three-level hierarchic menu.
 	void hierarchy(int start, int end);
-	//! Get the hierarchy description
-	
+	//! \brief Get the hierarchy description.	
 	//! \see hierarchy
 	void hierarchy(int* start, int* end) const;
 

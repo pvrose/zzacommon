@@ -43,13 +43,14 @@ void calendar_input::cb_button(Fl_Widget* w, void* v) {
 	calendar* cal = new calendar(w->x(), w->y());
 	const char* ip_value = that->input()->value();
 	if (strlen(ip_value) == 0) {
-		std::string today = now(false, "%Y%m%d").c_str();
+		std::string today = now(false, that->format_).c_str();
 		cal->value(today.c_str());
 		that->input()->value(today.c_str());
 	}
 	else {
 		cal->value(ip_value);
 	}
+	cal->format(that->format_);
 	cal->callback(cb_calendar, that->input());
 	cal->show();
 	Fl_Widget_Tracker wt(cal);
@@ -63,4 +64,14 @@ void calendar_input::cb_calendar(Fl_Widget* w, void* v) {
 	ip->value(cal->value());
 	ip->redraw();
 	ip->do_callback();
+}
+
+// Set Format
+void calendar_input::format(const char* value) {
+	format_ = value;
+}
+
+// Get format
+const char* calendar_input::format() {
+	return format_;
 }

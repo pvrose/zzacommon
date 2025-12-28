@@ -6,45 +6,53 @@
 
 using json = nlohmann::json;
 
-//! JSON based settings, a bit based on Fl_Preferences
+//! \brief This class provides access to a JSON-based setting file.
+//! The interface is simillar to that of Fl_Preferences in fltk, but simplified
+//! for specific usages.
 class settings
 {
 public:
 	//! Basic constructor
 	settings();
 
-	//! Construct a sub-group of settings
+	//! \brief Construct a sub-group of settings.
+	//! \param parent Parent settings for which this object will form a group.
+	//! \param name Name of the settings group.
 	settings(settings* parent, std::string name);
 
-	//! DEstructor
+	//! Destructor
 	~settings();
 
-	//! Clear the settings and unhook the group
+	//! Clear the settings and unhook the group.
 	void clear();
 
-	//! Flush the settings to filestore
+	//! Flush the settings to filestore.
 	void flush();
 
 protected:
 
-	//! Set of data items
+	//! The entite contents of the settings file as a JSON object.
 	static json* all_settings_;
 
-	//! Number of attachments
+	//! Number of items currently accessing the settings file.
 	static int attachments_;
 
-	//! Data relevant to this instance of settings
+	//! The contents of this settings group as a JSON object
 	json* data_;
 
-	//! Parent settings
+	//! Parent settings group.
 	settings* parent_;
 
-	//! The name of this group
+	//! The name of this group.
 	std::string name_;
 
 public:
 
-	//! Get object
+	//! \brief Get object of type \p T.
+    //! \param name The name of the object.
+	//! \param value Reference to where the data will be stored.
+	//! \param def Default value in the absence of data in the settings file.
+	//! \todo Pass def by reference.
 	template <class T>
 	bool get(std::string name, T& value, const T def) {
 		bool exists = true;
@@ -62,7 +70,10 @@ public:
 		return exists;
 	}
 
-	//! Set object
+	//! \brief Set object of type T.
+	//! \param name The name of the object.
+	//! \param value The value to be written.
+	//! \todo pass value by reference.
 	template <class T>
 	void set(std::string name, const T value) {
 		(*data_)[name.c_str()] = value;

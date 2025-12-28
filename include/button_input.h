@@ -9,18 +9,28 @@
 
 class Fl_Button;
 
-//! This class provides an input plus a button combination that are connected.
+//! \brief This class provides an input plus a button combination where the 
+//! button affects the behaviour of the overall widget.
 
-//! The button will affect the input is some way, either opening up some browser 
-//! or affecting its format.
+//! The button may affect the appearance or bahaviour of the input,
+//! or it may open a dialog that provides an alternate way of 
+//! specifying the text.
+//! Examples include:
+//!   calendar_input: The button opens a display of a calendar to allow a date to be selected.
+//!   filename_input: The button opens a file dialog to allow the user to search for a file.
+//!   password_input: The button toggles the input between a normal input (where the text is
+//! visible) and a secret input (where it is replaced by asterisks). 
+
+//! \note This class has only a header file. The default implmentations may be used,
+//! but it is generally expected that inheritees implement their own methods.
 class button_input :
 	public Fl_Group
 {
 protected:
 
-	//! The Fl_Input widget
+	//! The Fl_Input widget.
 	Fl_Input* ip_;
-	//! The Fl_Button widget
+	//! The Fl_Button widget.
 	Fl_Button* bn_;
 
 public:
@@ -47,30 +57,22 @@ public:
 	//! Destructor
 	~button_input() {};
 
-	//! Inherited from Fl_Group - to be overridden by inheritee.
-	
-	//! The default is to std::set the callback of the Fl_Input to the specified callback.
+	//! The default is to set the callback of the Fl_Input to the specified callback.
 	virtual void callback(Fl_Callback* cb, void* v) { ip_->callback(cb, v); }
 	//! \see callback
 	virtual void callback(Fl_Callback* cb) { ip_->callback(cb); }
 	//! \see callback
 	virtual Fl_Callback_p callback() { return ip_->callback(); }
 
-	//! Inherited from Fl_Group - to be overridden by inheritee
-	
 	//! The default sets the when condition onto the Fl_Input component.
 	virtual void when(uchar i) { ip_->when(i); }
 	//! \see when
 	virtual Fl_When when() { return ip_->when(); }
 
-	//! Inherited from Fl_Group - to be overridden by inheritee
-
 	//! The default forwards the user data to the Fl_Input component.
 	virtual void user_data(void* v) { ip_->user_data(v); }
 	//! \see user_data
 	virtual void* user_data() { return ip_->user_data(); }
-
-	//! Inherited from Fl_Group - to be overridden by inheritee
 
 	//! The default forwards the value to the Fl_Input component.
 	void value(const char* d) { ip_->value(d); }
