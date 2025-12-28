@@ -117,12 +117,4 @@ const std::map<object_t, const char*> OBJECT_NAMES = {
 	{ OT_EQSL_IMAGE, "EQSL" },
 };
 
-//! Default width for main window
-//! \todo This is a ZZALOG specific object. Consider moving back to ZZALOG.
-const unsigned int WIDTH = 1000;
-//! Default height for main window
-//! \todo This is a ZZALOG specific object. Consider moving back to ZZALOG.
-const unsigned int HEIGHT = 650;
-
-
 #endif
