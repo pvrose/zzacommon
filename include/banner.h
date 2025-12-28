@@ -4,7 +4,6 @@
 #include <FL/Fl_Double_Window.H>
 
 enum status_t : char;
-enum object_t : char;
 
 // FLTK classes
 class Fl_Box;
@@ -59,9 +58,10 @@ public:
     
     //! \param max_value the maximum count of object_t items expected.
     //! \param object identifier of the object_t item.
+    //! \param colour Colour to be used for the progress wheel.
     //! \param msg message to accompany any display of progress.
     //! \param suffix textual description of the objecy (eg bytes or records).
-    void start_progress(uint64_t max_value, object_t object, const char* msg, const char* suffix);
+    void start_progress(uint64_t max_value, const char* object, Fl_Color colour, const char* msg, const char* suffix);
 
     //! Report on progress - update the clock.
     
@@ -132,8 +132,10 @@ protected:
     const char* prg_msg_;
 
     //! \brief Progress object - affects the colour of the progress clock.
-    //! \todo This is a ZZALOG specific item. Needs considering how to generalise it.
-    object_t prg_object_;
+    const char* prg_object_;
+
+    //! Progress colour
+    Fl_Color prg_colour_;
 
     //! Display "CLOSING" across the window.
     bool closing_ = false;

@@ -248,7 +248,12 @@ void banner::add_message(status_t type, const char* msg, const char* ts) {
 }
 
 // Add progress
-void banner::start_progress(uint64_t max_value, object_t object, const char* msg, const char* suffix) {
+void banner::start_progress(
+	uint64_t max_value, 
+	const char* object, 
+	Fl_Color colour, 
+	const char* msg, 
+	const char* suffix) {
 	// Trap any call that is not from the main std::thread
 	if (std::this_thread::get_id() != main_thread_id_) {
 		printf("Calling banner_start_progress(%s) when not in the main std::thread\n", msg);
@@ -262,14 +267,15 @@ void banner::start_progress(uint64_t max_value, object_t object, const char* msg
 	prg_msg_ = msg;
 	prg_unit_ = suffix;
 	prg_object_ = object;
+	prg_colour_ = colour;
 	// Set display message
-	snprintf(text, sizeof(text), "%s: PROGRESS: Starting %s - %lld %s", OBJECT_NAMES.at(object), msg, max_value, suffix);
+	snprintf(text, sizeof(text), "%s: PROGRESS: Starting %s - %lld %s", object, msg, max_value, suffix);
 	status_->misc_status(ST_PROGRESS, text);
-	snprintf(text, sizeof(text), "%s: %s.", OBJECT_NAMES.at(object), msg);
+	snprintf(text, sizeof(text), "%s: %s.", object, msg);
 	op_prog_title_->value(text);
 	snprintf(text, sizeof(text), "0 out of %lld %s", max_value, suffix);
 	bx_prog_value_->copy_label(text);
-	fd_progress_->selection_color(OBJECT_COLOURS.at(object));
+	fd_progress_->selection_color(colour);
 	fd_progress_->value(0.0);
 
 	redraw();
@@ -314,9 +320,9 @@ void banner::end_progress() {
 	}
 	char text[128];
 	// Set display message
-	snprintf(text, sizeof(text), "%s: PROGRESS: Ending %s", OBJECT_NAMES.at(prg_object_), prg_msg_);
+	snprintf(text, sizeof(text), "%s: PROGRESS: Ending %s", prg_object_, prg_msg_);
 	status_->misc_status(ST_PROGRESS, text);
-	snprintf(text, sizeof(text), "%s: %s. Done", OBJECT_NAMES.at(prg_object_), prg_msg_);
+	snprintf(text, sizeof(text), "%s: %s. Done", prg_object_, prg_msg_);
 	op_prog_title_->value(text);
 	redraw();
 	if (visible()) Fl::check();
@@ -331,9 +337,9 @@ void banner::cancel_progress(const char* msg) {
 	}
 	char text[128];
 	// Set display message
-	snprintf(text, sizeof(text), "%s: PROGRESS: cancelling %s - %s", OBJECT_NAMES.at(prg_object_), prg_msg_, msg);
+	snprintf(text, sizeof(text), "%s: PROGRESS: cancelling %s - %s", prg_object_, prg_msg_, msg);
 	status_->misc_status(ST_PROGRESS, text);
-	snprintf(text, sizeof(text), "%s: %s. Cancelled (%s)", OBJECT_NAMES.at(prg_object_), prg_msg_, msg);
+	snprintf(text, sizeof(text), "%s: %s. Cancelled (%s)", prg_object_, prg_msg_, msg);
 	op_prog_title_->value(text);
 	redraw();
 	if (visible()) Fl::check();

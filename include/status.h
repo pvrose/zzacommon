@@ -63,8 +63,14 @@ class banner;
 		{ ST_FATAL, 'F'}
 	};
 
-	// 
-	enum object_t : char;
+	//! Status object parameters
+	struct object_data_t {
+		const char* name;              //!< Text to use in output
+		Fl_Color colour;               //!< Colour for text and progress wheel
+	};
+
+	//! Object parameter map
+	typedef std::map<uint8_t, object_data_t> object_data_map;
 
 	//! This class provides the means of managing status and progress for the user application.
 	class status 
@@ -72,14 +78,15 @@ class banner;
 	public:
 
 		//! \brief Constructor.
-		//! \param features The features supported. The options currently are:
-		//! \par HAS_BANNER: 
+		//! \param features The features supported. The options currently are given below.
+		//! \param data_map Formatting parameters.
+	    //! \par HAS_BANNER: 
 		//! Open a window of class banner.
 		//! \par HAS_LOGFILE: 
 		//! Write status messages to a file.
 		//! \par HAS_CONSOLE: 
 		//! Write status messages to the console.
-		status(uint8_t features);
+		status(uint8_t features, const object_data_map& data_map);
 		static const uint8_t HAS_BANNER = 1;          //!< Opens a banner window
 		static const uint8_t HAS_LOGFILE = 2;         //!< Writes to a log file
 		static const uint8_t HAS_CONSOLE = 4;         //!< Displays on the console
@@ -92,17 +99,17 @@ class banner;
 		//! \param object An identifier for the what is being measured
 		//! \param description Textual description of what is being measured.
 		//! \param suffix Indicates units of items being measured.
-		void progress(uint64_t max_value, object_t object, const char* description, const char* suffix);
+		void progress(uint64_t max_value, uint8_t object, const char* description, const char* suffix);
 		
 		//! \brief Update progress.		
 		//! \param value Current number of items being measured.
 		//! \param object Identifier.
-		void progress(uint64_t value, object_t object);
+		void progress(uint64_t value, uint8_t object);
 
 		//! \brief Update progress with a text message and mark complete.		
 		//! \param message Message indicating why it is complete.
 		//! \param object Identifier.
-		void progress(const char* message, object_t object);
+		void progress(const char* message, uint8_t object);
 
 		//! Output message \p label with \p status.
 		void misc_status(status_t status, const char* label);
@@ -143,6 +150,9 @@ class banner;
 
 		//! Keep banner when closing
 		bool keep_banner_ = false;
+
+		//! Display parameter map
+		object_data_map object_map_;
 	};
 
 	extern status* status_;

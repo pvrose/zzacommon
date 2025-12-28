@@ -23,12 +23,13 @@ extern std::string PROGRAM_VERSION;
 extern bool DEVELOPMENT_MODE;
 
 // Constructor
-status::status(uint8_t features) :
+status::status(uint8_t features, const object_data_map& data_map) :
 	  report_filename_("")
 	, report_file_(nullptr)
 	, file_unusable_(false)
 {
 	feature_set_ = features;
+	object_map_ = data_map;
 
 	if (feature_set_ & HAS_LOGFILE) {
 		// Get report filename from the settings
@@ -53,23 +54,28 @@ status::~status()
 }
 
 // Add a progress item to the stack
-void status::progress(uint64_t max_value, object_t object, const char* description, const char* suffix) {
+void status::progress(uint64_t max_value, uint8_t object, const char* description, const char* suffix) {
 	// Turrn off file viewer update to improve performance
 	// no_update_viewer = true;
 	// Initialise it
 	// Reset previous value as a new progress
 	// Start a new progress bar process - create the progress item (total expected count, objects being counted, up/down and what view it's for)
-	banner_->start_progress(max_value, object, description, suffix);
+	banner_->start_progress(
+		max_value, 
+		object_map_.at(object).name, 
+		object_map_.at(object).colour,
+		description, 
+		suffix);
 }
 
 // Update progress to the new specified value
-void status::progress(uint64_t value, object_t object) {
+void status::progress(uint64_t value, uint8_t object) {
 	// Update progress item
 	banner_->add_progress(value);
 }
 
 // Update progress with a message - e.g. cancel it and display why cancelled
-void status::progress(const char* message, object_t object) {
+void status::progress(const char* message, uint8_t object) {
 	banner_->cancel_progress(message);
 }
 
