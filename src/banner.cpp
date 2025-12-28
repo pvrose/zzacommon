@@ -29,6 +29,7 @@
 #include <FL/Fl_Widget.H>
 
 const int NUMBER_STYLES = 10;
+const double PROGRESS_INCREMENT = 0.01;
 const Fl_Text_Display::Style_Table_Entry style_table_[NUMBER_STYLES] = {
 	{ STATUS_COLOURS.at(ST_NONE).fg, FL_COURIER, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_NONE).bg },
 	{ STATUS_COLOURS.at(ST_LOG).fg, FL_COURIER, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_LOG).bg },
@@ -59,30 +60,6 @@ banner::banner(int W, int H, const char* L) :
 
 banner::~banner() {
 
-}
-
-// Handle
-int banner::handle(int event) {
-	int result = Fl_Double_Window::handle(event);
-	// Now handle F1 regardless
-	switch (event) {
-	case FL_FOCUS:
-		return true;
-	case FL_UNFOCUS:
-		// Acknowledge focus events to get the keyboard event
-		return true;
-	case FL_PUSH:
-		take_focus();
-		return true;
-	// case FL_KEYBOARD:
-	// 	switch (Fl::event_key()) {
-	// 	case FL_F + 1:
-	// 		open_html("banner.html");
-	// 		return true;
-	// 	}
-	// 	break;
-	}
-	return result;
 }
 
 // Visualise or no the close overay
@@ -260,9 +237,8 @@ void banner::start_progress(
 		throw;
 	}
 	char text[128];
-	const uint64_t FRACTION = 100L;
 	max_value_ = max_value;
-	delta_ = max_value / FRACTION;
+	delta_ = (uint64_t)((double)max_value * PROGRESS_INCREMENT);
 	prev_value_ = 0L;
 	prg_msg_ = msg;
 	prg_unit_ = suffix;

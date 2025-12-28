@@ -19,7 +19,6 @@ class Fl_Text_Display;
 //! This is a separate window from the main window of the app.
 //! It works better with the class status to act as an interface
 //! and control the look and feel of the banner display.
-//! \todo Merge status and banner classes.
 class banner :
     public Fl_Double_Window
 {
@@ -32,13 +31,7 @@ public:
     banner(int W, int H, const char* L = nullptr);
 
     //! Destructor
-    ~banner();
-
-    //! Overload of Fl_Double_Window::handle.
-
-    //! \todo This originally had code to handle F1. Check whether this can
-    //! be reinstated or the overload of handle removed.
-    virtual int handle(int event);
+    virtual ~banner();
 
     //! This method builds the banner object from the component widgets.
     void create_form();
@@ -116,8 +109,6 @@ protected:
     uint64_t max_value_;
 
     //! Delta value to trigger update of progress. Set to a fixed fraction of the maximum value.
-    //! \todo This is currently hard-coded as 1.0%. Consider making it a compile-time
-    //! configuration parameter.
     uint64_t delta_;
 
     //! \brief Previous progress value.

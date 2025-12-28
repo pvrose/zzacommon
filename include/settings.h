@@ -52,9 +52,8 @@ public:
     //! \param name The name of the object.
 	//! \param value Reference to where the data will be stored.
 	//! \param def Default value in the absence of data in the settings file.
-	//! \todo Pass def by reference.
 	template <class T>
-	bool get(std::string name, T& value, const T def) {
+	bool get(std::string name, T& value, const T& def) {
 		bool exists = true;
 		if (data_->find(name.c_str()) == data_->end()) {
 			(*data_)[name.c_str()] = def;
@@ -73,9 +72,8 @@ public:
 	//! \brief Set object of type T.
 	//! \param name The name of the object.
 	//! \param value The value to be written.
-	//! \todo pass value by reference.
 	template <class T>
-	void set(std::string name, const T value) {
+	void set(std::string name, const T& value) {
 		(*data_)[name.c_str()] = value;
 	}
 
