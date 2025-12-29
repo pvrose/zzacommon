@@ -1,4 +1,7 @@
 //! To update the timestamp and version string, run 'cmake' in the build directory.
+#pragma once
+
+#include <string>
 
 std::string ZZACOMMON_TIMESTAMP = "@BUILD_TIMESTAMP@";
 std::string ZZACOMMON_VERSION = "@VERSION_STRING@";
