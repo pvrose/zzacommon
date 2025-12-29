@@ -1,12 +1,31 @@
 cmake_minimum_required(VERSION 3.16)
 
+## Library zzacommon. 
 project(zzacommon)
-
 set (TARGET zzacommon)
+
+# Language requirememnts
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+## Set home directory per OS.
+if(MSVC)
+  set(USER_HOME_DIR $ENV{USERPROFILE})
+else()
+  set(USER_HOME_DIR $ENV{HOME})
+endif()
+
+# Set timestamp and version into files (requires to be rebuilt to take effect)
+string(TIMESTAMP BUILD_TIMESTAMP UTC)
+set(VERSION_STRING "1.0.0")
+configure_file(
+  ${CMAKE_SOURCE_DIR}/include/zzacommon.h.in
+  ${CMAKE_SOURCE_DIR}/include/zzacommon.h
+  @ONLY
+)
+
+# Source files
 set(CPPFILES 
   src/banner.cpp
   src/calendar.cpp
@@ -24,6 +43,7 @@ set(CPPFILES
   src/utils.cpp
 )
 
+# Header files - used as dependencies for API documentation
 set(HPPFILES
   ${CMAKE_SOURCE_DIR}/include/banner.h
   ${CMAKE_SOURCE_DIR}/include/button_input.h
@@ -42,9 +62,10 @@ set(HPPFILES
   ${CMAKE_SOURCE_DIR}/include/tabs_nonav.h
   ${CMAKE_SOURCE_DIR}/include/ticker.h
   ${CMAKE_SOURCE_DIR}/include/utils.h
+  ${CMAKE_SOURCE_DIR}/include/zzacommon.h
 )
 
-# ser compiler options
+# set compiler options
 if (MSVC)
 #  add_compile_options(/MD)
 else()
@@ -52,32 +73,39 @@ else()
 endif()
 
 # Find fltk
-set(FLTK_DIR "C:\\Users\\pvros\\source\\repos\\fltk\\build")
+# TODO: Should this be an ExternalProject?
+# MSVC work-round as FLTK built in user.
+if (MSVC)
+  set(FLTK_DIR "${USER_HOME_DIR}\\source\\repos\\fltk\\build")
+endif()
 set(CMAKE_MODULE_PATH ../ ./)
-find_package(FLTK CONFIG REQUIRED)
+find_package(FLTK CONFIG)
 if (FLTK_FOUND)
   message(STATUS "FLTK found: ${FLTK_VERSION}")
   message(STATUS "FLTK include dir: ${FLTK_INCLUDE_DIR}")
-#     set(FLTK_LIBRARIES fltk::fltk fltk::fltk_images)
+  message(STATUS "FLTK libraries: ${FLTK_LIBRARIES}")
 else()
   message(FATAL_ERROR "FLTK not found")
 endif()
 
 set(CMAKE_MODULE_PATH ../)
 
-set(CMAKE_BUILD_RPATH ${CMAKE_CURRENT_BINARY_DIR})
+## Target is libzzacommon
 add_library(${TARGET} STATIC)
+
+## Set include files.
 target_include_directories(${TARGET} PRIVATE 
   ./include
   ${FLTK_INCLUDE_DIR}
 )
+## Add nlohmann/json for MSVC
 if (MSVC)
   target_include_directories(${TARGET} PRIVATE 
-    "C:\\Users\\pvros\\source\\repos\\json\\include"
+    "${USER_HOME_DIR}\\source\\repos\\json\\include"
   )
 endif()
 
-# Add QBS_logo.h to ensure it gets generated
+# Set sources.
 target_sources(${TARGET} 
   PRIVATE 
     ${CPPFILES}
@@ -88,7 +116,7 @@ target_sources(${TARGET}
     FILES ${HPPFILES}
 )
 
-# generate docus
+# generate API documentation
 message(STATUS "Adding API documentation")
 add_subdirectory(api)
 add_dependencies(${TARGET} api_html)
