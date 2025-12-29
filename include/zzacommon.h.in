@@ -3,5 +3,5 @@
 
 #include <string>
 
-std::string ZZACOMMON_TIMESTAMP = "@BUILD_TIMESTAMP@";
-std::string ZZACOMMON_VERSION = "@VERSION_STRING@";
+const std::string ZZACOMMON_TIMESTAMP = "@BUILD_TIMESTAMP@";
+const std::string ZZACOMMON_VERSION = "@VERSION_STRING@";
