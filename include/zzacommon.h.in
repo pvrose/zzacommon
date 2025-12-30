@@ -1,7 +1,86 @@
-//! To update the timestamp and version string, run 'cmake' in the build directory.
+// To update the timestamp and version string, run 'cmake' in the build directory.
 #pragma once
 
 #include <string>
 
-const std::string ZZACOMMON_TIMESTAMP = "@BUILD_TIMESTAMP@";
-const std::string ZZACOMMON_VERSION = "@VERSION_STRING@";
+/*!
+\mainpage API Documentation
+
+ZZACOMMON is a library of useful methods and classes developed for ZZALOG but
+that have been generalised for use with other projects.
+
+ZZACOMMON is based in part on the work of the FLTK project <A HREF=https://www.fltk.org>https://www.fltk.org</A>.
+
+It provides a number of FLTK-derived widgets for general use:
+
+\par banner
+This is a banner window that provides a progress wheel and status message screen. 
+See \ref banner.
+\par button_input
+This is a combination of Fl_Input and Fl_Button where clicking the button interacts
+in some way with the operation of the input. This is only ever intended to be used
+as the basis for other widgets: it is not a free-standing widget. 
+See \ref button_input.
+\par calendar_input
+This is a version of button_input where the button opens a calendat window to allow
+a date to be selected that is then placed as the text value of the input.
+See \ref calendar_input.
+\par calendar
+The calendar window opened by the button in calendar_input.
+See \ref calendar.
+\par calendar_table
+The calendar object used in calendar.
+See \ref calendar_input.
+\par callback.h
+This is a set of standard callbacks that can be used either directly as the callback
+for widget operations or used within custom callbacks.
+See \ref callback.h.
+\par drawing.h
+This is a set of drawing constants to maintain a consistent "look-and-feel" across
+all projects.
+See \ref drawing.h.
+\par filename_input
+This is a version of button_input where the button opens a file browser and the selected
+filename is then copied to the text value of the input widget.
+See \ref filename_input.
+\par file_holder
+This class provides a consistent approach to filestore management used across all
+projects.
+See \ref file_holder.
+\par input_hierch
+This is an extension of Fl_Input_Choice that uses a hierarchic menu for use where
+there are a large number of menu options. The supplied options are split into
+groups according to the first letter (or more) of the option.
+See \ref input_hierch.
+\par password_input
+This is a version of button_input where the button toggles the behaviour of the input between
+FL_NORMAL_INPUT (where the text is visible) and FL_SECRET_INPUT (where the text
+is masked).
+See \ref password_input.
+\par settings
+This class provides a JSON based settings file.
+See \ref settings.
+\par status
+This class encapsulates banner and is the main user interface for it.
+See \ref status.
+\par symbols
+This is a set of methods that each draw an image to be used in widget labels using the
+'\@' construct.
+See \ref symbols.h.
+\par tabs_nonav
+This is an extension of Fl_Tabs that inhibits the use of navigaton keys to switch
+between tab entries.
+See \ref tabs_nonav.
+\par ticker
+This class provides an application-wide clock that can send timer callbacks to 
+subscribed instances within the application. It, itself, receives a callback
+every 100 ms and forwards it to subscribers according to their needs.
+See \ref ticker.
+\par utils
+This is a set of standard utility methods.
+See \ref utils.h.
+
+*/
+
+const std::string ZZACOMMON_TIMESTAMP = "@ZZACOMMON_TIMESTAMP@";
+const std::string ZZACOMMON_VERSION = "@ZZACOMMON_VERSION@";

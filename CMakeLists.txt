@@ -17,8 +17,8 @@ else()
 endif()
 
 # Set timestamp and version into files (requires to be rebuilt to take effect)
-string(TIMESTAMP BUILD_TIMESTAMP UTC)
-set(VERSION_STRING "1.0.0")
+string(TIMESTAMP ZZACOMMON_TIMESTAMP UTC)
+set(ZZACOMMON_VERSION "1.0.0")
 configure_file(
   ${CMAKE_SOURCE_DIR}/include/zzacommon.h.in
   ${CMAKE_SOURCE_DIR}/include/zzacommon.h
@@ -26,7 +26,7 @@ configure_file(
 )
 
 # Source files
-set(CPPFILES 
+set(ZZACOMMON_CPPFILES 
   src/banner.cpp
   src/calendar.cpp
   src/calendar_input.cpp
@@ -44,7 +44,7 @@ set(CPPFILES
 )
 
 # Header files - used as dependencies for API documentation
-set(HPPFILES
+set(ZZACOMMON_HPPFILES
   ${CMAKE_SOURCE_DIR}/include/banner.h
   ${CMAKE_SOURCE_DIR}/include/button_input.h
   ${CMAKE_SOURCE_DIR}/include/calendar.h
@@ -73,9 +73,8 @@ else()
 endif()
 
 # Find fltk
-# TODO: Should this be an ExternalProject?
 # MSVC work-round as FLTK built in user.
-if (MSVC)
+if (NOT FLTK_DIR AND MSVC)
   set(FLTK_DIR "${USER_HOME_DIR}\\source\\repos\\fltk\\build")
 endif()
 set(CMAKE_MODULE_PATH ../ ./)
@@ -108,7 +107,7 @@ endif()
 # Set sources.
 target_sources(${TARGET} 
   PRIVATE 
-    ${CPPFILES}
+    ${ZZACOMMON_CPPFILES}
   PUBLIC 
     FILE_SET common_headers
     TYPE HEADERS
