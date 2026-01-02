@@ -22,10 +22,10 @@ if(DOXYGEN_FOUND)
     DEPENDS ${DOXY_API_FILES} ${DOXY_API_OUT}
     COMMAND ${DOXYGEN_EXECUTABLE} ${DOXY_API_OUT}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating API documentation"
+    COMMENT "ZZACOMMON: Generating API documentation"
     VERBATIM
   )
-  add_custom_target(api_html ALL
+  add_custom_target(zzacommon_api_html ALL
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/index.html
   )
 
