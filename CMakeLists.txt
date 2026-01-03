@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 ## Library zzacommon. 
-project(ZZACOMMON)
+project(ZZACOMMON VERSION 1.0.1)
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
 set (TARGET zzacommon)
 
@@ -19,7 +19,6 @@ endif()
 
 # Set timestamp and version into files (requires to be rebuilt to take effect)
 string(TIMESTAMP ZZACOMMON_TIMESTAMP UTC)
-set(ZZACOMMON_VERSION "1.0.0")
 configure_file(
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h.in
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h
