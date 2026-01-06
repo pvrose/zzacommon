@@ -123,6 +123,9 @@ class banner;
 		//! \brief Initiate a close-down (from banner).
 		void close();
 
+		//! \brief Returns pointer to the banner
+		banner* get_banner();
+
 	protected:
 		//! Returns the terminal characters used for the specific \p fg or bg colour for \p status.
 		std::string colour_code(status_t status, bool fg); 

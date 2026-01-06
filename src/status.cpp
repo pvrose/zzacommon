@@ -179,3 +179,8 @@ void status::close() {
 	banner_->show();
 	banner_->redraw();
 }
+
+// Return banner
+banner* status::get_banner() {
+	return banner_;
+}
