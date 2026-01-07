@@ -27,7 +27,7 @@ calendar_input::~calendar_input() {}
 void calendar_input::callback(Fl_Callback* cb, void* v) {
 	// Default behaviour of button input - sets ip_ callback
 	button_input::callback(cb, v);
-	// Now std::set the user data on the button
+	// Now set the user data on the button
 	bn_->user_data(v);
 }
 

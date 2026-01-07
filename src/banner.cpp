@@ -185,9 +185,9 @@ void banner::enable_widgets() {
 
 // Add a message to the banner
 void banner::add_message(status_t type, const char* msg, const char* ts) {
-	// Trap any call that is not from the main std::thread
+	// Trap any call that is not from the main thread
 	if (std::this_thread::get_id() != main_thread_id_) {
-		printf("Calling banner::add_message(%s) when not in the main std::thread\n", msg);
+		printf("Calling banner::add_message(%s) when not in the main thread\n", msg);
 		throw;
 	}
 	switch (type) {
@@ -231,9 +231,9 @@ void banner::start_progress(
 	Fl_Color colour, 
 	const char* msg, 
 	const char* suffix) {
-	// Trap any call that is not from the main std::thread
+	// Trap any call that is not from the main thread
 	if (std::this_thread::get_id() != main_thread_id_) {
-		printf("Calling banner_start_progress(%s) when not in the main std::thread\n", msg);
+		printf("Calling banner_start_progress(%s) when not in the main thread\n", msg);
 		throw;
 	}
 	char text[128];
@@ -260,9 +260,9 @@ void banner::start_progress(
 
 // Update progress dial and output
 void banner::add_progress(uint64_t value) {
-	// Trap any call that is not from the main std::thread
+	// Trap any call that is not from the main thread
 	if (std::this_thread::get_id() != main_thread_id_) {
-		printf("Calling banner::add_progress(%lld) when not in the main std::thread\n", value);
+		printf("Calling banner::add_progress(%lld) when not in the main thread\n", value);
 		throw;
 	}
 	char text[128];
@@ -289,9 +289,9 @@ void banner::add_progress(uint64_t value) {
 
 // Ending the progress - log message
 void banner::end_progress() {
-	// Trap any call that is not from the main std::thread
+	// Trap any call that is not from the main thread
 	if (std::this_thread::get_id() != main_thread_id_) {
-		printf("Calling banner::end_progress(%s) when not in the main std::thread\n", prg_msg_);
+		printf("Calling banner::end_progress(%s) when not in the main thread\n", prg_msg_);
 		throw;
 	}
 	char text[128];
@@ -306,9 +306,9 @@ void banner::end_progress() {
 
 // cancelling the progress - log message
 void banner::cancel_progress(const char* msg) {
-	// Trap any call that is not from the main std::thread
+	// Trap any call that is not from the main thread
 	if (std::this_thread::get_id() != main_thread_id_) {
-		printf("Calling banner::cancel_progress(%s) when not in the main std::thread\n", msg);
+		printf("Calling banner::cancel_progress(%s) when not in the main thread\n", msg);
 		throw;
 	}
 	char text[128];
@@ -335,7 +335,7 @@ void banner::copy_msg_display(status_t type, const char* msg, const char* ts) {
 	buffer->append(" ");
 	buffer->append(msg);
 	buffer->append("\n");
-	// Now std::set the style of the added characters
+	// Now set the style of the added characters
 	// Create a string of the required length and fill it with the style character
 	size_t len = strlen(msg) + strlen(ts)  + 2;
 	char* style = new char[len + 1];

@@ -128,7 +128,7 @@ void calendar::cb_bn_cal(Fl_Widget* w, void* v) {
 		Fl::delete_widget(that);
 		break;
 	case BN_CANCEL:
-		// Restore to original value std::set.
+		// Restore to original value set.
 		string_to_tm(that->value_, that->display_date_, that->format_);
 		// Tell instancing view and delete this
 		that->do_callback();
@@ -214,7 +214,7 @@ void calendar::value(const char* date) {
 	value_ = date;
 	// Update associated 
 	string_to_tm(date, display_date_, format_);
-	// now try and std::set the date into calendar - it may fail so read back defaulted
+	// now try and set the date into calendar - it may fail so read back defaulted
 	change_date();
 	display_date_ = table_->value();
 }

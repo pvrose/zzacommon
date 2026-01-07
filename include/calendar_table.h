@@ -18,7 +18,7 @@ public:
 	//! \param Y vertical position with hosr window
 	//! \param W width 
 	//! \param H height
-	//! \param date date to std::set.
+	//! \param date date to set.
 	calendar_table(int X, int Y, int W, int H, tm date);
 
 	//! Destructor.

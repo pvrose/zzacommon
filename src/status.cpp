@@ -79,7 +79,7 @@ void status::progress(const char* message, uint8_t object) {
 	banner_->cancel_progress(message);
 }
 
-// Update miscellaneous status - std::set text and colour, log the status
+// Update miscellaneous status - set text and colour, log the status
 void status::misc_status(status_t status, const char* label) {
 	// Start each entry with a timestamp
 	std::string timestamp = now(false, "%Y/%m/%d %H:%M:%S", true);
