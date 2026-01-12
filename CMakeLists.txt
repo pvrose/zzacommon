@@ -30,8 +30,8 @@ endif()
 if (NOT APP_NAME)
   set(APP_NAME "UNNAMED")
 endif()
-if (NOT APP_SHORTNAME)
-  set(APP_SHORTNAME "UNNAMED")
+if (NOT APP_VENDOR)
+  set(APP_VENDOR "GM3ZZA")
 endif()
 configure_file(
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h.in
