@@ -12,7 +12,7 @@
 
 using json = nlohmann::json;
 
-extern std::string PROGRAM_ID;
+extern std::string APP_NAME;
 
 
 json* settings::all_settings_ = nullptr;
@@ -30,9 +30,9 @@ settings::settings() {
 			try {
 				json j;
 				i >> j;
-				if (j.find(PROGRAM_ID) != j.end() &&
-					!j.at(PROGRAM_ID).is_null()) {
-					all_settings_ = new json(j.at(PROGRAM_ID));
+				if (j.find(APP_NAME) != j.end() &&
+					!j.at(APP_NAME).is_null()) {
+					all_settings_ = new json(j.at(APP_NAME));
 				}
 				else {
 					all_settings_ = new json;
@@ -91,7 +91,7 @@ void settings::flush() {
 		file_holder_->get_file(FILE_SETTINGS, o, filename);
 		parent_ = nullptr;
 		json j;
-		j[PROGRAM_ID] = *data_;
+		j[APP_NAME] = *data_;
 		o << std::setw(2) << j << '\n';
 		o.close();
 	}

@@ -18,8 +18,8 @@
 #include <FL/fl_ask.H>
 #include <FL/fl_utf8.h>
 
-extern std::string PROGRAM_ID;
-extern std::string PROGRAM_VERSION;
+extern std::string APP_NAME;
+extern std::string APP_VERSION;
 extern bool DEVELOPMENT_MODE;
 
 // Constructor
@@ -38,7 +38,7 @@ status::status(uint8_t features, const object_data_map& data_map) :
 	if (feature_set_ & HAS_BANNER) {
 		// Create banner
 		banner_ = new banner(400, 200);
-		std::string title = PROGRAM_ID + " " + PROGRAM_VERSION;
+		std::string title = APP_NAME + " " + APP_VERSION;
 		if (DEVELOPMENT_MODE) title += " DEVT";
 		banner_->copy_label(title.c_str());
 
