@@ -30,31 +30,37 @@ endif()
 if (NOT APP_NAME)
   set(APP_NAME "UNNAMED")
 endif()
-if (NOT APP_VENDOR)
-  set(APP_VENDOR "GM3ZZA")
+if (NOT APP_SHORTNAME)
+  set(APP_SHORTNAME "UNNAMED")
 endif()
 configure_file(
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h.in
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h
   @ONLY
 )
+configure_file(
+  ${ZZACOMMON_SOURCE_DIR}/src/ident.cpp.in
+  ${ZZACOMMON_SOURCE_DIR}/src/ident.cpp
+  @ONLY
+)
 
 # Source files
 set(ZZACOMMON_CPPFILES 
-  src/banner.cpp
-  src/calendar.cpp
-  src/calendar_input.cpp
-  src/calendar_table.cpp
-  src/file_holder.cpp
-  src/filename_input.cpp
-  src/input_hierch.cpp
-  src/password_input.cpp
-  src/settings.cpp
-  src/status.cpp
-  src/symbols.cpp
-  src/tabs_nonav.cpp
-  src/ticker.cpp
-  src/utils.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/banner.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/calendar.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/calendar_input.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/calendar_table.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/file_holder.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/filename_input.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/ident.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/input_hierch.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/password_input.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/settings.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/status.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/symbols.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/tabs_nonav.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/ticker.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/utils.cpp
 )
 
 # Header files - used as dependencies for API documentation
@@ -68,6 +74,7 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/drawing.h
   ${ZZACOMMON_INCLUDE_DIR}/file_holder.h
   ${ZZACOMMON_INCLUDE_DIR}/filename_input.h
+  ${ZZACOMMON_INCLUDE_DIR}/ident.h
   ${ZZACOMMON_INCLUDE_DIR}/input_hierch.h
   ${ZZACOMMON_INCLUDE_DIR}/password_input.h
   ${ZZACOMMON_INCLUDE_DIR}/settings.h
@@ -104,7 +111,7 @@ endif()
 set(CMAKE_MODULE_PATH ../)
 
 ## Target is libzzacommon
-add_library(${TARGET} STATIC)
+add_library(${TARGET})
 
 ## Set include files.
 target_include_directories(${TARGET} PRIVATE 
