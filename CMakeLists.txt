@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 ## Library zzacommon. 
-project(ZZACOMMON VERSION 1.0.1)
+project(ZZACOMMON VERSION 1.0.1.1)
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
 set (TARGET zzacommon)
 
@@ -17,8 +17,22 @@ else()
   set(USER_HOME_DIR $ENV{HOME})
 endif()
 
+
 # Set timestamp and version into files (requires to be rebuilt to take effect)
 string(TIMESTAMP ZZACOMMON_TIMESTAMP UTC)
+# Set app details
+if (NOT APP_TIMESTAMP)
+  set(APP_TIMESTAMP ${ZZACOMMON_TIMESTAMP})
+endif()
+if (NOT APP_VERSION)
+  set(APP_VERSION ${ZZACOMMON_VERSION})
+endif()
+if (NOT APP_NAME)
+  set(APP_NAME "UNNAMED")
+endif()
+if (NOT APP_VENDOR)
+  set(APP_VENDOR "GM3ZZA")
+endif()
 configure_file(
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h.in
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h
@@ -121,5 +135,7 @@ add_subdirectory(api)
 add_dependencies(${TARGET} zzacommon_api_html)
 
 
+if (MSVC)
+else()
 install(TARGETS ${TARGET})
-
+endif()
