@@ -20,19 +20,6 @@ endif()
 
 # Set timestamp and version into files (requires to be rebuilt to take effect)
 string(TIMESTAMP ZZACOMMON_TIMESTAMP UTC)
-# Set app details
-if (NOT APP_TIMESTAMP)
-  set(APP_TIMESTAMP ${ZZACOMMON_TIMESTAMP})
-endif()
-if (NOT APP_VERSION)
-  set(APP_VERSION ${ZZACOMMON_VERSION})
-endif()
-if (NOT APP_NAME)
-  set(APP_NAME "UNNAMED")
-endif()
-if (NOT APP_VENDOR)
-  set(APP_VENDOR "GM3ZZA")
-endif()
 configure_file(
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h.in
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h
