@@ -15,8 +15,8 @@
 
 file_holder* file_holder_ = nullptr;
 uint16_t DEBUG_RESET_CONFIG = 0;
-extern std::string VENDOR;
-extern std::string PROGRAM_ID;
+extern std::string APP_VENDOR;
+extern std::string APP_NAME;
 extern bool DEVELOPMENT_MODE;
 //! File control datra
 
@@ -55,7 +55,7 @@ file_holder::file_holder(const char* arg0, const std::map<uint8_t, file_control_
 #ifdef _WIN32
 		default_source_directory_ = 
 			std::string(getenv("ALLUSERSPROFILE")) + "\\" + 
-			VENDOR + "\\" + PROGRAM_ID + "\\";
+			APP_VENDOR + "\\" + APP_NAME + "\\";
 #else
 		default_source_directory_ = 
 			"/etc/" + VENDOR + "/" + PROGRAM_ID + "/";
@@ -77,7 +77,7 @@ file_holder::file_holder(const char* arg0, const std::map<uint8_t, file_control_
 	default_html_directory_ = default_source_directory_;
 	// Working directory
 	default_data_directory_ =
-		std::string(getenv("APPDATA")) + "\\" + VENDOR + "\\" + PROGRAM_ID + "\\";
+		std::string(getenv("APPDATA")) + "\\" + APP_VENDOR + "\\" + APP_NAME + "\\";
 	// Create the working directory
 	std::string unixified = default_data_directory_;
 	for (size_t pos = 0; pos < unixified.length(); pos++) {

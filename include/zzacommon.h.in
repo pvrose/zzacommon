@@ -84,7 +84,3 @@ See \ref utils.h.
 
 const std::string ZZACOMMON_TIMESTAMP = "@ZZACOMMON_TIMESTAMP@";
 const std::string ZZACOMMON_VERSION = "@ZZACOMMON_VERSION@";
-const std::string APP_TIMESTAMP = "@APP_TIMESTAMP@";
-const std::string APP_VERSION = "@APP_VERSION@";
-const std::string APP_NAME = "@APP_NAME@";
-const std::string APP_VENDOR = "@APP_VENDOR@";
