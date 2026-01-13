@@ -146,7 +146,7 @@ add_dependencies(${TARGET} zzacommon_api_html)
 
 if (MSVC)
 else()
-  if (NOT BUILD_SHARED_LIBS)
+  if (BUILD_SHARED_LIBS)
     install(TARGETS ${TARGET})
   endif()
 endif()
