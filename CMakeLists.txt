@@ -43,6 +43,7 @@ configure_file(
   ${ZZACOMMON_SOURCE_DIR}/src/ident.cpp
   @ONLY
 )
+message(STATUS "ZZACOMMON for parent ${APP_NAME}")
 
 # Source files
 set(ZZACOMMON_CPPFILES 
@@ -145,5 +146,7 @@ add_dependencies(${TARGET} zzacommon_api_html)
 
 if (MSVC)
 else()
-install(TARGETS ${TARGET})
+  if (NOT BUILD_SHARED_LIBS)
+    install(TARGETS ${TARGET})
+  endif()
 endif()
