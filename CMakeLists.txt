@@ -38,11 +38,7 @@ configure_file(
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h
   @ONLY
 )
-configure_file(
-  ${ZZACOMMON_SOURCE_DIR}/src/ident.cpp.in
-  ${ZZACOMMON_SOURCE_DIR}/src/ident.cpp
-  @ONLY
-)
+
 message(STATUS "ZZACOMMON for parent ${APP_NAME}")
 
 # Source files
@@ -53,7 +49,6 @@ set(ZZACOMMON_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/calendar_table.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/file_holder.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/filename_input.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/ident.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/input_hierch.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/password_input.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/settings.cpp
@@ -75,7 +70,6 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/drawing.h
   ${ZZACOMMON_INCLUDE_DIR}/file_holder.h
   ${ZZACOMMON_INCLUDE_DIR}/filename_input.h
-  ${ZZACOMMON_INCLUDE_DIR}/ident.h
   ${ZZACOMMON_INCLUDE_DIR}/input_hierch.h
   ${ZZACOMMON_INCLUDE_DIR}/password_input.h
   ${ZZACOMMON_INCLUDE_DIR}/settings.h
