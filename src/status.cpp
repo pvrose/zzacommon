@@ -7,6 +7,7 @@
 // #include "main_window.h"
 #include "utils.h"
 
+#include <cstdarg>
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
@@ -60,7 +61,7 @@ void status::progress(uint64_t max_value, uint8_t object, const char* descriptio
 	// Initialise it
 	// Reset previous value as a new progress
 	// Start a new progress bar process - create the progress item (total expected count, objects being counted, up/down and what view it's for)
-	banner_->start_progress(
+	if (banner_) banner_->start_progress(
 		max_value, 
 		object_map_.at(object).name, 
 		object_map_.at(object).colour,
@@ -71,25 +72,54 @@ void status::progress(uint64_t max_value, uint8_t object, const char* descriptio
 // Update progress to the new specified value
 void status::progress(uint64_t value, uint8_t object) {
 	// Update progress item
-	banner_->add_progress(value);
+	if (banner_) banner_->add_progress(value);
 }
 
 // Update progress with a message - e.g. cancel it and display why cancelled
 void status::progress(const char* message, uint8_t object) {
-	banner_->cancel_progress(message);
+	if (banner_) banner_->cancel_progress(message);
 }
 
 // Update miscellaneous status - set text and colour, log the status
-void status::misc_status(status_t status, const char* label) {
+void status::misc_status(status_t status, const char* label, ... ) {
+	char llabel[256];
+	va_list args;
+	va_start(args, label);
+	vsprintf(llabel, label, args);
+	va_end(args);
 	// Start each entry with a timestamp
 	std::string timestamp = now(false, "%Y/%m/%d %H:%M:%S", true);
 	char f_message[256];
 	// X YYYY/MM/DD HH:MM:SS Message 
 	// X is a single letter indicating the message severity
 	snprintf(f_message, sizeof(f_message), "%c %s %s\n", STATUS_CODES.at(status), timestamp.c_str(), label);
-	banner_->add_message(status, label, timestamp.substr(11).c_str());
+	if (banner_) {
+		banner_->add_message(status, llabel, timestamp.substr(11).c_str());
+	}
 
-	if (!report_file_) {
+	if (feature_set_ & HAS_CONSOLE) {
+		if (true) {
+			// Restore default colours
+			const char restore[] = "\033[0m";
+			const char faint[] = "\033[2m";
+			printf("%s%s%s %s%s%s%s\n",
+				faint,
+				timestamp.c_str(),
+				restore,
+				colour_code(status, true).c_str(),
+				colour_code(status, false).c_str(),
+				llabel,
+				restore);
+		}
+		else {
+			printf("%s %s %s\n",
+				STATUS_ABBREV.at(status),
+				timestamp.c_str(),
+				llabel);
+		}
+	}
+
+	if (!report_file_ && (feature_set_ & HAS_LOGFILE)) {
 		// Append the status to the file
 		// Try to open the file. Open and close it each message
 		// Save previous files
@@ -122,7 +152,7 @@ void status::misc_status(status_t status, const char* label) {
 	switch(status) {
 	case ST_SEVERE:
 		// Open status file viewer and update it.
-		banner_->show();
+		if (banner_) banner_->show();
 		fl_beep(FL_BEEP_ERROR);
 		// A severe error - ask the user whether to continue
 		if (fl_choice("An error that resulted in reduced functionality occurred:\n%s\n\nDo you want to try to continue or quit?", "Continue", "Quit", nullptr, label, report_filename_.c_str()) == 1) {
@@ -133,7 +163,7 @@ void status::misc_status(status_t status, const char* label) {
 		break;
 	case ST_FATAL:
 		// Open status file viewer and update it. Set the flag to keep it displayed after other windows have been hidden
-		banner_->show();
+		if (banner_) banner_->show();
 		fl_beep(FL_BEEP_ERROR);
 		// A fatal error - quit the application
 		fl_message("An unrecoverable error has occurred, closing down - check status log");
@@ -143,7 +173,7 @@ void status::misc_status(status_t status, const char* label) {
 		break;
 	case ST_ERROR:
 		// Open status file viewer and continue
-		banner_->show();
+		if (banner_) banner_->show();
 		fl_beep(FL_BEEP_ERROR);
 		break;
 	default:
@@ -175,9 +205,11 @@ void status::callback(Fl_Window* w, void(*close)(Fl_Window*, void*)) {
 
 // SEt Cloisng
 void status::close() {
-	banner_->close();
-	banner_->show();
-	banner_->redraw();
+	if (banner_) {
+		banner_->close();
+		banner_->show();
+		banner_->redraw();
+	}
 }
 
 // Return banner

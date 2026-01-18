@@ -62,6 +62,19 @@ class banner;
 		{ ST_SEVERE, 'S'},
 		{ ST_FATAL, 'F'}
 	};
+	// Abbreviations
+	const std::map < status_t, const char* > STATUS_ABBREV = {
+		{ ST_NONE, "    "},
+		{ ST_LOG, " LOG "},
+		{ ST_DEBUG, " DBUG"},
+		{ ST_NOTE, " NOTE"},
+		{ ST_PROGRESS, " PROG"},
+		{ ST_OK, " OK  "},
+		{ ST_WARNING, "?WARN"},
+		{ ST_ERROR, "*ERR*"},
+		{ ST_SEVERE, "!SVR!"},
+		{ ST_FATAL, "!FTL!"}
+	};
 
 	//! Status object parameters
 	struct object_data_t {
@@ -112,7 +125,7 @@ class banner;
 		void progress(const char* message, uint8_t object);
 
 		//! Output message \p label with \p status.
-		void misc_status(status_t status, const char* label);
+		void misc_status(status_t status, const char* label, ... );
 
 		//! \brief Set close-down callback.
 		//! \param w Pointer to the widget that will action the close-down.
@@ -149,7 +162,7 @@ class banner;
 		uint8_t feature_set_ = 0;
 
 		//! Banner
-		banner* banner_;
+		banner* banner_ = nullptr;
 
 		//! Keep banner when closing
 		bool keep_banner_ = false;
