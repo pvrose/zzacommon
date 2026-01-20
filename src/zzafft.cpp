@@ -34,19 +34,21 @@ zzafft::zzafft(unsigned int size) {
     }
 
     // Omega factors 
-    omega_factor_ = new cx[log2_size_ + 1];
+    omega_factor_.resize(log2_size_ + 1);
     for (unsigned int l = 0, p = 1; l <= log2_size_; l++, p<<=1) {
-        double angle = 2 * PI / p;
-        omega_factor_[l] = cx(cos(angle), sin(angle));
+        float angle = 2 * PI / p;
+        omega_factor_[l] = {cos(angle), sin(angle)};
         // cout << l << " " << p << " " << omega_factor_[l] << endl;
     } 
 
  }
 
 // Calculate
-void zzafft::calculate(cx* data) {
-    data_ = data;
-
+void zzafft::calculate(std::vector<float>* data) {
+    // Copy data from buffer
+    for (size_t ix = 0; ix < data->size(); ix++) {
+        data_[ix] = { (*data)[ix], 0.0F };
+    }
     // Swap the data samples
     for (unsigned int i = 0; i < size_; i++) {
         unsigned int j = bitswap_lut_[i];
@@ -59,14 +61,19 @@ void zzafft::calculate(cx* data) {
     for (unsigned int len = 2, ix = 1; len <= size_; len <<= 1, ix++) {
         // Step along each pair/quartet/...
         for (unsigned int i = 0; i < size_; i += len) {
-            cx omega(1);
+            std::complex<float> omega(1);
             for (unsigned int j = 0; j < len / 2; j++) {
-                cx u = data_[i+j]; 
-                cx v = data_[i+j+len/2] * omega;
+                std::complex<float> u = data_[i+j]; 
+                std::complex<float> v = data_[i+j+len/2] * omega;
                 data_[i+j] = u + v;
                 data_[i+j+len/2] = u - v;
                 omega *= omega_factor_[ix];
             }
         }
+    }
+
+    // Copy data back to buffer
+    for (size_t ix = 0; ix < data->size(); ix++) {
+        (*data)[ix] = std::abs(data_[ix]);
     }
 }

@@ -1,29 +1,33 @@
 #pragma once
 #include <complex>
+#include <vector>
 
 using namespace std;
 
 // Allow simple testing with double or long double
-typedef float floatx;
-typedef complex<floatx> cx;
-const floatx PI = 3.14159265358979323846264338327950288419716939937510;
 
 class zzafft {
+
+    const float PI = 3.14159265358979323846264338327950288419716939937510;
+    
     public:
-    // Constructor
+    //! Constructor
+    //! \param size Number of FFT bins (must be power of 2)
     zzafft(unsigned int size);
 
-    // Calculate
-    void calculate(cx* data);
+    //! Calculate
+    //! \param data Contains data to be transformed - returned in place.
+    void calculate(std::vector<float>* data);
 
-    //
-    cx* data_;
-    // bitswap lookup table
+    //! Complex version for transform
+    std::vector<std::complex<float> > data_;
+    //! bitswap lookup table
     unsigned int* bitswap_lut_;
-    // Size
+    //! Size
     unsigned int size_;
+    //! Logarithm base 2 of size_
     unsigned int log2_size_;
-    // Omega factors
-    cx* omega_factor_;
+    //!  \316\251 (Omega) factors -- 
+    std::vector<std::complex<float> > omega_factor_;
  
 };
