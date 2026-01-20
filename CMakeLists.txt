@@ -57,6 +57,7 @@ set(ZZACOMMON_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/tabs_nonav.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/ticker.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/utils.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zzafft.cpp
 )
 
 # Header files - used as dependencies for API documentation
@@ -79,6 +80,7 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/ticker.h
   ${ZZACOMMON_INCLUDE_DIR}/utils.h
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h
+  ${ZZACOMMON_INCLUDE_DIR}/zzafft.h
 )
 
 # set compiler options
