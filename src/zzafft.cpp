@@ -41,6 +41,8 @@ zzafft::zzafft(unsigned int size) {
         // cout << l << " " << p << " " << omega_factor_[l] << endl;
     } 
 
+    data_.resize(size_, { 0.0F, 0.0F });
+
  }
 
 // Calculate
