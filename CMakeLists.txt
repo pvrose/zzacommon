@@ -43,46 +43,46 @@ message(STATUS "ZZACOMMON for parent ${APP_NAME}")
 
 # Source files
 set(ZZACOMMON_CPPFILES 
-  ${ZZACOMMON_SOURCE_DIR}/src/banner.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/calendar.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/calendar_input.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/calendar_table.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/file_holder.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/filename_input.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/graph.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/input_hierch.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/password_input.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/settings.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/status.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/symbols.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/tabs_nonav.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/ticker.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/utils.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zzafft.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_banner.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar_input.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar_table.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_file_holder.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_filename_input.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_input_hierch.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_password_input.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_settings.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_status.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_symbols.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_tabs_nonav.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_ticker.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_utils.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_fft.cpp
 )
 
 # Header files - used as dependencies for API documentation
 set(ZZACOMMON_HPPFILES
-  ${ZZACOMMON_INCLUDE_DIR}/banner.h
-  ${ZZACOMMON_INCLUDE_DIR}/button_input.h
-  ${ZZACOMMON_INCLUDE_DIR}/calendar.h
-  ${ZZACOMMON_INCLUDE_DIR}/calendar_input.h
-  ${ZZACOMMON_INCLUDE_DIR}/calendar_table.h
-  ${ZZACOMMON_INCLUDE_DIR}/callback.h
-  ${ZZACOMMON_INCLUDE_DIR}/drawing.h
-  ${ZZACOMMON_INCLUDE_DIR}/file_holder.h
-  ${ZZACOMMON_INCLUDE_DIR}/filename_input.h
-  ${ZZACOMMON_INCLUDE_DIR}/graph.h
-  ${ZZACOMMON_INCLUDE_DIR}/input_hierch.h
-  ${ZZACOMMON_INCLUDE_DIR}/password_input.h
-  ${ZZACOMMON_INCLUDE_DIR}/settings.h
-  ${ZZACOMMON_INCLUDE_DIR}/status.h
-  ${ZZACOMMON_INCLUDE_DIR}/symbols.h
-  ${ZZACOMMON_INCLUDE_DIR}/tabs_nonav.h
-  ${ZZACOMMON_INCLUDE_DIR}/ticker.h
-  ${ZZACOMMON_INCLUDE_DIR}/utils.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_banner.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_button_input.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_calendar.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_calendar_input.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_calendar_table.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_callback.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_drawing.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_file_holder.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_filename_input.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_input_hierch.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_password_input.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_settings.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_status.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_symbols.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_tabs_nonav.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_ticker.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_utils.h
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h
-  ${ZZACOMMON_INCLUDE_DIR}/zzafft.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_fft.h
 )
 
 # set compiler options

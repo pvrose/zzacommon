@@ -13,72 +13,78 @@ ZZACOMMON is based in part on the work of the FLTK project <A HREF=https://www.f
 
 It provides a number of FLTK-derived widgets for general use:
 
-\par banner
+\par zc_banner
 This is a banner window that provides a progress wheel and status message screen. 
-See \ref banner.
-\par button_input
+See \ref zc_banner.
+\par zc_button_input
 This is a combination of Fl_Input and Fl_Button where clicking the button interacts
 in some way with the operation of the input. This is only ever intended to be used
 as the basis for other widgets: it is not a free-standing widget. 
-See \ref button_input.
-\par calendar_input
+See \ref zc_button_input.
+\par zc_calendar_input
 This is a version of button_input where the button opens a calendat window to allow
 a date to be selected that is then placed as the text value of the input.
-See \ref calendar_input.
-\par calendar
+See \ref zc_calendar_input.
+\par zc_calendar
 The calendar window opened by the button in calendar_input.
-See \ref calendar.
-\par calendar_table
+See \ref zc_calendar.
+\par zc_calendar_table
 The calendar object used in calendar.
-See \ref calendar_input.
-\par callback.h
+See \ref zc_calendar_input.
+\par zc_callback.h
 This is a set of standard callbacks that can be used either directly as the callback
 for widget operations or used within custom callbacks.
-See \ref callback.h.
-\par drawing.h
+See \ref zc_callback.h.
+\par zc_drawing.h
 This is a set of drawing constants to maintain a consistent "look-and-feel" across
 all projects.
-See \ref drawing.h.
-\par filename_input
+See \ref zc_drawing.h.
+\par zc_fft
+This class provides a fast Fourier Transform.
+See \ref zc_fft.
+\par zc_filename_input
 This is a version of button_input where the button opens a file browser and the selected
 filename is then copied to the text value of the input widget.
-See \ref filename_input.
-\par file_holder
+See \ref zc_filename_input.
+\par zc_file_holder
 This class provides a consistent approach to filestore management used across all
 projects.
-See \ref file_holder.
-\par input_hierch
+See \ref zc_file_holder.
+\par zc_graph
+This class provides a simple X/Y line graph. The presentation is configurable.
+See \ref zc_graph.
+\par zc_input_hierch
 This is an extension of Fl_Input_Choice that uses a hierarchic menu for use where
 there are a large number of menu options. The supplied options are split into
 groups according to the first letter (or more) of the option.
-See \ref input_hierch.
-\par password_input
+See \ref zc_input_hierch.
+\par zc_password_input
 This is a version of button_input where the button toggles the behaviour of the input between
 FL_NORMAL_INPUT (where the text is visible) and FL_SECRET_INPUT (where the text
 is masked).
-See \ref password_input.
-\par settings
+See \ref zc_password_input.
+\par zc_settings
 This class provides a JSON based settings file.
-See \ref settings.
-\par status
+See \ref zc_settings.
+\par zc_status
 This class encapsulates banner and is the main user interface for it.
-See \ref status.
-\par symbols
+See \ref zc_status.
+\par zc_symbols
 This is a set of methods that each draw an image to be used in widget labels using the
 '\@' construct.
-See \ref symbols.h.
-\par tabs_nonav
+See \ref zc_symbols.h.
+\par zc_tabs_nonav
 This is an extension of Fl_Tabs that inhibits the use of navigaton keys to switch
 between tab entries.
-See \ref tabs_nonav.
-\par ticker
+See \ref zc_tabs_nonav.
+\par zc_ticker
 This class provides an application-wide clock that can send timer callbacks to 
 subscribed instances within the application. It, itself, receives a callback
 every 100 ms and forwards it to subscribers according to their needs.
-See \ref ticker.
-\par utils
+See \ref zc_ticker.
+\par zc_utils
 This is a set of standard utility methods.
-See \ref utils.h.
+See \ref zc_utils.h.
 
 */
 
