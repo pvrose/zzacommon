@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 ## Library zzacommon. 
-project(ZZACOMMON VERSION 1.0.1.1)
+project(ZZACOMMON VERSION 1.0.1.2)
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
 set (TARGET zzacommon)
 
@@ -49,6 +49,7 @@ set(ZZACOMMON_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/calendar_table.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/file_holder.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/filename_input.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/graph.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/input_hierch.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/password_input.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/settings.cpp
@@ -71,6 +72,7 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/drawing.h
   ${ZZACOMMON_INCLUDE_DIR}/file_holder.h
   ${ZZACOMMON_INCLUDE_DIR}/filename_input.h
+  ${ZZACOMMON_INCLUDE_DIR}/graph.h
   ${ZZACOMMON_INCLUDE_DIR}/input_hierch.h
   ${ZZACOMMON_INCLUDE_DIR}/password_input.h
   ${ZZACOMMON_INCLUDE_DIR}/settings.h
