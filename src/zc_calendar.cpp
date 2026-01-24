@@ -115,7 +115,7 @@ zc_calendar::~zc_calendar() {
 void zc_calendar::cb_bn_cal(Fl_Widget* w, void* v) {
 	// Indicates the button clicked
 	button_t action = (button_t)(intptr_t)v;
-	zc_calendar* that = ancestor_view<zc_calendar>(w);
+	zc_calendar* that = zc::ancestor_view<zc_calendar>(w);
 	switch (action) {
 	case BN_OK:
 		// Get the display date from the calendar and convert it to text
@@ -129,7 +129,7 @@ void zc_calendar::cb_bn_cal(Fl_Widget* w, void* v) {
 		break;
 	case BN_CANCEL:
 		// Restore to original value set.
-		string_to_tm(that->value_, that->display_date_, that->format_);
+		zc::string_to_tm(that->value_, that->display_date_, that->format_);
 		// Tell instancing view and delete this
 		that->do_callback();
 		Fl::delete_widget(that);
@@ -186,7 +186,7 @@ void zc_calendar::cb_bn_cal(Fl_Widget* w, void* v) {
 void zc_calendar::cb_cal_cal(Fl_Widget* w, void* v) {
 	// Get the calendar and this
 	zc_calendar_table* table = (zc_calendar_table*)w;
-	zc_calendar* that = ancestor_view<zc_calendar>(w);
+	zc_calendar* that = zc::ancestor_view<zc_calendar>(w);
 	// Get the row and column clicked
 	int row = table->callback_row();
 	int col = table->callback_col();
@@ -213,7 +213,7 @@ void zc_calendar::value(const char* date) {
 	// Set the date
 	value_ = date;
 	// Update associated 
-	string_to_tm(date, display_date_, format_);
+	zc::string_to_tm(date, display_date_, format_);
 	// now try and set the date into calendar - it may fail so read back defaulted
 	change_date();
 	display_date_ = table_->value();
@@ -227,9 +227,9 @@ const char* zc_calendar::value() {
 // Update the various representations of the date
 void zc_calendar::change_date() {
 	// First make the date valid
-	if (display_date_.tm_mday > days_in_month(&display_date_)) {
+	if (display_date_.tm_mday > zc::days_in_month(&display_date_)) {
 		// day in month is too great make it the end of the month
-		display_date_.tm_mday = days_in_month(&display_date_);
+		display_date_.tm_mday = zc::days_in_month(&display_date_);
 	}
 	// Update the date in the widgets that need it
 	char month[9];

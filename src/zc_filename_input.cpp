@@ -35,7 +35,7 @@ void zc_filename_input::type(zc_filename_input::type_t value) {
 }
 
 void zc_filename_input::cb_button(Fl_Widget* w, void* v) {
-    zc_filename_input* that = ancestor_view<zc_filename_input>(w);
+    zc_filename_input* that = zc::ancestor_view<zc_filename_input>(w);
     std::string filename = that->ip_->value();
     Fl_Native_File_Chooser::Type fb_type = Fl_Native_File_Chooser::BROWSE_FILE;
     switch(that->type_) {
@@ -51,11 +51,11 @@ void zc_filename_input::cb_button(Fl_Widget* w, void* v) {
     chooser->title(that->title_);
     if (that->type_ == FILE) {
         chooser->filter(that->pattern_);
-        chooser->directory(directory(filename).c_str());
+        chooser->directory(zc::directory(filename).c_str());
     } else {
         chooser->directory(filename.c_str());
     }
-    chooser->preset_file(terminal(filename).c_str());
+    chooser->preset_file(zc::terminal(filename).c_str());
     // Now display the dialog
     switch(chooser->show()) {
         case 0: 

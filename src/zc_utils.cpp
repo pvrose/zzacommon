@@ -30,7 +30,7 @@ zc_utils.h - Utility methods
 
 
 // Split the line into its separate words with specified separator
-void split_line(const std::string& line, std::vector<std::string>& words, const char separator) {
+void zc::split_line(const std::string& line, std::vector<std::string>& words, const char separator) {
 	// Quotes will escape separator
 	bool in_quotes = false;
 	words.clear();
@@ -67,7 +67,7 @@ void split_line(const std::string& line, std::vector<std::string>& words, const 
 }
 
 // Join line
-std::string join_line(std::vector<std::string> words, const char separator) {
+std::string zc::join_line(std::vector<std::string> words, const char separator) {
 	std::string result = "";
 	for (auto it = words.begin(); it != words.end(); it++) {
 		if (result.length()) {
@@ -81,7 +81,7 @@ std::string join_line(std::vector<std::string> words, const char separator) {
 }
 
 // Converts display format text to a tm object for reformatting
-bool string_to_tm(std::string source, tm& time, std::string format) {
+bool zc::string_to_tm(std::string source, tm& time, std::string format) {
 	bool escaped = false;
 	// Default YMD to 19700101 to avoid assertion when only setting time
 	time.tm_year = 70;
@@ -196,7 +196,7 @@ bool string_to_tm(std::string source, tm& time, std::string format) {
 }
 
 // Convert a string e.g. 00-06:08 to an array of UINTs {0,1,2,3,4,5,6,8}
-void string_to_ints(std::string& text, std::vector<unsigned int>& ints) {
+void zc::string_to_ints(std::string& text, std::vector<unsigned int>& ints) {
 	int current = 0;
 	int start = 0;
 	size_t index = 0;
@@ -262,7 +262,7 @@ void string_to_ints(std::string& text, std::vector<unsigned int>& ints) {
 }
 
 // returns the current time in supplied format
-std::string now(bool local, const char* format, bool add_ms) {
+std::string zc::now(bool local, const char* format, bool add_ms) {
 	std::chrono::system_clock::time_point p = std::chrono::system_clock::now();
 
 	std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(p.time_since_epoch());
@@ -284,19 +284,19 @@ std::string now(bool local, const char* format, bool add_ms) {
 }
 
 // Print current time to the millisecond
-std::string now_ms() {
-	return now(false, "%H:%M:%S", true);
+std::string zc::now_ms() {
+	return zc::now(false, "%H:%M:%S", true);
 }
 
 // copy tm to time_t and back to update derived values in tm struct
-void refresh_tm(tm* date) {
+void zc::refresh_tm(tm* date) {
 	// I think mktime regards tm as a local time
 	time_t first = mktime(date);
 	*date = *(localtime(&first));
 }
 
 // return  the number of days in the month
-int days_in_month(tm* date) {
+int zc::days_in_month(tm* date) {
 	switch (date->tm_mon) {
 	case 0:
 	case 2:
@@ -331,7 +331,7 @@ int days_in_month(tm* date) {
 }
 
 // return true if the year is a leap year
-bool is_leap(tm* date) {
+bool zc::is_leap(tm* date) {
 	int year = date->tm_year + 1900;
 	if (year % 4 != 0) {
 		// Doesn't divide by 4 - NO
@@ -352,7 +352,7 @@ bool is_leap(tm* date) {
 }
 
 // Create a tip window - tip text, position(root_x, root_y)
-Fl_Window* tip_window(const std::string& tip, int x_root, int y_root) {
+Fl_Window* zc::tip_window(const std::string& tip, int x_root, int y_root) {
 	// get the size of the text, set the font, default width
 	fl_font(Fl_Tooltip::font(), Fl_Tooltip::size());
 	int width = Fl_Tooltip::wrap_width();
@@ -388,7 +388,7 @@ Fl_Window* tip_window(const std::string& tip, int x_root, int y_root) {
 }
 
 // Create an upper-case version of a string
-std::string to_upper(const std::string& data) {
+std::string zc::to_upper(const std::string& data) {
 	size_t len = data.length();
 	char* result = new char[3 * len + 1];
 	memset(result, 0, 3 * len + 1);
@@ -399,7 +399,7 @@ std::string to_upper(const std::string& data) {
 }
 
 // Create an lower-case version of a string
-std::string to_lower(const std::string& data) {
+std::string zc::to_lower(const std::string& data) {
 	size_t len = data.length();
 	char* result = new char[3 * len + 1];
 	memset(result, 0, 3 * len + 1);
@@ -410,7 +410,7 @@ std::string to_lower(const std::string& data) {
 }
 
 // Check a while string is an integer
-bool is_integer(const std::string& data) {
+bool zc::is_integer(const std::string& data) {
 	bool result = true;
 	const char* src = data.c_str();
 	// Ignore initial +/- sign
@@ -422,7 +422,7 @@ bool is_integer(const std::string& data) {
 }
 
 // Search for any characters in match (assume its zero-terminated)
-size_t find(const char* data, size_t length, const char* match) {
+size_t zc::find(const char* data, size_t length, const char* match) {
 	size_t pos = length;
 	bool found = false;
 	// Compare each char in data with each char in find
@@ -439,7 +439,7 @@ size_t find(const char* data, size_t length, const char* match) {
 }
 
 // Search for single character match
-size_t find(const char* data, size_t length, const char match) {
+size_t zc::find(const char* data, size_t length, const char match) {
 	size_t pos = length;
 	bool found = false;
 	// Compare each char in data with match
@@ -455,7 +455,7 @@ size_t find(const char* data, size_t length, const char match) {
 }
 
 // Find the occurence of match in data 
-size_t find_substr(const char* data, size_t length, const char* match, size_t len_substr) {
+size_t zc::find_substr(const char* data, size_t length, const char* match, size_t len_substr) {
 	// Possible start of match
 	size_t possible = 0;
 	// Length of string remaining to match
@@ -475,7 +475,7 @@ size_t find_substr(const char* data, size_t length, const char* match, size_t le
 }
 
 // Search for any characters not in match (assume its zero-terminated)
-size_t find_not(const char* data, size_t length, const char* match) {
+size_t zc::find_not(const char* data, size_t length, const char* match) {
 	size_t pos = 0;
 	bool matches = true;
 	// Compare each char in data with each char in find
@@ -493,7 +493,7 @@ size_t find_not(const char* data, size_t length, const char* match) {
 }
 
 // Replace charatceters with %nnx if not in chars (allow) or in chars (~allow)
-std::string escape_hex(std::string text, bool allow, const char* chars)
+std::string zc::escape_hex(std::string text, bool allow, const char* chars)
 {
 	std::string result = "";
 	// For the length of the string
@@ -516,12 +516,12 @@ std::string escape_hex(std::string text, bool allow, const char* chars)
 }
 
 // Escape the non-usable characters in a url - not alphanumeric replace with %nnx 
-std::string escape_url(std::string url) {
+std::string zc::escape_url(std::string url) {
 	return escape_hex(url, true, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 }
 
 // Escape / and & for menu items
-std::string escape_menu(std::string text) {
+std::string zc::escape_menu(std::string text) {
 	size_t len = text.length() * 2 + 1;
 	std::string dest = "";
 	dest.reserve(len);
@@ -541,7 +541,7 @@ std::string escape_menu(std::string text) {
 }
 
 // Convert from %nn to ASCII character
-std::string unescape_hex(std::string text) {
+std::string zc::unescape_hex(std::string text) {
 	std::string result = "";
 	result.reserve(text.length());
 	const char* src = text.c_str();
@@ -569,7 +569,7 @@ std::string unescape_hex(std::string text) {
 }
 
 // Escape characters - add a '\' before any characters in escapees
-std::string escape_string(const std::string text, const std::string escapees) {
+std::string zc::escape_string(const std::string text, const std::string escapees) {
 	// Create a string sufficiently long to escape all characters
 	std::string result = "";
 	result.reserve(2 * text.length());
@@ -585,7 +585,7 @@ std::string escape_string(const std::string text, const std::string escapees) {
 }
 
 // Unescape characters - remove the '\' before ant character
-std::string unescape_string(const std::string text) {
+std::string zc::unescape_string(const std::string text) {
 	// Create a string at least as long as the supplied string
 	std::string result = "";
 	result.reserve(text.length());
@@ -600,7 +600,7 @@ std::string unescape_string(const std::string text) {
 }
 
 // Convert a floating point degree value to � ' " N/E/S/W
-std::string degrees_to_dms(float value, bool is_latitude) {
+std::string zc::degrees_to_dms(float value, bool is_latitude) {
 	if (std::isnan(value)) {
 		return "NAN";
 	}
@@ -627,7 +627,7 @@ std::string degrees_to_dms(float value, bool is_latitude) {
 }
 
 // Convert latitude and longitode to 2, 4, 6, 8, 10 or 12 character grid square
-std::string latlong_to_grid(lat_long_t location, int num_chars) {
+std::string zc::latlong_to_grid(zc::lat_long_t location, int num_chars) {
 	std::string result;
 	result.resize(num_chars, ' ');
 	// 'Normalise' location relative to 180W, 90S - i.e. AA00aa00aa00
@@ -663,12 +663,12 @@ std::string latlong_to_grid(lat_long_t location, int num_chars) {
 }
 
 // Convert gridsquare to latitude and longitude - returns the centre of the square
-lat_long_t grid_to_latlong(std::string gridsquare) {
+zc::lat_long_t zc::grid_to_latlong(std::string gridsquare) {
 	double inc = 20.0;
 	double next_inc;
 	int8_t cg;
 	int8_t ct;
-	lat_long_t lat_long = { 0.0, 0.0 };
+	zc::lat_long_t lat_long = { 0.0, 0.0 };
 	for (size_t i = 0; i < gridsquare.length(); i += 2) {
 		switch (i) {
 		case 0:
@@ -701,7 +701,7 @@ lat_long_t grid_to_latlong(std::string gridsquare) {
 }
 
 // Convert from base64 encoding - single character
-unsigned char decode_base_64(unsigned char c) {
+unsigned char zc::decode_base_64(unsigned char c) {
 	// A-Z => 0x00 to 0x19
 	// a-z => 0x1A to 0x33
 	// 0-9 => 0x34 to 0x3D
@@ -729,7 +729,7 @@ unsigned char decode_base_64(unsigned char c) {
 }
 
 // Convert from base64 encoding for string
-std::string decode_base_64(std::string value) {
+std::string zc::decode_base_64(std::string value) {
 	std::string result;
 	unsigned char out = 0;
 	unsigned char in = 0;
@@ -774,7 +774,7 @@ std::string decode_base_64(std::string value) {
 }
 
 // Encode single character to base64
-unsigned char encode_base_64(unsigned char c) {
+unsigned char zc::encode_base_64(unsigned char c) {
 	// Look up table to convert 6 bits to 
 	// A-Z => 0x00 to 0x19
 	// a-z => 0x1A to 0x33
@@ -788,7 +788,7 @@ unsigned char encode_base_64(unsigned char c) {
 }
 
 // Encode the string to base64
-std::string encode_base_64(std::string value) {
+std::string zc::encode_base_64(std::string value) {
 	std::string result;
 	unsigned char out = 0;
 	unsigned char in = 0;
@@ -829,7 +829,7 @@ std::string encode_base_64(std::string value) {
 }
 
 // Decode hex
-std::string to_hex(std::string data) {
+std::string zc::to_hex(std::string data) {
 	std::string result = "";
 	for (size_t i = 0; i < data.length(); i++) {
 		result += to_hex(data[i]);
@@ -838,7 +838,7 @@ std::string to_hex(std::string data) {
 }
 
 // Encode hex
-std::string to_ascii(std::string data) {
+std::string zc::to_ascii(std::string data) {
 	std::string result = "";
 	unsigned int ix = 0;
 	while (ix < data.length()) {
@@ -848,7 +848,7 @@ std::string to_ascii(std::string data) {
 }
 
 // Decode single character
-std::string to_hex(unsigned char data, bool add_space /* = true */) {
+std::string zc::to_hex(unsigned char data, bool add_space /* = true */) {
 	const char lookup[] = "0123456789ABCDEF";
 	std::string result = "";
 	result += lookup[data / 16];
@@ -860,7 +860,7 @@ std::string to_hex(unsigned char data, bool add_space /* = true */) {
 }
 
 // Encode single character
-unsigned char to_ascii(std::string data, int&ix) {
+unsigned char zc::to_ascii(std::string data, int&ix) {
 	// Skip non hex
 	while (!isxdigit(data[ix]) && ((unsigned)ix < data.length())) ix++;
 	if (ix == data.length()) return 0;
@@ -871,7 +871,7 @@ unsigned char to_ascii(std::string data, int&ix) {
 }
 
 // Convert int to BCD
-std::string int_to_bcd(int value, int size, bool least_first) {
+std::string zc::int_to_bcd(int value, int size, bool least_first) {
 	std::string result;
 	result.resize(size, ' ');
 
@@ -899,7 +899,7 @@ std::string int_to_bcd(int value, int size, bool least_first) {
 }
 
 // Convert BCD to int
-int bcd_to_int(std::string bcd, bool least_first) {
+int zc::bcd_to_int(std::string bcd, bool least_first) {
 	int result = 0;
 	if (least_first) {
 		for (size_t i = bcd.length(); i > 0;) {
@@ -923,7 +923,7 @@ int bcd_to_int(std::string bcd, bool least_first) {
 }
 
 // Convert BCD to doble
-double bcd_to_double(std::string bcd, int decimals, bool least_first) {
+double zc::bcd_to_double(std::string bcd, int decimals, bool least_first) {
 	double digit_value = 1.0;
 	for (int i = 0; i < decimals; i++) {
 		digit_value *= 0.1;
@@ -955,7 +955,7 @@ double bcd_to_double(std::string bcd, int decimals, bool least_first) {
 }
 
 // Convert string to hex
-std::string string_to_hex(std::string data, bool escape /*=true*/) {
+std::string zc::string_to_hex(std::string data, bool escape /*=true*/) {
 	std::string result;
 	char hex_chars[] = "0123456789ABCDEF";
 	result.resize(data.length() * 4, ' ');
@@ -971,7 +971,7 @@ std::string string_to_hex(std::string data, bool escape /*=true*/) {
 }
 
 // Convert hex representation to string
-std::string hex_to_string(std::string data) {
+std::string zc::hex_to_string(std::string data) {
 	std::string result;
 	result.reserve(data.length());
 	int ix = 0;
@@ -986,15 +986,15 @@ std::string hex_to_string(std::string data) {
 }
 
 // Calculate the great circle bearing and distance between two locations on the Earth's surface
-void great_circle(lat_long_t source, lat_long_t destination, double& bearing, double& distance)
+void zc::great_circle(zc::lat_long_t source, zc::lat_long_t destination, double& bearing, double& distance)
 {
 	// difference in longitude in radians
-	double d_long = (destination.longitude - source.longitude) * DEGREE_RADIAN;
+	double d_long = (destination.longitude - source.longitude) * zc::DEGREE_RADIAN;
 	double cos_d_long = cos(d_long);
 	double sin_d_long = sin(d_long);
 	// Latitudes in radians
-	double src_latitude = source.latitude * DEGREE_RADIAN;
-	double dest_latitude = destination.latitude * DEGREE_RADIAN;
+	double src_latitude = source.latitude * zc::DEGREE_RADIAN;
+	double dest_latitude = destination.latitude * zc::DEGREE_RADIAN;
 	double cos_s_lat = cos(src_latitude);
 	double sin_s_lat = sin(src_latitude);
 	double tan_d_lat = tan(dest_latitude);
@@ -1020,7 +1020,7 @@ void great_circle(lat_long_t source, lat_long_t destination, double& bearing, do
 
 // Replace all / characters in a string with _ - used for callsigns as filenames 
 // menu items
-void de_slash(std::string& data) {
+void zc::de_slash(std::string& data) {
 	for (size_t ix = 0; ix < data.length(); ix++) {
 		if (data[ix] == '/') data[ix] = '_';
 	}
@@ -1028,21 +1028,21 @@ void de_slash(std::string& data) {
 
 // Replace all _ characters in a string with / - used for callsigns as filenames 
 // menu items
-void re_slash(std::string& data) {
+void zc::re_slash(std::string& data) {
 	for (size_t ix = 0; ix < data.length(); ix++) {
 		if (data[ix] == '_') data[ix] = '/';
 	}
 }
 
 // Replace all backslash with foreslashes - filename portability
-void forward_slash(std::string& data) {
+void zc::forward_slash(std::string& data) {
 	for (size_t ix = 0; ix < data.length(); ix++) {
 		if (data[ix] == '\\') data[ix] = '/';
 	}
 }
 
 // Return the directory part of the filenam
-std::string directory(std::string filename) {
+std::string zc::directory(std::string filename) {
 	size_t pos = filename.find_last_of("/\\");
 	if (pos == std::string::npos) {
 		return "";
@@ -1052,7 +1052,7 @@ std::string directory(std::string filename) {
 }
 
 // Return the filename part of the filenam
-std::string terminal(std::string filename) {
+std::string zc::terminal(std::string filename) {
 	size_t pos = filename.find_last_of("/\\");
 	if (pos == std::string::npos) {
 		return filename;
@@ -1062,7 +1062,7 @@ std::string terminal(std::string filename) {
 }
 
 // 8-bit hash - XOR all the characters in src string
-uint8_t hash8(const char* src) {
+uint8_t zc::hash8(const char* src) {
 	uint8_t result = '\x00';
 	// Hash in the next character and increment the pointer
 	while (*src != '\x00') result ^= *(src++);
@@ -1070,7 +1070,7 @@ uint8_t hash8(const char* src) {
 }
 
 // Basic XOR encryption using a pseudo-random key
-void xor_crypt(char* src, int len, uint32_t seed, uint8_t offset) {
+void zc::xor_crypt(char* src, int len, uint32_t seed, uint8_t offset) {
 	// Seed a pseudo-random number sequence
 	std::minstd_rand key(seed);
 	// Now offset into the sequence
@@ -1083,7 +1083,7 @@ void xor_crypt(char* src, int len, uint32_t seed, uint8_t offset) {
 }
 
 // String version
-std::string xor_crypt(std::string src, uint32_t seed, uint8_t offset) {
+std::string zc::xor_crypt(std::string src, uint32_t seed, uint8_t offset) {
 	std::string result;
 	result.resize(src.length());
 	// Seed a pseudo-random number sequence
@@ -1099,7 +1099,7 @@ std::string xor_crypt(std::string src, uint32_t seed, uint8_t offset) {
 }
 
 // Convert ISO date time format to time_t
-std::time_t convert_iso_datetime(std::string value) {
+std::time_t zc::convert_iso_datetime(std::string value) {
 	// Get resolution of time_t
 	time_t now;
 	time(&now);
@@ -1147,7 +1147,7 @@ std::time_t convert_iso_datetime(std::string value) {
 	return result;
 }
 
-std::string convert_iso_datetime(std::time_t t) {
+std::string zc::convert_iso_datetime(std::time_t t) {
 	tm tm_struct;
 #ifdef _WIN32
 	gmtime_s(&tm_struct, &t);

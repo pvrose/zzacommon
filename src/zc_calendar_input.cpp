@@ -39,11 +39,11 @@ void zc_calendar_input::user_data(void* v) {
 
 // Call back for the button
 void zc_calendar_input::cb_button(Fl_Widget* w, void* v) {
-	zc_calendar_input* that = ancestor_view<zc_calendar_input>(w);
+	zc_calendar_input* that = zc::ancestor_view<zc_calendar_input>(w);
 	zc_calendar* cal = new zc_calendar(w->x(), w->y());
 	const char* ip_value = that->input()->value();
 	if (strlen(ip_value) == 0) {
-		std::string today = now(false, that->format_).c_str();
+		std::string today = zc::now(false, that->format_).c_str();
 		cal->value(today.c_str());
 		that->input()->value(today.c_str());
 	}

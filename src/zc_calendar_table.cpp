@@ -131,7 +131,7 @@ void zc_calendar_table::value(tm date) {
 	month_start_ = selected_date_;
 	month_start_.tm_mday = 1;
 	// now convert to time_t and back to correct wday
-	refresh_tm(&month_start_);
+	zc::refresh_tm(&month_start_);
 	// redraw so that today is highlighted again
 	redraw();
 }
@@ -141,7 +141,7 @@ tm* zc_calendar_table::get_date(int R, int C) {
 	// Get the column containing 1st of the month
 	int col_first = month_start_.tm_wday;
 	// Number of days in month
-	int last_day = days_in_month(&selected_date_);
+	int last_day = zc::days_in_month(&selected_date_);
 	tm* date = nullptr;
 	if (R == 0 && C < col_first) {
 		// special case where last days are printed in row 0.
@@ -152,7 +152,7 @@ tm* zc_calendar_table::get_date(int R, int C) {
 			// The cell represents a date between last Sunday and end of month
 			date = new tm(month_start_);
 			date->tm_mday = sunday_mday + C;
-			refresh_tm(date);
+			zc::refresh_tm(date);
 		}
 		else {
 			// Cell is outwith the month
@@ -166,7 +166,7 @@ tm* zc_calendar_table::get_date(int R, int C) {
 			// day is not before first or after last of month
 			date = new tm(month_start_);
 			date->tm_mday = sunday_mday + C;
-			refresh_tm(date);
+			zc::refresh_tm(date);
 		}
 		else {
 			// Cell is outwith the month

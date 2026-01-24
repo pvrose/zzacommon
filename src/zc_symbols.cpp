@@ -21,7 +21,7 @@ void draw_lash(int lash);
 
 // Drawing constants
 const double lid_arc = 90.0;
-const double lid_angle = (lid_arc / 2.0) * DEGREE_RADIAN;
+const double lid_angle = (lid_arc / 2.0) * zc::DEGREE_RADIAN;
 const double lid_incr = lid_angle / 3.0;
 // Lid origion Y value
 const double origin_y = 1 / tan(lid_angle);

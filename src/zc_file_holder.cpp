@@ -24,7 +24,7 @@ extern bool DEVELOPMENT_MODE;
 zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_control_t>& control) {
 	control_data_ = control;
 	char * pwd = fl_getcwd(nullptr, 256);
-	std::string run_dir = directory(arg0);
+	std::string run_dir = zc::directory(arg0);
 	printf("%s: Running in %s\n", APP_NAME.c_str(), run_dir.c_str());
 	// Try reading from run directory first - if present then
 	// we are development

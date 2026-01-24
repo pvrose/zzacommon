@@ -20,6 +20,8 @@ zc_utils.h - various utility methods
 //! \file 
 //! This file provides a number of common utility methods
 
+namespace zc {
+
 
 	//! Latitude/longitude pair
 	struct lat_long_t {
@@ -32,7 +34,7 @@ zc_utils.h - various utility methods
 		}
 
 		//! Returns true if both cordinates compare.
-		bool operator==(lat_long_t rhs) {
+		bool operator==(zc::lat_long_t rhs) {
 			return (latitude == rhs.latitude && longitude == rhs.longitude);
 		}
 	};
@@ -108,12 +110,12 @@ zc_utils.h - various utility methods
 	//! Returns coordinate pair for \p gridsquare.
 	lat_long_t grid_to_latlong(std::string gridsquare);
 	//! Returns character equivalent of base64 encoded character \p c.
-	
+
 	/*! \code
 	A-Z => 0x00 to 0x19
 	a-z => 0x1A to 0x33
 	0-9 => 0x34 to 0x3D
-    +   => 0x3E
+	+   => 0x3E
 	/   => 0x3F
 	=   => 0xFF (padding byte)
 	\endcode
@@ -172,7 +174,7 @@ zc_utils.h - various utility methods
 	//! \param destination Coordinates of location measuring to.
 	//! \param bearing Receives the bearing from \p source to \p destination (in degress).
 	//! \param distance Receives the distance from \p sourec to \p destination (in kilometres). 
-	void great_circle(lat_long_t source, lat_long_t destination, double& bearing, double& distance);
+	void great_circle(zc::lat_long_t source, zc::lat_long_t destination, double& bearing, double& distance);
 
 	//! Replace '/' with '_' throughout \p data.
 	void de_slash(std::string& data);
@@ -224,5 +226,6 @@ zc_utils.h - various utility methods
 		else return dynamic_cast<WIDGET*>(p);
 	}
 
+}
 
 #endif

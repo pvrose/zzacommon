@@ -25,8 +25,10 @@
 
 extern bool DEBUG_ERRORS;
 
+namespace zc {
+
 	//! Structure to pass to radio and or_check button callbacks 
-		struct radio_param_t {
+	struct radio_param_t {
 		//! Value assigned to radio button
 		unsigned int value;
 		//! The integer object to receive the value
@@ -221,6 +223,8 @@ extern bool DEBUG_ERRORS;
 			*enum_value = "";
 		}
 	}
+
+}
 
 #ifndef _WIN32
 #pragma GCC diagnostic pop

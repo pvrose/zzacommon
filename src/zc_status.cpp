@@ -88,7 +88,7 @@ void zc_status::misc_status(status_t status, const char* label, ... ) {
 	vsprintf(llabel, label, args);
 	va_end(args);
 	// Start each entry with a timestamp
-	std::string timestamp = now(false, "%Y/%m/%d %H:%M:%S", true);
+	std::string timestamp = zc::now(false, "%Y/%m/%d %H:%M:%S", true);
 	char f_message[256];
 	// X YYYY/MM/DD HH:MM:SS Message 
 	// X is a single letter indicating the message severity
