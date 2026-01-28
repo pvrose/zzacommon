@@ -92,7 +92,7 @@ void zc_status::misc_status(status_t status, const char* label, ... ) {
 	char f_message[256];
 	// X YYYY/MM/DD HH:MM:SS Message 
 	// X is a single letter indicating the message severity
-	snprintf(f_message, sizeof(f_message), "%c %s %s\n", STATUS_CODES.at(status), timestamp.c_str(), label);
+	snprintf(f_message, sizeof(f_message), "%c %s %s\n", STATUS_CODES.at(status), timestamp.c_str(), llabel);
 	if (banner_) {
 		banner_->add_message(status, llabel, timestamp.substr(11).c_str());
 	}
@@ -155,7 +155,7 @@ void zc_status::misc_status(status_t status, const char* label, ... ) {
 		if (banner_) banner_->show();
 		fl_beep(FL_BEEP_ERROR);
 		// A severe error - ask the user whether to continue
-		if (fl_choice("An error that resulted in reduced functionality occurred:\n%s\n\nDo you want to try to continue or quit?", "Continue", "Quit", nullptr, label, report_filename_.c_str()) == 1) {
+		if (fl_choice("An error that resulted in reduced functionality occurred:\n%s\n\nDo you want to try to continue or quit?", "Continue", "Quit", nullptr, llabel, report_filename_.c_str()) == 1) {
 			// Set the flag to continue showing the file viewer after all other windows have been hidden.
 			keep_banner_ = true;
 			close_(window_, nullptr);
