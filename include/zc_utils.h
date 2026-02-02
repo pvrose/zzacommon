@@ -20,6 +20,7 @@ zc_utils.h - various utility methods
 //! \file 
 //! This file provides a number of common utility methods
 
+//! Utility methods, types and variables.
 namespace zc {
 
 

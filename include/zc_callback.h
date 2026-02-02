@@ -25,6 +25,7 @@
 
 extern bool DEBUG_ERRORS;
 
+//! General purpose callbacks for FLTK widgets.
 namespace zc {
 
 	//! Structure to pass to radio and or_check button callbacks 

@@ -113,17 +113,19 @@ set(CMAKE_MODULE_PATH ../)
 add_library(${TARGET})
 
 ## Set include files.
-if (MSVC) 
-  ## Add nlohmann/json for MSVC
-  set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_INCLUDE_DIR} ${USER_HOME_DIR}\\source\\repos\\json\\include)
-endif()
-message(STATUS "ZZACOMMON: Include dir: ${ZZACOMMON_INCLUDE_DIR}")
 target_include_directories(${TARGET} PRIVATE 
   ${ZZACOMMON_INCLUDE_DIR}
   ${FLTK_INCLUDE_DIR}
 )
+if (MSVC)
+  target_include_directories(${TARGET} PRIVATE
+    ${USER_HOME_DIR}\\source\\repos\\json\\include
+  )
+endif()
+
 ## Export include directories
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_INCLUDE_DIR} PARENT_SCOPE)
+set(ZZACOMMON_HPPFILES ${ZZACOMMON_HPPFILES} PARENT_SCOPE)
 
 # Set sources.
 target_sources(${TARGET} 
