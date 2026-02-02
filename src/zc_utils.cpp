@@ -67,7 +67,7 @@ void zc::split_line(const std::string& line, std::vector<std::string>& words, co
 }
 
 // Join line
-std::string zc::join_line(std::vector<std::string> words, const char separator) {
+std::string zc::join_line(const std::vector<std::string>& words, const char separator) {
 	std::string result = "";
 	for (auto it = words.begin(); it != words.end(); it++) {
 		if (result.length()) {
@@ -81,7 +81,7 @@ std::string zc::join_line(std::vector<std::string> words, const char separator) 
 }
 
 // Converts display format text to a tm object for reformatting
-bool zc::string_to_tm(std::string source, tm& time, std::string format) {
+bool zc::string_to_tm(const std::string& source, tm& time, const std::string& format) {
 	bool escaped = false;
 	// Default YMD to 19700101 to avoid assertion when only setting time
 	time.tm_year = 70;
@@ -196,7 +196,7 @@ bool zc::string_to_tm(std::string source, tm& time, std::string format) {
 }
 
 // Convert a string e.g. 00-06:08 to an array of UINTs {0,1,2,3,4,5,6,8}
-void zc::string_to_ints(std::string& text, std::vector<unsigned int>& ints) {
+void zc::string_to_ints(const std::string& text, std::vector<unsigned int>& ints) {
 	int current = 0;
 	int start = 0;
 	size_t index = 0;
@@ -493,7 +493,7 @@ size_t zc::find_not(const char* data, size_t length, const char* match) {
 }
 
 // Replace charatceters with %nnx if not in chars (allow) or in chars (~allow)
-std::string zc::escape_hex(std::string text, bool allow, const char* chars)
+std::string zc::escape_hex(const std::string& text, bool allow, const char* chars)
 {
 	std::string result = "";
 	// For the length of the string
@@ -516,12 +516,12 @@ std::string zc::escape_hex(std::string text, bool allow, const char* chars)
 }
 
 // Escape the non-usable characters in a url - not alphanumeric replace with %nnx 
-std::string zc::escape_url(std::string url) {
+std::string zc::escape_url(const std::string& url) {
 	return escape_hex(url, true, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 }
 
 // Escape / and & for menu items
-std::string zc::escape_menu(std::string text) {
+std::string zc::escape_menu(const std::string& text) {
 	size_t len = text.length() * 2 + 1;
 	std::string dest = "";
 	dest.reserve(len);
@@ -541,7 +541,7 @@ std::string zc::escape_menu(std::string text) {
 }
 
 // Convert from %nn to ASCII character
-std::string zc::unescape_hex(std::string text) {
+std::string zc::unescape_hex(const std::string& text) {
 	std::string result = "";
 	result.reserve(text.length());
 	const char* src = text.c_str();
@@ -569,7 +569,7 @@ std::string zc::unescape_hex(std::string text) {
 }
 
 // Escape characters - add a '\' before any characters in escapees
-std::string zc::escape_string(const std::string text, const std::string escapees) {
+std::string zc::escape_string(const std::string& text, const std::string& escapees) {
 	// Create a string sufficiently long to escape all characters
 	std::string result = "";
 	result.reserve(2 * text.length());
@@ -585,7 +585,7 @@ std::string zc::escape_string(const std::string text, const std::string escapees
 }
 
 // Unescape characters - remove the '\' before ant character
-std::string zc::unescape_string(const std::string text) {
+std::string zc::unescape_string(const std::string& text) {
 	// Create a string at least as long as the supplied string
 	std::string result = "";
 	result.reserve(text.length());
@@ -663,7 +663,7 @@ std::string zc::latlong_to_grid(zc::lat_long_t location, int num_chars) {
 }
 
 // Convert gridsquare to latitude and longitude - returns the centre of the square
-zc::lat_long_t zc::grid_to_latlong(std::string gridsquare) {
+zc::lat_long_t zc::grid_to_latlong(const std::string& gridsquare) {
 	double inc = 20.0;
 	double next_inc;
 	int8_t cg;
@@ -788,7 +788,7 @@ unsigned char zc::encode_base_64(unsigned char c) {
 }
 
 // Encode the string to base64
-std::string zc::encode_base_64(std::string value) {
+std::string zc::encode_base_64(const std::string& value) {
 	std::string result;
 	unsigned char out = 0;
 	unsigned char in = 0;
@@ -829,7 +829,7 @@ std::string zc::encode_base_64(std::string value) {
 }
 
 // Decode hex
-std::string zc::to_hex(std::string data) {
+std::string zc::to_hex(const std::string& data) {
 	std::string result = "";
 	for (size_t i = 0; i < data.length(); i++) {
 		result += to_hex(data[i]);
@@ -838,7 +838,7 @@ std::string zc::to_hex(std::string data) {
 }
 
 // Encode hex
-std::string zc::to_ascii(std::string data) {
+std::string zc::to_ascii(const std::string& data) {
 	std::string result = "";
 	unsigned int ix = 0;
 	while (ix < data.length()) {
@@ -860,7 +860,7 @@ std::string zc::to_hex(unsigned char data, bool add_space /* = true */) {
 }
 
 // Encode single character
-unsigned char zc::to_ascii(std::string data, int&ix) {
+unsigned char zc::to_ascii(const std::string& data, int&ix) {
 	// Skip non hex
 	while (!isxdigit(data[ix]) && ((unsigned)ix < data.length())) ix++;
 	if (ix == data.length()) return 0;
@@ -899,7 +899,7 @@ std::string zc::int_to_bcd(int value, int size, bool least_first) {
 }
 
 // Convert BCD to int
-int zc::bcd_to_int(std::string bcd, bool least_first) {
+int zc::bcd_to_int(const std::string &bcd, bool least_first) {
 	int result = 0;
 	if (least_first) {
 		for (size_t i = bcd.length(); i > 0;) {
@@ -923,7 +923,7 @@ int zc::bcd_to_int(std::string bcd, bool least_first) {
 }
 
 // Convert BCD to doble
-double zc::bcd_to_double(std::string bcd, int decimals, bool least_first) {
+double zc::bcd_to_double(const std::string &bcd, int decimals, bool least_first) {
 	double digit_value = 1.0;
 	for (int i = 0; i < decimals; i++) {
 		digit_value *= 0.1;
@@ -955,7 +955,7 @@ double zc::bcd_to_double(std::string bcd, int decimals, bool least_first) {
 }
 
 // Convert string to hex
-std::string zc::string_to_hex(std::string data, bool escape /*=true*/) {
+std::string zc::string_to_hex(const std::string &data, bool escape /*=true*/) {
 	std::string result;
 	char hex_chars[] = "0123456789ABCDEF";
 	result.resize(data.length() * 4, ' ');
@@ -971,7 +971,7 @@ std::string zc::string_to_hex(std::string data, bool escape /*=true*/) {
 }
 
 // Convert hex representation to string
-std::string zc::hex_to_string(std::string data) {
+std::string zc::hex_to_string(const std::string &data) {
 	std::string result;
 	result.reserve(data.length());
 	int ix = 0;
@@ -1042,7 +1042,7 @@ void zc::forward_slash(std::string& data) {
 }
 
 // Return the directory part of the filenam
-std::string zc::directory(std::string filename) {
+std::string zc::directory(const std::string& filename) {
 	size_t pos = filename.find_last_of("/\\");
 	if (pos == std::string::npos) {
 		return "";
@@ -1052,7 +1052,7 @@ std::string zc::directory(std::string filename) {
 }
 
 // Return the filename part of the filenam
-std::string zc::terminal(std::string filename) {
+std::string zc::terminal(const std::string& filename) {
 	size_t pos = filename.find_last_of("/\\");
 	if (pos == std::string::npos) {
 		return filename;
@@ -1083,7 +1083,7 @@ void zc::xor_crypt(char* src, int len, uint32_t seed, uint8_t offset) {
 }
 
 // String version
-std::string zc::xor_crypt(std::string src, uint32_t seed, uint8_t offset) {
+std::string zc::xor_crypt(const std::string& src, uint32_t seed, uint8_t offset) {
 	std::string result;
 	result.resize(src.length());
 	// Seed a pseudo-random number sequence
@@ -1099,7 +1099,7 @@ std::string zc::xor_crypt(std::string src, uint32_t seed, uint8_t offset) {
 }
 
 // Convert ISO date time format to time_t
-std::time_t zc::convert_iso_datetime(std::string value) {
+std::time_t zc::convert_iso_datetime(const std::string& value) {
 	// Get resolution of time_t
 	time_t now;
 	time(&now);
@@ -1147,7 +1147,7 @@ std::time_t zc::convert_iso_datetime(std::string value) {
 	return result;
 }
 
-std::string zc::convert_iso_datetime(std::time_t t) {
+std::string zc::convert_iso_datetime(const std::time_t& t) {
 	tm tm_struct;
 #ifdef _WIN32
 	gmtime_s(&tm_struct, &t);

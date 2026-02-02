@@ -56,11 +56,11 @@ namespace zc {
 	//! Split a text \p line into separate \p words on \p separator
 	void split_line(const std::string& line, std::vector<std::string>& words, const char separator);
 	//! Recombine separate \p words into a string with \p separator and return the result.
-	std::string join_line(std::vector<std::string> words, const char separator);
+	std::string join_line(const std::vector<std::string>& words, const char separator);
 	//! Converts display format text to a tm object for reformatting.
-	bool string_to_tm(std::string text, tm& time, std::string format);
+	bool string_to_tm(const std::string& text, tm& time, const std::string& format);
 	//! Convert a string e.g. 00-06:08 to an array of UINTs {0,1,2,3,4,5,6,8}.
-	void string_to_ints(std::string& text, std::vector<unsigned int>& ints);
+	void string_to_ints(const std::string& text, std::vector<unsigned int>& ints);
 	//! Returns the current time in specific fomat.
 	std::string now(bool local, const char* format, bool add_ms = false);
 	//! Returns the current time to milliseconds.
@@ -92,24 +92,24 @@ namespace zc {
 	size_t find_not(const char* data, size_t length, const char* match);
 	//! \brief Returns \p text with any character in \p chars (\p allow = false) or
 	//! not in \p chars (\p allow = true) replaced with hex representation. 
-	std::string escape_hex(std::string text, bool allow, const char* chars);
+	std::string escape_hex(const std::string& text, bool allow, const char* chars);
 	//! Returns \p text with any non-alphanumeric characters replaced with hex representation .
-	std::string escape_url(std::string text);
+	std::string escape_url(const std::string& text);
 	//! Returns \p text with && and %% characters escaped for menu items.
-	std::string escape_menu(std::string text);
+	std::string escape_menu(const std::string& text);
 	//! Returns \p text with hex characters (%%nnx) replaced by 8-bit character.
-	std::string unescape_hex(std::string text);
+	std::string unescape_hex(const std::string& text);
 	//! Escape characters - Returns \p text adding a '\' before any characters in \p escapees.
-	std::string escape_string(const std::string text, const std::string escapees);
+	std::string escape_string(const std::string& text, const std::string& escapees);
 	//! Unescape characters - Returns .p with '\' removed.
-	std::string unescape_string(const std::string text);
+	std::string unescape_string(const std::string& text);
 	//! \brief Returns \p value expressed as degrees, minutes and seconds: 
 	//! if \p is_lat is true treat as latitude, otherwise as longitude.
 	std::string degrees_to_dms(float value, bool is_lat);
 	//! Returns coordinate pair as gridsquare equivalent with \p num_chars characters.
 	std::string latlong_to_grid(lat_long_t location, int num_chars);
 	//! Returns coordinate pair for \p gridsquare.
-	lat_long_t grid_to_latlong(std::string gridsquare);
+	lat_long_t grid_to_latlong(const std::string& gridsquare);
 	//! Returns character equivalent of base64 encoded character \p c.
 
 	/*! \code
@@ -137,17 +137,17 @@ namespace zc {
 	*/
 	unsigned char encode_base_64(unsigned char c);
 	//! Returns base64 encoding of string \p s.
-	std::string encode_base_64(std::string s);
+	std::string encode_base_64(const std::string& s);
 	//! Returns \p data as hex encoded string.
-	std::string to_hex(std::string data);
+	std::string to_hex(const std::string& data);
 	//! Returns hex-encoded string \p data as string of 8-bit characters.
-	std::string to_ascii(std::string data);
+	std::string to_ascii(const std::string& data);
 	//! Returns string representing hex encode of \p data: a string is added in \p add_space is true.
 	std::string to_hex(unsigned char data, bool add_space = true);
 	//! \brief Returns the single 8-bit byte from hex-encoded string \p data at position \p ix, 
 	//! which then
 	//! points to the position after the decoded characters. 
-	unsigned char to_ascii(std::string data, int& ix);
+	unsigned char to_ascii(const std::string& data, int& ix);
 
 	//! \brief Returns value in BCD format.
 	//! \param value Integer to encode.
@@ -157,17 +157,17 @@ namespace zc {
 
 	//! \brief Returns BCD value as an integer.	
 	//! \param least_first First byte of data is least significant.
-	int bcd_to_int(std::string, bool least_first);
+	int bcd_to_int(const std::string&, bool least_first);
 
 	//! \brief Returns BCD value as a double-precision value.
 	//! \param decimals Number of characters after the decimal point.
 	//! \param least_first First byte of data is least significant.
-	double bcd_to_double(std::string, int decimals, bool least_first);
+	double bcd_to_double(const std::string&, int decimals, bool least_first);
 
 	//! Convert string to hex
-	std::string string_to_hex(std::string, bool escape = false);
+	std::string string_to_hex(const std::string&, bool escape = false);
 	//! Convert string from hex
-	std::string hex_to_string(std::string);
+	std::string hex_to_string(const std::string&);
 
 	//! \brief Calculate the great circle bearing and distance between two locations on 
 	//! the Earth's surface.	
@@ -187,10 +187,10 @@ namespace zc {
 	void forward_slash(std::string& data);
 
 	//! Returns the directroy part of a a filename
-	std::string directory(std::string filename);
+	std::string directory(const std::string& filename);
 
 	//! Returns the terminal part of a filename.
-	std::string terminal(std::string filename);
+	std::string terminal(const std::string& filename);
 
 	//! Returns a simple 8-bit hash of \p src (zero-terminated)
 	uint8_t hash8(const char* src);
@@ -206,13 +206,13 @@ namespace zc {
 
 	//! \brief Performs "XOR" encrypt/decrypt using string data and returns encrypted string.
 	//! \see xor_crypt.
-	std::string xor_crypt(std::string, uint32_t seed, uint8_t offset);
+	std::string xor_crypt(const std::string& data, uint32_t seed, uint8_t offset);
 
 	//! Convert ISO date-time format to time_t.
-	std::time_t convert_iso_datetime(std::string value);
+	std::time_t convert_iso_datetime(const std::string& value);
 
 	//! Convert ISO date-time format from time_t.
-	std::string convert_iso_datetime(std::time_t t);
+	std::string convert_iso_datetime(const std::time_t& t);
 
 	//! Returns the widget of class \p WIDGET that encloses \p w.
 	template <class WIDGET>
