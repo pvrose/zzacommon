@@ -52,6 +52,7 @@ std::thread::id main_thread_id_ = std::this_thread::get_id();
 zc_banner::zc_banner(int W, int H, const char* L) :
 	Fl_Double_Window(W, H, L)
 {
+	clear_modal_states();
 	// Set the ticker for 2 seconds
 	callback(cb_close);
 	create_form();
