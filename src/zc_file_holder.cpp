@@ -53,9 +53,7 @@ zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_co
 	} else {
 		DEVELOPMENT_MODE = false;
 #ifdef _WIN32
-		default_source_directory_ = 
-			std::string(getenv("ALLUSERSPROFILE")) + "\\" + 
-			APP_VENDOR + "\\" + APP_NAME + "\\";
+		default_source_directory_ += "etc\\";
 #else
 		default_source_directory_ = 
 			"/etc/" + APP_VENDOR + "/" + APP_NAME + "/";
