@@ -13,6 +13,10 @@
 #include <FL/Fl_PNG_Image.H>
 #include <FL/Fl_Window.H>
 
+#define BOOST_NO_CXX11_SCOPED_ENUMS
+#include <boost/dll/runtime_symbol_info.hpp>
+#undef BOOST_NO_CXX11_SCOPED_ENUMS
+
 zc_file_holder* file_holder_ = nullptr;
 uint16_t DEBUG_RESET_CONFIG = 0;
 extern std::string APP_VENDOR;
@@ -25,25 +29,15 @@ zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_co
 	control_data_ = control;
 	char * pwd = fl_getcwd(nullptr, 256);
 	std::string run_dir = zc::directory(arg0);
+	auto exe_path = boost::dll::program_location();
+	std::string exe_dir = zc::directory(exe_path.string());
+	std::string app_name = zc::terminal(exe_path.string());
 	printf("%s: Running in %s\n", APP_NAME.c_str(), run_dir.c_str());
+	printf("%s: Executed as %s from %s\n", APP_NAME.c_str(), app_name.c_str(), exe_dir.c_str());
 	// Try reading from run directory first - if present then
 	// we are development
-#ifdef _WIN32
-	if (run_dir[1] == ':') {
-		// We have an absolutre path
-		default_source_directory_ = run_dir + "\\";
-	} else {
-		default_source_directory_ = std::string(pwd) + "\\" + run_dir + "\\";
-	}
-#else
-    if (run_dir[0] == '/') {
-		// We have an absolute path
-		default_source_directory_ = run_dir + "/";
-	} else {
-		default_source_directory_ = std::string(pwd) + "/" + run_dir + "/";
-	}
+	default_source_directory_ = exe_dir + "/";
 
-#endif
 	default_code_directory_ = default_code_directory_;
 	// Test the path using the icon
 	std::string logo = get_filename(FILE_ICON_ZZA);
@@ -55,8 +49,7 @@ zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_co
 #ifdef _WIN32
 		default_source_directory_ += "etc\\";
 #else
-		default_source_directory_ = 
-			"/etc/" + APP_VENDOR + "/" + APP_NAME + "/";
+		default_source_directory_ += "../etc/" + app_name + "/";
 #endif
 		// Try again in release directory
 		logo = get_filename(FILE_ICON_ZZA);

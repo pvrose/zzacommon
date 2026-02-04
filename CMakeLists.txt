@@ -107,15 +107,23 @@ else()
   message(FATAL_ERROR "FLTK not found")
 endif()
 
+# libboost
+find_package(Boost CONFIG REQUIRED COMPONENTS ALL)
+if (Boost_FOUND)
+  message(STATUS "Boost found: ${Boost_VERSION}")
+  message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
+endif()
+
 set(CMAKE_MODULE_PATH ../)
 
 ## Target is libzzacommon
-add_library(${TARGET})
+add_library(${TARGET} STATIC)
 
 ## Set include files.
 target_include_directories(${TARGET} PRIVATE 
   ${ZZACOMMON_INCLUDE_DIR}
   ${FLTK_INCLUDE_DIR}
+  ${Boost_INCLUDE_DIR}
 )
 if (MSVC)
   target_include_directories(${TARGET} PRIVATE
