@@ -36,7 +36,11 @@ zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_co
 	printf("%s: Executed as %s from %s\n", APP_NAME.c_str(), app_name.c_str(), exe_dir.c_str());
 	// Try reading from run directory first - if present then
 	// we are development
+#ifdef _WIN32
+	default_source_directory_ = exe_dir + "\\";
+#else
 	default_source_directory_ = exe_dir + "/";
+#endif
 
 	default_code_directory_ = default_code_directory_;
 	// Test the path using the icon

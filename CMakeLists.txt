@@ -108,7 +108,11 @@ else()
 endif()
 
 # libboost
-find_package(Boost CONFIG REQUIRED COMPONENTS ALL)
+if (MSVC)
+  find_package(Boost REQUIRED COMPONENTS filesystem system)
+else()
+  find_package(Boost CONFIG REQUIRED COMPONENTS ALL)
+endif()
 if (Boost_FOUND)
   message(STATUS "Boost found: ${Boost_VERSION}")
   message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
