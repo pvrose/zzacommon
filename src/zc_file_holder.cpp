@@ -18,7 +18,7 @@
 #undef BOOST_NO_CXX11_SCOPED_ENUMS
 
 zc_file_holder* file_holder_ = nullptr;
-uint16_t DEBUG_RESET_CONFIG = 0;
+uint32_t DEBUG_RESET_CONFIG = 0;
 extern std::string APP_VENDOR;
 extern std::string APP_NAME;
 extern bool DEVELOPMENT_MODE;
@@ -201,7 +201,7 @@ bool zc_file_holder::copy_source_to_working(file_control_t ctrl) const {
 		return false;
 	}
 	else {
-		snprintf(msg, sizeof(msg), "File Copied %s to %s", source.c_str(), filename.c_str());
+		snprintf(msg, sizeof(msg), "FILE: Copied %s to %s", source.c_str(), filename.c_str());
 		if (status_) status_->misc_status(ST_NOTE, msg);
 	}
 	DEBUG_RESET_CONFIG &= ~(ctrl.reset_mask);

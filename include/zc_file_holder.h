@@ -7,14 +7,14 @@
 #include <string>
 
 //! Reset configuration files
-extern uint16_t DEBUG_RESET_CONFIG;
+extern uint32_t DEBUG_RESET_CONFIG;
 
 //! File control structore
 struct file_control_t {
 	std::string filename;                   //!< Filename.
 	bool reference;                         //!< file is reference - from source.
 	bool read_only;                         //!< Not written - do not copy from source.
-	uint16_t reset_mask;                    //!< Reset mask.
+	uint32_t reset_mask;                    //!< Reset mask.
 	bool fatal{ true };                     //!< Fatal error if unable to open the file.
 };
 
