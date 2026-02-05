@@ -116,6 +116,7 @@ endif()
 if (Boost_FOUND)
   message(STATUS "Boost found: ${Boost_VERSION}")
   message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
+  message(STATUS "Boost includes: ${Boost_INCLUDE_DIR}")
 endif()
 
 set(CMAKE_MODULE_PATH ../)
