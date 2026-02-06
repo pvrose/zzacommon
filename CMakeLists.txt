@@ -109,14 +109,14 @@ endif()
 
 # libboost
 if (MSVC)
-  find_package(Boost REQUIRED COMPONENTS filesystem system)
+  find_package(Boost CONFIG REQUIRED COMPONENTS filesystem system)
 else()
   find_package(Boost CONFIG REQUIRED COMPONENTS ALL)
 endif()
 if (Boost_FOUND)
   message(STATUS "Boost found: ${Boost_VERSION}")
   message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
-  message(STATUS "Boost includes: ${Boost_INCLUDE_DIR}")
+  message(STATUS "Boost includes: ${Boost_INCLUDE_DIRS}")
 endif()
 
 set(CMAKE_MODULE_PATH ../)
@@ -128,7 +128,7 @@ add_library(${TARGET} STATIC)
 target_include_directories(${TARGET} PRIVATE 
   ${ZZACOMMON_INCLUDE_DIR}
   ${FLTK_INCLUDE_DIR}
-  ${Boost_INCLUDE_DIR}
+  ${Boost_INCLUDE_DIRS}
 )
 if (MSVC)
   target_include_directories(${TARGET} PRIVATE
@@ -144,11 +144,11 @@ set(ZZACOMMON_HPPFILES ${ZZACOMMON_HPPFILES} PARENT_SCOPE)
 target_sources(${TARGET} 
   PRIVATE 
     ${ZZACOMMON_CPPFILES}
-  PUBLIC 
-    FILE_SET common_headers
-    TYPE HEADERS
-    BASE_DIRS ./include
-    FILES ${ZZACOMMON_HPPFILES}
+#  PUBLIC 
+#    FILE_SET common_headers
+#    TYPE HEADERS
+#    BASE_DIRS ./include
+#    FILES ${ZZACOMMON_HPPFILES}
 )
 
 # generate API documentation
