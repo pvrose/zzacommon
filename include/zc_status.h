@@ -38,7 +38,7 @@ class zc_banner;
 	//! Map the values of status_t to the colours used to display them.
 	const std::map<status_t, colours_t> STATUS_COLOURS = {
 		{ ST_NONE, { FL_WHITE, FL_BLACK } },
-		{ ST_LOG, { fl_lighter(FL_BLUE), FL_BLACK } },
+		{ ST_LOG, { fl_color_average(FL_BLUE, FL_WHITE, 0.5), FL_BLACK } },
 		{ ST_DEBUG, { fl_lighter(FL_MAGENTA), FL_BLACK } },
 		{ ST_NOTE, { fl_lighter(FL_CYAN), FL_BLACK } },
 		{ ST_PROGRESS, { fl_darker(FL_WHITE), FL_BLACK } },
