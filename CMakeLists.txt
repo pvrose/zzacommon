@@ -136,10 +136,15 @@ if (MSVC)
   )
 endif()
 
+target_link_libraries(${TARGET}
+  ${Boost_LIBRARIES}
+  ${FLTK_LIBRARIES}
+)
+
 ## Export include directories
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_INCLUDE_DIR} PARENT_SCOPE)
 set(ZZACOMMON_HPPFILES ${ZZACOMMON_HPPFILES} PARENT_SCOPE)
-
+set(ZZACOMMON_LIBRARIES zzacommon PARENT_SCOPE)
 # Set sources.
 target_sources(${TARGET} 
   PRIVATE 
