@@ -138,6 +138,7 @@ endif()
 
 target_link_libraries(${TARGET} 
   ${Boost_LIBRARIES}
+  ${FLTK_LIBRARIES}
 )
 
 ## Export include directories
