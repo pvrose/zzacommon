@@ -145,6 +145,7 @@ target_link_libraries(${TARGET}
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_INCLUDE_DIR} PARENT_SCOPE)
 set(ZZACOMMON_HPPFILES ${ZZACOMMON_HPPFILES} PARENT_SCOPE)
 set(ZZACOMMON_LIBRARIES zzacommon PARENT_SCOPE)
+set(FLTK_INCLUDE_DIR ${FLTK_INCLUDE_DIR} PARENT_SCOPE)
 
 # Set sources.
 target_sources(${TARGET} 
@@ -163,9 +164,9 @@ add_subdirectory(api)
 add_dependencies(${TARGET} zzacommon_api_html)
 
 
-if (MSVC)
-else()
+#if (MSVC)
+#else()
   if (BUILD_SHARED_LIBS)
     install(TARGETS ${TARGET})
   endif()
-endif()
+#endif()
