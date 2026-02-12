@@ -220,7 +220,7 @@ namespace zc {
 		Fl_Widget* p = w;
 		// Keep going up the parent until we found one that casts to WIDGET or we run out of ancestors
 		while (p != nullptr && dynamic_cast<WIDGET*>(p) == nullptr) {
-			p = p->parent();
+			p = (Fl_Widget*)p->parent();
 		}
 		// Return null if we don't find one, else the one we did
 		if (p == nullptr) return nullptr;
