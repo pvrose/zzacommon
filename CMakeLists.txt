@@ -164,9 +164,9 @@ add_subdirectory(api)
 add_dependencies(${TARGET} zzacommon_api_html)
 
 
-if (MSVC)
-else()
+#if (MSVC)
+#else()
   if (BUILD_SHARED_LIBS)
     install(TARGETS ${TARGET})
   endif()
-endif()
+#endif()
