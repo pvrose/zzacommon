@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 ## Library zzacommon. 
-project(ZZACOMMON VERSION 1.0.3)
+project(ZZACOMMON VERSION 1.0.4)
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
 set (TARGET zzacommon)
 
@@ -159,14 +159,18 @@ target_sources(${TARGET}
 )
 
 # generate API documentation
-message(STATUS "ZZACOMMON: Adding API documentation")
-add_subdirectory(api)
-add_dependencies(${TARGET} zzacommon_api_html)
-
+if (ZZACOMMON_DOX)
+  message(STATUS "ZZACOMMON: Adding API documentation")
+  add_subdirectory(api)
+  add_dependencies(${TARGET} zzacommon_api_html)
+endif()
 
 #if (MSVC)
 #else()
   if (BUILD_SHARED_LIBS)
     install(TARGETS ${TARGET})
+  endif()
+  if (MSVC)
+    install(IMPORTED_RUNTIME_ARTIFACTS ${Boost_LIBRARIES})
   endif()
 #endif()

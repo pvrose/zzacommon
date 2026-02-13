@@ -144,6 +144,9 @@ public:
 	//! Get file control for type.
 	file_control_t file_control(uint8_t type) const;
 
+	//! \brief Display (to status) file information
+	void display_info() const;
+
 protected:
 
 	//! Copy source to working.
@@ -161,6 +164,9 @@ protected:
 
 	//! Default directory for HTML files.
 	std::string default_html_directory_;
+
+	//! Program executable directory
+	std::string exec_directory_;
 
 	//! Control data.
 	std::map<uint8_t, file_control_t> control_data_;

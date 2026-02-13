@@ -30,16 +30,16 @@ zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_co
 	char * pwd = fl_getcwd(nullptr, 256);
 	std::string run_dir = zc::directory(arg0);
 	auto exe_path = boost::dll::program_location();
-	std::string exe_dir = zc::directory(exe_path.string());
+	exec_directory_ = zc::directory(exe_path.string());
 	std::string app_name = zc::terminal(exe_path.string());
 	printf("%s: Running in %s\n", APP_NAME.c_str(), run_dir.c_str());
-	printf("%s: Executed as %s from %s\n", APP_NAME.c_str(), app_name.c_str(), exe_dir.c_str());
+	printf("%s: Executed as %s from %s\n", APP_NAME.c_str(), app_name.c_str(), exec_directory_.c_str());
 	// Try reading from run directory first - if present then
 	// we are development
 #ifdef _WIN32
-	default_source_directory_ = exe_dir + "\\";
+	default_source_directory_ = exec_directory_ + "\\";
 #else
-	default_source_directory_ = exe_dir + "/";
+	default_source_directory_ = exec_directory_ + "/";
 #endif
 
 	default_code_directory_ = default_code_directory_;
@@ -51,7 +51,7 @@ zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_co
 	} else {
 		DEVELOPMENT_MODE = false;
 #ifdef _WIN32
-		default_source_directory_ += "etc\\";
+		default_source_directory_ += "..\\etc\\";
 #else
 		default_source_directory_ += "../etc/" + app_name + "/";
 #endif
@@ -258,4 +258,13 @@ bool zc_file_holder::copy_working_to_source(uint8_t type) const {
 
 file_control_t zc_file_holder::file_control(uint8_t type) const {
 	return control_data_.at(type);
+}
+
+// Display file info
+void zc_file_holder::display_info() const {
+	if (status_) {
+		status_->misc_status(ST_NOTE, "FILE: Binary: %s", exec_directory_.c_str());
+		status_->misc_status(ST_NOTE, "FILE: Source data:- %s", default_source_directory_.c_str());
+		status_->misc_status(ST_NOTE, "FILE: Working data:- %s", default_data_directory_.c_str());
+	}
 }
