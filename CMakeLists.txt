@@ -94,10 +94,13 @@ endif()
 
 # Find fltk
 # MSVC work-round as FLTK built in user.
-if (NOT FLTK_DIR AND MSVC)
-  set(FLTK_DIR "${USER_HOME_DIR}\\source\\repos\\fltk\\build")
+if(MSVC)
+if (NOT FLTK_DIR)
+  message(FATAL_ERROR "Please set FLTK_DIR") 
+else()
+  message(STATUS "Using FLTK_DIR: ${FLTK_DIR}")
 endif()
-set(CMAKE_MODULE_PATH ../ ./)
+endif()
 find_package(FLTK CONFIG)
 if (FLTK_FOUND)
   message(STATUS "FLTK found: ${FLTK_VERSION}")
