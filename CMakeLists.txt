@@ -109,7 +109,7 @@ endif()
 
 # libboost
 if (MSVC)
-  find_package(Boost CONFIG REQUIRED COMPONENTS filesystem system)
+  find_package(Boost 1.89.0 CONFIG REQUIRED COMPONENTS filesystem)
 else()
   find_package(Boost CONFIG REQUIRED COMPONENTS ALL)
 endif()
