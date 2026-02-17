@@ -90,6 +90,14 @@ public:
     //! Called indirectly through status when the main app is closing.
     void close();
 
+	//! Set font \p f and size \p sz of display text
+	void font(Fl_Font f, Fl_Fontsize sz);
+
+	//! Get font 
+	Fl_Font font();
+	//! Get fontsize
+	Fl_Fontsize fontsize();
+
 protected:
 
     //! Add message to the message history display (with colour)
