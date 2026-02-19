@@ -201,13 +201,13 @@ void zc_banner::add_message(status_t type, const char* msg, const char* ts) {
 	case ST_NOTE:
 	case ST_OK: 
 	case ST_WARNING:
+	case ST_ERROR:
 	{
 		op_msg_low_->value(msg);
 		op_msg_low_->color(STATUS_COLOURS.at(type).bg);
 		op_msg_low_->textcolor(STATUS_COLOURS.at(type).fg);
 		break;
 	}
-	case ST_ERROR:
 	case ST_SEVERE:
 	case ST_FATAL:
 	{
