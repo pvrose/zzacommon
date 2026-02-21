@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <fstream>
 #include <istream>
@@ -147,12 +148,20 @@ public:
 	//! \brief Display (to status) file information
 	void display_info() const;
 
+	//! \brief Get timestamp for the file \p type.
+	std::chrono::system_clock::time_point timestamp(uint8_t type) const;
+
 protected:
 
 	//! Copy source to working.
-	bool copy_source_to_working(file_control_t ctrl) const;
-	
+	bool copy_source_to_working(uint8_t type);
 
+	//! Remember the timestamp of the file
+	//! \param type File type
+	//! \param filename Name of the file to save the timestamp of.
+	//! \param overwrite Replace the existing timestamp.
+	void remember_timestamp(uint8_t type, const std::string& filename, bool overwrite = false);
+	
 	//! Default location for configuration files, and HTML files.
 	std::string default_data_directory_;
 
@@ -170,6 +179,9 @@ protected:
 
 	//! Control data.
 	std::map<uint8_t, file_control_t> control_data_;
+
+	//! Timestamps
+	std::map<uint8_t, std::chrono::system_clock::time_point > timestamps_;
 
 
 };

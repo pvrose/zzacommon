@@ -2,6 +2,7 @@
 
 #include <zc_status.h>
 
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -13,6 +14,7 @@
 #include <FL/Fl_PNG_Image.H>
 #include <FL/Fl_Window.H>
 
+#include <boost/filesystem.hpp>
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/dll/runtime_symbol_info.hpp>
 #undef BOOST_NO_CXX11_SCOPED_ENUMS
@@ -106,13 +108,14 @@ bool zc_file_holder::get_file(uint8_t type, std::ifstream& is, std::string& file
 				return false;
 			}
 			else {
+				remember_timestamp(type, filename);
 				return true;
 			}
 		}
 		else if (DEBUG_RESET_CONFIG & ctrl.reset_mask) {
 			filename = default_data_directory_ + ctrl.filename;
 			// Copy source to working
-			if (copy_source_to_working(ctrl)) {
+			if (copy_source_to_working(type)) {
 				is.open(filename);
 				if (is.fail()) {
 					snprintf(msg, sizeof(msg), "FILE: Cannot open %s", filename.c_str());
@@ -140,7 +143,7 @@ bool zc_file_holder::get_file(uint8_t type, std::ifstream& is, std::string& file
 					printf("\n");
 				}
 				// Copy source to working
-				if (copy_source_to_working(ctrl)) {
+				if (copy_source_to_working(type)) {
 					is.open(filename);
 					if (is.fail()) {
 						snprintf(msg, sizeof(msg), "FILE: Cannot open %s", filename.c_str());
@@ -157,7 +160,10 @@ bool zc_file_holder::get_file(uint8_t type, std::ifstream& is, std::string& file
 					return false;
 				}
 			}
-			else return true;
+			else {
+				remember_timestamp(type, filename);
+				return  true;
+			}
 		}
 	}
 	else {
@@ -182,29 +188,45 @@ bool zc_file_holder::get_file(uint8_t type, std::ifstream& is, std::string& file
 			}
 			return false;
 		}
+		remember_timestamp(type, filename);
 		return true;
 	}
 }
 
-bool zc_file_holder::copy_source_to_working(file_control_t ctrl) const {
+bool zc_file_holder::copy_source_to_working(uint8_t type) {
+	file_control_t ctrl = control_data_.at(type);
 	// Copy source to working
 	std::string source = default_source_directory_ + ctrl.filename;
 	std::string filename = default_data_directory_ + ctrl.filename;
-#ifdef _WIN32
-	std::string command = "copy " + source + " " + filename;
-#else
-	std::string command = "cp " + source + " " + filename;
-#endif
-	int result = system(command.c_str());
+// #ifdef _WIN32
+// 	std::string command = "copy " + source + " " + filename;
+// #else
+// 	std::string command = "cp " + source + " " + filename;
+// #endif
+// 	int result = system(command.c_str());
+	boost::system::error_code ec;
+	if (boost::filesystem::remove(filename.c_str())) {
+		if (status_) {
+			status_->misc_status(ST_NOTE, "FILE: Existing %s removed.", filename.c_str());
+		}
+	}
+	boost::filesystem::copy(
+		source.c_str(),
+		filename.c_str(),
+		boost::filesystem::copy_options::update_existing |
+		boost::filesystem::copy_options::synchronize,
+		ec
+	);
 	char msg[256];
-	if (result != 0) {
-		snprintf(msg, sizeof(msg), "FILE: Copy failed %d", result);
+	if (ec) {
+		snprintf(msg, sizeof(msg), "FILE: Copy %s to %s failed %d", source.c_str(), filename.c_str(), ec);
 		if (status_) status_->misc_status(ST_ERROR, msg);
 		return false;
 	}
 	else {
 		snprintf(msg, sizeof(msg), "FILE: Copied %s to %s", source.c_str(), filename.c_str());
 		if (status_) status_->misc_status(ST_NOTE, msg);
+		remember_timestamp(type, source, true);
 	}
 	DEBUG_RESET_CONFIG &= ~(ctrl.reset_mask);
 	return true;
@@ -264,5 +286,28 @@ void zc_file_holder::display_info() const {
 		status_->misc_status(ST_NOTE, "FILE: Binary: %s", exec_directory_.c_str());
 		status_->misc_status(ST_NOTE, "FILE: Source data:- %s", default_source_directory_.c_str());
 		status_->misc_status(ST_NOTE, "FILE: Working data:- %s", default_data_directory_.c_str());
+	}
+}
+
+// Get timestamp for file type
+std::chrono::system_clock::time_point zc_file_holder::timestamp(uint8_t type) const {
+	if (timestamps_.find(type) != timestamps_.end()) {
+		return timestamps_.at(type);
+	} else {
+		// Return the earliest it can be
+		return std::chrono::system_clock::time_point::min();
+	}
+}
+
+// Remember the timestamp for the file (first time only)
+void zc_file_holder::remember_timestamp(uint8_t type, const std::string& filename, bool overwrite) {
+	if (!overwrite && timestamps_.find(type) != timestamps_.end()) {
+		return;
+	} else {
+		boost::system::error_code ec;
+		std::time_t ts = boost::filesystem::last_write_time(filename.c_str(), ec);
+		if (!ec) {
+			timestamps_[type] = std::chrono::system_clock::from_time_t(ts);
+		}
 	}
 }
