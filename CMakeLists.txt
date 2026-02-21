@@ -33,6 +33,9 @@ endif()
 if (NOT APP_VENDOR)
   set(APP_VENDOR "GM3ZZA")
 endif()
+if (NOT APP_SOURCE_DIR) 
+  set(APP_SOURCE_DIR ${ZZACOMMON_SOURCE_DIR})
+endif()
 configure_file(
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h.in
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h

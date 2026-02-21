@@ -138,9 +138,13 @@ public:
 		}
 	}
 
-	//! \brief Release working copy to source. 
+	//! \brief Release working copy to git source. 
 	//! \note This is only available for development use. 
 	bool copy_working_to_source(uint8_t type) const;
+
+	//! \brief Release working copy to git source. 
+	//! \note This is only available for development use. 
+	bool copy_source_to_git(uint8_t type) const;
 
 	//! Get file control for type.
 	file_control_t file_control(uint8_t type) const;
@@ -167,6 +171,9 @@ protected:
 
 	//! Default location for reference source data.
 	std::string default_source_directory_;
+
+	//! Default location for git reference source directory.
+	std::string default_git_directory_;
 
 	//! Default location for auto-generating compile fodder.
 	std::string default_code_directory_;

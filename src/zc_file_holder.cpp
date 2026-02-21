@@ -1,6 +1,7 @@
 #include "zc_file_holder.h"
 
-#include <zc_status.h>
+#include "zc_status.h"
+#include "zc_utils.h"
 
 #include <chrono>
 #include <cstdint>
@@ -8,7 +9,6 @@
 #include <cstdlib>
 #include <fstream>
 #include <string>
-#include <zc_utils.h>
 
 #include <FL/fl_utf8.h>
 #include <FL/Fl_PNG_Image.H>
@@ -23,6 +23,7 @@ zc_file_holder* file_holder_ = nullptr;
 uint32_t DEBUG_RESET_CONFIG = 0;
 extern std::string APP_VENDOR;
 extern std::string APP_NAME;
+extern std::string APP_SOURCE_DIR;
 extern bool DEVELOPMENT_MODE;
 //! File control datra
 
@@ -43,6 +44,7 @@ zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_co
 #endif
 
 	default_code_directory_ = default_code_directory_;
+	default_git_directory_ = APP_SOURCE_DIR + "/reference/";
 	// Test the path using the icon
 	std::string logo = get_filename(FILE_ICON_ZZA);
 	Fl_PNG_Image* ilog = new Fl_PNG_Image(logo.c_str());
@@ -250,26 +252,56 @@ bool zc_file_holder::get_file(uint8_t type, std::ofstream& os, std::string& file
 	return true;
 }
 
-// Copy working copy to source for releasing
-bool zc_file_holder::copy_working_to_source(uint8_t type) const {
+// Copy from source to git
+bool zc_file_holder::copy_source_to_git(uint8_t type) const {
 	file_control_t ctrl = file_holder_->file_control(type);
 	// Copy source to working
 	std::string source = default_source_directory_ + ctrl.filename;
-	std::string filename = default_data_directory_ + ctrl.filename;
-#ifdef _WIN32
-	std::string command = "copy " + filename + " " + source;
-#else
-	std::string command = "cp " + filename  + " " + source;
-#endif
-	int result = system(command.c_str());
+	std::string git = default_git_directory_ + ctrl.filename;
+	boost::system::error_code ec;
+	boost::filesystem::copy(
+		source.c_str(),
+		git.c_str(),
+		boost::filesystem::copy_options::update_existing |
+		boost::filesystem::copy_options::synchronize,
+		ec
+	);
 	char msg[256];
-	if (result != 0) {
-		snprintf(msg, sizeof(msg), "FILE: Copy failed %d", result);
+	if (ec) {
+		snprintf(msg, sizeof(msg), "FILE: Copy failed %d", ec);
 		if (status_) status_->misc_status(ST_ERROR, msg);
 		return false;
 	}
 	else {
-		snprintf(msg, sizeof(msg), "File Copied %s to %s", filename.c_str(), source.c_str());
+		snprintf(msg, sizeof(msg), "File Copied %s to %s", source.c_str(), git.c_str());
+		if (status_) status_->misc_status(ST_NOTE, msg);
+	}
+	//char msg[256];
+	return true;
+}
+
+// Copy working to source
+bool zc_file_holder::copy_working_to_source(uint8_t type) const {
+	file_control_t ctrl = file_holder_->file_control(type);
+	// Copy source to working
+	std::string source = default_source_directory_ + ctrl.filename;
+	std::string working = default_data_directory_ + ctrl.filename;
+	boost::system::error_code ec;
+	boost::filesystem::copy(
+		working.c_str(),
+		source.c_str(),
+		boost::filesystem::copy_options::update_existing |
+		boost::filesystem::copy_options::synchronize,
+		ec
+	);
+	char msg[256];
+	if (ec) {
+		snprintf(msg, sizeof(msg), "FILE: Copy failed %d", ec);
+		if (status_) status_->misc_status(ST_ERROR, msg);
+		return false;
+	}
+	else {
+		snprintf(msg, sizeof(msg), "File Copied %s to %s", working.c_str(), source.c_str());
 		if (status_) status_->misc_status(ST_NOTE, msg);
 	}
 	//char msg[256];
