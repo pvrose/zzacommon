@@ -16,7 +16,7 @@
 
 */
 
-pragma once
+#pragma once
 
 #include "zc_button_input.h"
 
