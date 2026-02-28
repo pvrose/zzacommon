@@ -1,10 +1,21 @@
 ﻿/*
-ZZALOG - Amateur Radio Log
-© - Copyright 2017, Philip Rose, GM3ZZA
-All Rights Reserved
+	Copyright 2017-2026, Philip Rose, GM3ZZA
+	
+    This file is part of ZZACOMMON.
 
-zc_utils.h - various utility methods
+    ZZACOMMON is free software: you can redistribute it and/or modify it under the
+	terms of the Lesser GNU General Public License as published by the Free Software
+	Foundation, either version 3 of the License, or (at your option) any later version.
+
+    ZZACOMMON is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+	without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+	PURPOSE. See the GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along with ZZACOMMON. 
+	If not, see <https://www.gnu.org/licenses/>. 
+
 */
+
 #ifndef __UTILS__
 #define __UTILS__
 
@@ -17,10 +28,9 @@ zc_utils.h - various utility methods
 #include <FL/Fl_Widget.H>
 
 
-//! \file 
+//! \file zc_utils.h
 //! This file provides a number of common utility methods
-
-//! Utility methods, types and variables.
+//! types and variables.
 namespace zc {
 
 
