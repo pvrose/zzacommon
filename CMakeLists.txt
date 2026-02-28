@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 ## Library zzacommon. 
-project(ZZACOMMON VERSION 1.0.3)
+project(ZZACOMMON VERSION 1.0.4.1)
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
 set (TARGET zzacommon)
 
@@ -32,6 +32,9 @@ if (NOT APP_NAME)
 endif()
 if (NOT APP_VENDOR)
   set(APP_VENDOR "GM3ZZA")
+endif()
+if (NOT APP_SOURCE_DIR) 
+  set(APP_SOURCE_DIR ${ZZACOMMON_SOURCE_DIR})
 endif()
 configure_file(
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h.in
@@ -94,10 +97,13 @@ endif()
 
 # Find fltk
 # MSVC work-round as FLTK built in user.
-if (NOT FLTK_DIR AND MSVC)
-  set(FLTK_DIR "${USER_HOME_DIR}\\source\\repos\\fltk\\build")
+if(MSVC)
+if (NOT FLTK_DIR)
+  message(FATAL_ERROR "Please set FLTK_DIR") 
+else()
+  message(STATUS "Using FLTK_DIR: ${FLTK_DIR}")
 endif()
-set(CMAKE_MODULE_PATH ../ ./)
+endif()
 find_package(FLTK CONFIG)
 if (FLTK_FOUND)
   message(STATUS "FLTK found: ${FLTK_VERSION}")
@@ -109,7 +115,10 @@ endif()
 
 # libboost
 if (MSVC)
-  find_package(Boost CONFIG REQUIRED COMPONENTS filesystem system)
+  find_package(Boost 1.89.0 CONFIG COMPONENTS filesystem)
+  if (NOT Boost_FOUND) 
+    find_package(Boost CONFIG REQUIRED COMPONENTS filesystem system)
+  endif()
 else()
   find_package(Boost CONFIG REQUIRED COMPONENTS ALL)
 endif()
@@ -159,14 +168,18 @@ target_sources(${TARGET}
 )
 
 # generate API documentation
-message(STATUS "ZZACOMMON: Adding API documentation")
-add_subdirectory(api)
-add_dependencies(${TARGET} zzacommon_api_html)
-
+if (ZZACOMMON_DOX)
+  message(STATUS "ZZACOMMON: Adding API documentation")
+  add_subdirectory(api)
+  add_dependencies(${TARGET} zzacommon_api_html)
+endif()
 
 #if (MSVC)
 #else()
   if (BUILD_SHARED_LIBS)
     install(TARGETS ${TARGET})
+  endif()
+  if (MSVC)
+    install(IMPORTED_RUNTIME_ARTIFACTS ${Boost_LIBRARIES})
   endif()
 #endif()

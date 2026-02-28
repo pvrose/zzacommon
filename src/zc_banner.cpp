@@ -47,17 +47,17 @@
 
 const int NUMBER_STYLES = 10;
 const double PROGRESS_INCREMENT = 0.01;
-const Fl_Text_Display::Style_Table_Entry style_table_[NUMBER_STYLES] = {
-	{ STATUS_COLOURS.at(ST_NONE).fg, FL_COURIER, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_NONE).bg },
-	{ STATUS_COLOURS.at(ST_LOG).fg, FL_COURIER, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_LOG).bg },
-	{ STATUS_COLOURS.at(ST_DEBUG).fg, FL_COURIER, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_DEBUG).bg },
-	{ STATUS_COLOURS.at(ST_NOTE).fg, FL_COURIER, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_NOTE).bg },
-	{ STATUS_COLOURS.at(ST_PROGRESS).fg, FL_COURIER, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_PROGRESS).bg,},
-	{ STATUS_COLOURS.at(ST_OK).fg, FL_COURIER, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_OK).bg },
-	{ STATUS_COLOURS.at(ST_WARNING).fg, FL_COURIER, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_WARNING).bg },
-	{ STATUS_COLOURS.at(ST_ERROR).fg, FL_COURIER, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_ERROR).bg },
-	{ STATUS_COLOURS.at(ST_SEVERE).fg, FL_COURIER, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_SEVERE).bg },
-	{ STATUS_COLOURS.at(ST_FATAL).fg, FL_COURIER, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_FATAL).bg }
+Fl_Text_Display::Style_Table_Entry style_table_[NUMBER_STYLES] = {
+	{ STATUS_COLOURS.at(ST_NONE).fg, FL_SCREEN, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_NONE).bg },
+	{ STATUS_COLOURS.at(ST_LOG).fg, FL_SCREEN, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_LOG).bg },
+	{ STATUS_COLOURS.at(ST_DEBUG).fg, FL_SCREEN, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_DEBUG).bg },
+	{ STATUS_COLOURS.at(ST_NOTE).fg, FL_SCREEN, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_NOTE).bg },
+	{ STATUS_COLOURS.at(ST_PROGRESS).fg, FL_SCREEN, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_PROGRESS).bg,},
+	{ STATUS_COLOURS.at(ST_OK).fg, FL_SCREEN, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_OK).bg },
+	{ STATUS_COLOURS.at(ST_WARNING).fg, FL_SCREEN, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_WARNING).bg },
+	{ STATUS_COLOURS.at(ST_ERROR).fg, FL_SCREEN, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_ERROR).bg },
+	{ STATUS_COLOURS.at(ST_SEVERE).fg, FL_SCREEN, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_SEVERE).bg },
+	{ STATUS_COLOURS.at(ST_FATAL).fg, FL_SCREEN, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_FATAL).bg }
 };
 
 extern std::string COPYRIGHT;
@@ -69,7 +69,7 @@ std::thread::id main_thread_id_ = std::this_thread::get_id();
 zc_banner::zc_banner(int W, int H, const char* L) :
 	Fl_Double_Window(W, H, L)
 {
-	clear_modal_states();
+	// clear_modal_states();
 	// Set the ticker for 2 seconds
 	callback(cb_close);
 	create_form();
@@ -218,13 +218,13 @@ void zc_banner::add_message(status_t type, const char* msg, const char* ts) {
 	case ST_NOTE:
 	case ST_OK: 
 	case ST_WARNING:
+	case ST_ERROR:
 	{
 		op_msg_low_->value(msg);
 		op_msg_low_->color(STATUS_COLOURS.at(type).bg);
 		op_msg_low_->textcolor(STATUS_COLOURS.at(type).fg);
 		break;
 	}
-	case ST_ERROR:
 	case ST_SEVERE:
 	case ST_FATAL:
 	{
@@ -373,4 +373,23 @@ void zc_banner::copy_msg_display(status_t type, const char* msg, const char* ts)
 // Set closing
 void zc_banner::close() {
 	closing_ = true;
+}
+
+// Set font in font table
+void zc_banner::font(Fl_Font f, Fl_Fontsize sz) {
+	for (size_t ix = 0; ix < NUMBER_STYLES; ix++) {
+		style_table_[ix].font = f;
+		style_table_[ix].size = sz;
+	}
+	redraw();
+}
+
+// Get font 
+Fl_Font zc_banner::font() {
+	return style_table_[0].font;
+}
+
+// Get font size
+Fl_Fontsize zc_banner::fontsize() {
+	return style_table_[0].size;
 }
