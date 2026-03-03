@@ -366,7 +366,9 @@ void zc_file_holder::remember_timestamp(uint8_t type, const std::string& filenam
 bool zc_file_holder::on_different_drive(const std::string& filename) const {
 	boost::filesystem::path exec_path(exec_directory_);
 	boost::filesystem::path file_path(filename);
-	if (exec_path.parent_path() == file_path.parent_path()) {
+	while (exec_path.parent_path() != exec_path.root_path()) exec_path = exec_path.parent_path();
+	while (file_path.parent_path() != file_path.root_path()) file_path = file_path.parent_path();
+	if (exec_path == file_path) {
 		return false;
 	}
 	else {
