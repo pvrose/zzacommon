@@ -69,6 +69,7 @@ public:
     //! \param name The name of the object.
 	//! \param value Reference to where the data will be stored.
 	//! \param def Default value in the absence of data in the settings file.
+	//! \return Returns true if item existed.
 	template <class T>
 	bool get(std::string name, T& value, const T& def) {
 		bool exists = true;

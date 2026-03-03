@@ -169,6 +169,9 @@ public:
 	//! \brief Get timestamp for the file \p type.
 	std::chrono::system_clock::time_point timestamp(uint8_t type) const;
 
+	//! \brief File \p filename is on a different drive from executable
+	bool on_different_drive(const std::string& filename) const;
+
 protected:
 
 	//! Copy source to working.

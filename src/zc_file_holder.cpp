@@ -361,3 +361,15 @@ void zc_file_holder::remember_timestamp(uint8_t type, const std::string& filenam
 		}
 	}
 }
+
+// File is on a different drive than the executable
+bool zc_file_holder::on_different_drive(const std::string& filename) const {
+	boost::filesystem::path exec_path(exec_directory_);
+	boost::filesystem::path file_path(filename);
+	if (exec_path.parent_path() == file_path.parent_path()) {
+		return false;
+	}
+	else {
+		return true;
+	}
+}
