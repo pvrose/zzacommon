@@ -169,7 +169,10 @@ public:
 	//! \brief Get timestamp for the file \p type.
 	std::chrono::system_clock::time_point timestamp(uint8_t type) const;
 
-	//! \brief File \p filename is on a different drive from executable
+	//! \brief File \p filename is on a different drive from executable.
+	//! This algorithm tends towards providing false positives. 
+	//! Linux:  /home will be considered different from /usr as well as /cloud.
+	//! Windows: C:\\Users is different fron C:\\Program Data as well as Z:\\Data.
 	bool on_different_drive(const std::string& filename) const;
 
 protected:
