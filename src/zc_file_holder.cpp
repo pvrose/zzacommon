@@ -291,7 +291,7 @@ bool zc_file_holder::copy_source_to_git(uint8_t type) const {
 		return false;
 	}
 	else {
-		snprintf(msg, sizeof(msg), "File Copied %s to %s", source.c_str(), git.c_str());
+		snprintf(msg, sizeof(msg), "FILE: Copied %s to %s", source.c_str(), git.c_str());
 		if (status_) status_->misc_status(ST_NOTE, msg);
 	}
 	//char msg[256];
@@ -319,7 +319,7 @@ bool zc_file_holder::copy_working_to_source(uint8_t type) const {
 		return false;
 	}
 	else {
-		snprintf(msg, sizeof(msg), "File Copied %s to %s", working.c_str(), source.c_str());
+		snprintf(msg, sizeof(msg), "FILE: Copied %s to %s", working.c_str(), source.c_str());
 		if (status_) status_->misc_status(ST_NOTE, msg);
 	}
 	//char msg[256];
