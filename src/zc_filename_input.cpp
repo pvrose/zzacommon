@@ -73,6 +73,8 @@ void zc_filename_input::cb_button(Fl_Widget* w, void* v) {
         chooser->directory(filename.c_str());
     }
     chooser->preset_file(zc::terminal(filename).c_str());
+	// Add the option to create a folder.
+	chooser->options(Fl_Native_File_Chooser::NEW_FOLDER);
     // Now display the dialog
     switch(chooser->show()) {
         case 0: 
