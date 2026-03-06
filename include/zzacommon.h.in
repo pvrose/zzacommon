@@ -21,7 +21,7 @@
 #include <string>
 
 /*!
-\mainpage API Documentation
+\mainpage ZZACOMMON API Documentation
 
 ZZACOMMON is a library of useful methods and classes developed for ZZALOG but
 that have been generalised for use with other projects.
