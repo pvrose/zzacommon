@@ -35,6 +35,9 @@ zc_ticker::zc_ticker() {
 // Destructor
 void zc_ticker::stop_all() {
     Fl::remove_timeout(cb_ticker);
+	// We need to lock here to avoid the possibility of the 
+	// ticker callback being active while we are deleting the tickers.
+	stop_lock_.lock();
     for( auto it = tickers_.begin(); it != tickers_.end(); it++) {
         delete *it;
     };
@@ -87,6 +90,8 @@ void zc_ticker::activate_ticker(void* object, bool active) {
 // Call back - check tickers
 void zc_ticker::cb_ticker(void * v) {
     zc_ticker* that = (zc_ticker*)v;
+	// We need lock against the ticker data being deleted while we are processing it.
+	that->stop_lock_.lock();
     that->tick_count_++;
     for (auto it = that->tickers_.begin(); it != that->tickers_.end(); it++) {
         // Send ticks to all who need it at this time
@@ -97,6 +102,7 @@ void zc_ticker::cb_ticker(void * v) {
             }
         }
     }
+	that->stop_lock_.unlock();
     // Now repeat timer
     Fl::repeat_timeout(TICK, cb_ticker, v);
 }

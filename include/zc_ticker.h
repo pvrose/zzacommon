@@ -18,6 +18,7 @@
 #pragma once
 
 #include <cstdint>
+#include <mutex>
 #include <vector>
 
 
@@ -76,5 +77,8 @@ class zc_ticker {
     
     //! Current time (in units of 100 milliseconds since started).
     unsigned int tick_count_;
+
+	//! Lock to coordinate stopping of ticker and processing of ticks.
+	std::mutex stop_lock_;
     
 };
