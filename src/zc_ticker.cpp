@@ -42,6 +42,7 @@ void zc_ticker::stop_all() {
         delete *it;
     };
     tickers_.clear();
+	stop_lock_.unlock();
 }
 
 zc_ticker::~zc_ticker() {
