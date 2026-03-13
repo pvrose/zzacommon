@@ -7,4 +7,4 @@
 /build
 
 /include/zzacommon.h
-src/ident.cpp
+src/zc_app.cpp
