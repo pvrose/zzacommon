@@ -22,10 +22,7 @@
 std::string zc_app::APP_NAME = "ZC_TEST";
 std::string zc_app::APP_VERSION = "1.0.6";
 std::string zc_app::APP_VENDOR = "GM3ZZA";
-std::string zc_app::APP_TIMESTAMP = "2026-03-13T20:58:48Z";
-
-const zc_app::debug_flag DEBUG_QUICK = 0x0001;
-const zc_app::debug_flag DEBUG_NEXT = DEBUG_QUICK << 1;
+std::string zc_app::APP_TIMESTAMP = "2026-03-13T21:07:04Z";
 
 zc_app::debug_flag zc_app::debug_flags_ = 0;
 

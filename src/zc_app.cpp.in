@@ -24,8 +24,5 @@ std::string zc_app::APP_VERSION = "@APP_VERSION@";
 std::string zc_app::APP_VENDOR = "@APP_VENDOR@";
 std::string zc_app::APP_TIMESTAMP = "@APP_TIMESTAMP@";
 
-const zc_app::debug_flag DEBUG_QUICK = 0x0001;
-const zc_app::debug_flag DEBUG_NEXT = DEBUG_QUICK << 1;
-
 zc_app::debug_flag zc_app::debug_flags_ = 0;
 

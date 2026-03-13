@@ -55,4 +55,5 @@ private:
 };
 
 //! \brief Next spate debug flag
-extern const zc_app::debug_flag DEBUG_NEXT;
+const zc_app::debug_flag DEBUG_QUICK = 1 << 0;
+const zc_app::debug_flag DEBUG_NEXT = DEBUG_QUICK << 1;
