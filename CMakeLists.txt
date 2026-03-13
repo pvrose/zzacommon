@@ -42,8 +42,8 @@ configure_file(
   @ONLY
 )
 configure_file(
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_apps.cpp.in
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_apps.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_app.cpp.in
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_app.cpp
   @ONLY
 )
 
@@ -51,7 +51,7 @@ message(STATUS "ZZACOMMON for parent ${APP_NAME}")
 
 # Source files
 set(ZZACOMMON_CPPFILES 
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_apps.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_app.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_banner.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar_input.cpp
