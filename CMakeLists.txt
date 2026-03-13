@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 ## Library zzacommon. 
-project(ZZACOMMON VERSION 1.0.5)
+project(ZZACOMMON VERSION 1.0.6)
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
 set (TARGET zzacommon)
 
@@ -28,7 +28,7 @@ if (NOT APP_VERSION)
   set(APP_VERSION ${ZZACOMMON_VERSION})
 endif()
 if (NOT APP_NAME)
-  set(APP_NAME "UNNAMED")
+  set(APP_NAME "ZC_TEST")
 endif()
 if (NOT APP_VENDOR)
   set(APP_VENDOR "GM3ZZA")
@@ -41,11 +41,17 @@ configure_file(
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h
   @ONLY
 )
+configure_file(
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_apps.cpp.in
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_apps.cpp
+  @ONLY
+)
 
 message(STATUS "ZZACOMMON for parent ${APP_NAME}")
 
 # Source files
 set(ZZACOMMON_CPPFILES 
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_apps.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_banner.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar_input.cpp
@@ -66,6 +72,7 @@ set(ZZACOMMON_CPPFILES
 
 # Header files - used as dependencies for API documentation
 set(ZZACOMMON_HPPFILES
+  ${ZZACOMMON_INCLUDE_DIR}/zc_app.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_banner.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_button_input.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_calendar.h

@@ -41,8 +41,6 @@
 #include <FL/Fl_Tree_Item.H>
 #include <FL/Fl_Widget.H>
 
-extern bool DEBUG_ERRORS;
-
 //! General purpose callbacks for FLTK widgets.
 namespace zc {
 

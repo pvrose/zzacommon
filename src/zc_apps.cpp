@@ -1,0 +1,31 @@
+/*
+	Copyright 2026, Philip Rose, GM3ZZA
+
+	This file is part of ZZACOMMON.
+
+	ZZACOMMON is free software: you can redistribute it and/or modify it under the
+	terms of the Lesser GNU General Public License as published by the Free Software
+	Foundation, either version 3 of the License, or (at your option) any later version.
+
+	ZZACOMMON is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+	without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+	PURPOSE. See the GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License along with ZZACOMMON.
+	If not, see <https://www.gnu.org/licenses/>.
+
+*/
+#include "zc_app.h"
+
+#include <string>
+
+std::string zc_app::APP_NAME = "ZC_TEST";
+std::string zc_app::APP_VERSION = "1.0.6";
+std::string zc_app::APP_VENDOR = "GM3ZZA";
+std::string zc_app::APP_TIMESTAMP = "2026-03-13T20:54:15Z";
+
+const zc_app::debug_flag DEBUG_QUICK = 0x0001;
+const zc_app::debug_flag DEBUG_NEXT = DEBUG_QUICK << 1;
+
+zc_app::debug_flag zc_app::debug_flags_ = 0;
+
