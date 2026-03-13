@@ -24,7 +24,7 @@
 #include <FL/Fl.H>
 
 const double TICK = 0.1;
-extern const zc_app::debug_flag DEBUG_QUICK;
+extern debug_flag DEBUG_QUICK;
 
 // Constructor
 zc_ticker::zc_ticker() {

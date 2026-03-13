@@ -19,10 +19,13 @@
 
 #include <string>
 
-std::string zc_app::APP_NAME = "ZC_TEST";
-std::string zc_app::APP_VERSION = "1.0.6";
+std::string zc_app::APP_NAME = "ZZALOG";
+std::string zc_app::APP_VERSION = "3.6.15.1";
 std::string zc_app::APP_VENDOR = "GM3ZZA";
-std::string zc_app::APP_TIMESTAMP = "2026-03-13T21:07:04Z";
+std::string zc_app::APP_TIMESTAMP = "2026-03-13T22:46:10Z";
 
-zc_app::debug_flag zc_app::debug_flags_ = 0;
+debug_flag zc_app::debug_flags_ = 0;
+//! \brief Next spate debug flags
+debug_flag DEBUG_QUICK = 1 << 0;
+debug_flag DEBUG_NEXT = DEBUG_QUICK << 1;
 
