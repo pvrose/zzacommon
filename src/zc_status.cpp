@@ -17,6 +17,7 @@
 */
 #include "zc_status.h"
 
+#include "zc_app.h"
 #include "zc_banner.h"
 #include <zc_drawing.h>
 #include "zc_file_holder.h"
@@ -38,7 +39,7 @@
 
 extern std::string APP_NAME;
 extern std::string APP_VERSION;
-extern bool DEVELOPMENT_MODE;
+extern debug_flag DEBUG_DEVELOPMENT;
 
 // Constructor
 zc_status::zc_status(uint8_t features, const object_data_map& data_map) :
@@ -57,7 +58,7 @@ zc_status::zc_status(uint8_t features, const object_data_map& data_map) :
 		// Create banner
 		banner_ = new zc_banner(400, 200);
 		std::string title = APP_NAME + " " + APP_VERSION;
-		if (DEVELOPMENT_MODE) title += " DEVT";
+		if (zc_app::debug(DEBUG_DEVELOPMENT)) title += " DEVT";
 		banner_->copy_label(title.c_str());
 
 	}

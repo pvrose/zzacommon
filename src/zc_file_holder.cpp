@@ -17,6 +17,7 @@
 */
 #include "zc_file_holder.h"
 
+#include "zc_app.h"
 #include "zc_status.h"
 #include "zc_utils.h"
 
@@ -41,7 +42,7 @@ uint32_t DEBUG_RESET_CONFIG = 0;
 extern std::string APP_VENDOR;
 extern std::string APP_NAME;
 extern std::string APP_SOURCE_DIR;
-extern bool DEVELOPMENT_MODE;
+extern debug_flag DEBUG_DEVELOPMENT;
 //! File control datra
 
 
@@ -65,9 +66,9 @@ zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_co
 	std::string logo = get_filename(FILE_ICON_ZZA);
 	Fl_PNG_Image* ilog = new Fl_PNG_Image(logo.c_str());
 	if (ilog && !ilog->fail()) {
-		DEVELOPMENT_MODE = true;
+		zc_app::set_debug(DEBUG_DEVELOPMENT);
 	} else {
-		DEVELOPMENT_MODE = false;
+		zc_app::clear_debug(DEBUG_DEVELOPMENT);
 #ifdef _WIN32
 		default_source_directory_ += "..\\etc\\";
 #else
