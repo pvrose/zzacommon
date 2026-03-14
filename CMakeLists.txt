@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 ## Library zzacommon. 
-project(ZZACOMMON VERSION 1.0.6)
+project(ZZACOMMON VERSION 1.0.7)
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
 set (TARGET zzacommon)
 
