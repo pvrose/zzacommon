@@ -43,7 +43,7 @@ configure_file(
 )
 
 string(TOLOWER ${APP_NAME} APP_NAME_LOWER)
-set(ZC_APP_TARGET zc_a_${APP_NAME_LOWER})
+set(ZC_APP_LIBRARY zc_a_${APP_NAME_LOWER})
 
 message(STATUS "ZZACOMMON for parent ${APP_NAME}")
 
@@ -147,7 +147,7 @@ set(CMAKE_MODULE_PATH ../)
 
 ## Target is libzzacommon
 add_library(${TARGET} STATIC)
-add_library(${ZC_APP_TARGET} STATIC)
+add_library(${ZC_APP_LIBRARY} STATIC)
 
 ## Set include files.
 target_include_directories(${TARGET} PRIVATE 
@@ -161,7 +161,7 @@ if (MSVC)
     ${USER_HOME_DIR}\\source\\repos\\json\\include
   )
 endif()
-target_include_directories(${ZC_APP_TARGET} PRIVATE
+target_include_directories(${ZC_APP_LIBRARY} PRIVATE
   ${ZZACOMMON_INCLUDE_DIR}
 )
 target_link_libraries(${TARGET}
@@ -175,7 +175,7 @@ if (NOT PROJECT_IS_TOP_LEVEL)
   set(ZZACOMMON_HPPFILES ${ZZACOMMON_HPPFILES} PARENT_SCOPE)
   set(ZZACOMMON_LIBRARIES zzacommon PARENT_SCOPE)
   set(ZZACOMMON_VERSION ${ZZACOMMON_VERSION} PARENT_SCOPE)
-  set(ZC_APP_TARGET ${ZC_APP_TARGET} PARENT_SCOPE)
+  set(ZC_APP_LIBRARY ${ZC_APP_LIBRARY} PARENT_SCOPE)
   set(FLTK_INCLUDE_DIR ${FLTK_INCLUDE_DIR} PARENT_SCOPE)
 endif()
 
@@ -184,7 +184,7 @@ target_sources(${TARGET}
   PRIVATE 
     ${ZZACOMMON_CPPFILES}
 )
-target_sources(${ZC_APP_TARGET}
+target_sources(${ZC_APP_LIBRARY}
   PRIVATE
     ${ZZACOMMON_SOURCE_DIR}/src/zc_app.cpp
 )
