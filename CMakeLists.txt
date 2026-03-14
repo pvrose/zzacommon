@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.21)
 
 ## Library zzacommon. 
 project(ZZACOMMON VERSION 1.0.6)
@@ -36,11 +36,6 @@ endif()
 if (NOT APP_SOURCE_DIR) 
   set(APP_SOURCE_DIR ${ZZACOMMON_SOURCE_DIR})
 endif()
-configure_file(
-  ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h.in
-  ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h
-  @ONLY
-)
 configure_file(
   ${ZZACOMMON_SOURCE_DIR}/src/zc_app.cpp.in
   ${ZZACOMMON_SOURCE_DIR}/src/zc_app.cpp
@@ -80,6 +75,7 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_calendar_table.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_callback.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_drawing.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_fft.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_file_holder.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_filename_input.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph.h
@@ -92,7 +88,6 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_ticker.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_utils.h
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_fft.h
 )
 
 # set compiler options
@@ -155,20 +150,17 @@ target_link_libraries(${TARGET}
 )
 
 ## Export include directories
-set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_INCLUDE_DIR} PARENT_SCOPE)
-set(ZZACOMMON_HPPFILES ${ZZACOMMON_HPPFILES} PARENT_SCOPE)
-set(ZZACOMMON_LIBRARIES zzacommon PARENT_SCOPE)
-set(FLTK_INCLUDE_DIR ${FLTK_INCLUDE_DIR} PARENT_SCOPE)
+if (NOT PROJECT_IS_TOP_LEVEL)
+  set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_INCLUDE_DIR} PARENT_SCOPE)
+  set(ZZACOMMON_HPPFILES ${ZZACOMMON_HPPFILES} PARENT_SCOPE)
+  set(ZZACOMMON_LIBRARIES zzacommon PARENT_SCOPE)
+  set(FLTK_INCLUDE_DIR ${FLTK_INCLUDE_DIR} PARENT_SCOPE)
+endif()
 
 # Set sources.
 target_sources(${TARGET} 
   PRIVATE 
     ${ZZACOMMON_CPPFILES}
-#  PUBLIC 
-#    FILE_SET common_headers
-#    TYPE HEADERS
-#    BASE_DIRS ./include
-#    FILES ${ZZACOMMON_HPPFILES}
 )
 
 # generate API documentation

@@ -28,11 +28,6 @@ class zc_app {
 
 public:
 
-	static std::string APP_NAME;    //!< The name of the application
-	static std::string APP_VERSION; //!< The version of the application
-	static std::string APP_VENDOR;  //!< The vendor of the application
-	static std::string APP_TIMESTAMP;  //!< The build timestamp of the application	
-
 	//! \brief Returns true if the debug flag is set.
 	static bool debug(debug_flag flag) {
 		return (debug_flags_ & flag) != 0;
