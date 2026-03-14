@@ -56,11 +56,16 @@ set(ZZACOMMON_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_input_hierch.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_password_input.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_rpc_data_item.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_rpc_handler.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_serial.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_settings.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_socket_server.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_status.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_symbols.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_tabs_nonav.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_ticker.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_url_handler.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_utils.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_fft.cpp
 )
@@ -81,11 +86,16 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_input_hierch.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_password_input.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_rpc_data_item.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_rpc_handler.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_serial.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_settings.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_socket_server.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_status.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_symbols.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_tabs_nonav.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_ticker.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_url_handler.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_utils.h
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h
 )
@@ -127,6 +137,9 @@ if (Boost_FOUND)
   message(STATUS "Boost includes: ${Boost_INCLUDE_DIRS}")
 endif()
 
+# TODO Make External Project?
+add_subdirectory(pugixml)
+
 set(CMAKE_MODULE_PATH ../)
 
 ## Target is libzzacommon
@@ -137,6 +150,7 @@ target_include_directories(${TARGET} PRIVATE
   ${ZZACOMMON_INCLUDE_DIR}
   ${FLTK_INCLUDE_DIR}
   ${Boost_INCLUDE_DIRS}
+  ${pugixml_INCLUDE_DIR}
 )
 if (MSVC)
   target_include_directories(${TARGET} PRIVATE
