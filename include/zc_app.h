@@ -17,6 +17,7 @@
 */
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 //! \file zc_app.h
