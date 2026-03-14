@@ -46,7 +46,7 @@ message(STATUS "ZZACOMMON for parent ${APP_NAME}")
 
 # Source files
 set(ZZACOMMON_CPPFILES 
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_app.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_app.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_banner.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar_input.cpp
@@ -144,6 +144,7 @@ set(CMAKE_MODULE_PATH ../)
 
 ## Target is libzzacommon
 add_library(${TARGET} STATIC)
+add_library(zc_app STATIC)
 
 ## Set include files.
 target_include_directories(${TARGET} PRIVATE 
@@ -157,7 +158,9 @@ if (MSVC)
     ${USER_HOME_DIR}\\source\\repos\\json\\include
   )
 endif()
-
+target_include_directories(zc_app PRIVATE
+  ${ZZACOMMON_INCLUDE_DIR}
+)
 target_link_libraries(${TARGET}
   ${Boost_LIBRARIES}
   ${FLTK_LIBRARIES}
@@ -176,6 +179,10 @@ endif()
 target_sources(${TARGET} 
   PRIVATE 
     ${ZZACOMMON_CPPFILES}
+)
+target_sources(zc_app
+  PRIVATE
+    ${ZZACOMMON_SOURCE_DIR}/src/zc_app.cpp
 )
 
 # generate API documentation
