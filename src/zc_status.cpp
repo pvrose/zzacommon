@@ -37,6 +37,7 @@
 #include <FL/fl_ask.H>
 #include <FL/fl_utf8.h>
 
+zc_status* status_ = nullptr;
 extern std::string APP_NAME;
 extern std::string APP_VERSION;
 extern debug_flag DEBUG_DEVELOPMENT;
