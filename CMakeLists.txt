@@ -43,7 +43,7 @@ configure_file(
 )
 
 string(TOLOWER ${APP_NAME} APP_NAME_LOWER)
-set(ZC_APP_LIBRARY zc_a_${APP_NAME_LOWER})
+set(ZC_APP_LIBRARY zc_${APP_NAME_LOWER})
 
 message(STATUS "ZZACOMMON for parent ${APP_NAME}")
 
