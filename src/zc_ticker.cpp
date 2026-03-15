@@ -38,16 +38,16 @@ void zc_ticker::stop_all() {
     Fl::remove_timeout(cb_ticker);
 	// We need to lock here to avoid the possibility of the 
 	// ticker callback being active while we are deleting the tickers.
-	stop_lock_.lock();
     for( auto it = tickers_.begin(); it != tickers_.end(); it++) {
         delete *it;
     };
     tickers_.clear();
-	stop_lock_.unlock();
 }
 
 zc_ticker::~zc_ticker() {
+	stop_lock_.lock();
     stop_all();
+	stop_lock_.unlock();
 }
 
 // Add zc_ticker
