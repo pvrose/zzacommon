@@ -25,6 +25,7 @@
 
 const double TICK = 0.1;
 extern debug_flag DEBUG_QUICK;
+zc_ticker* ticker_ = nullptr;
 
 // Constructor
 zc_ticker::zc_ticker() {

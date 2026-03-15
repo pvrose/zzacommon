@@ -82,3 +82,5 @@ class zc_ticker {
 	std::mutex stop_lock_;
     
 };
+
+extern zc_ticker* ticker_;

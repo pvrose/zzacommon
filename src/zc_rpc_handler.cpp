@@ -37,6 +37,7 @@
 extern debug_flag DEBUG_XMLRPC;
 extern std::string APP_NAME;
 extern std::string APP_VERSION;
+static zc_rpc_handler* rpc_handler_ = nullptr;
 
 // Constructor
 zc_rpc_handler::zc_rpc_handler(std::string address, int port_number, std::string resource_name)

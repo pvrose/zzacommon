@@ -148,4 +148,7 @@ class zc_url_handler;
 		zc_url_handler* url_handler_;
 
 	};
+
+	extern zc_rpc_handler* rpc_handler_;
+
 #endif

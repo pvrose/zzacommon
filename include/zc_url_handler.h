@@ -121,4 +121,7 @@
 		//! Lock to ensure only 1 CURL operation at once
 		static std::recursive_mutex lock_;
 	};
+
+	extern zc_url_handler* url_handler_;
+
 #endif

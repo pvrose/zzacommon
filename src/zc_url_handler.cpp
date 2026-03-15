@@ -34,6 +34,7 @@ extern debug_flag DEBUG_CURL;
 extern std::string APP_NAME;
 extern std::string APP_VERSION;
 std::string USER_AGENT = APP_NAME + '/' + APP_VERSION;
+zc_url_handler* url_handler_ = nullptr;
 
 // Make sure only one HTML transfer happens at once
 std::recursive_mutex zc_url_handler::lock_;
