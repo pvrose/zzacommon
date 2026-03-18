@@ -103,13 +103,6 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h
 )
 
-# set compiler options
-if (MSVC)
-#  add_compile_options(/MD)
-else()
-  add_compile_options(-g)
-endif()
-
 # Find fltk
 # MSVC work-round as FLTK built in user.
 if(MSVC)
@@ -140,6 +133,58 @@ if (Boost_FOUND)
   message(STATUS "Boost includes: ${Boost_INCLUDE_DIRS}")
 endif()
 
+# zlib (CURL dependency - needed for runtime DLL detection)
+if(MSVC)
+  # Try CONFIG mode first (vcpkg modern packages)
+  find_package(ZLIB CONFIG QUIET)
+
+  # If CONFIG mode fails, try MODULE mode
+  if(NOT ZLIB_FOUND)
+    find_package(ZLIB MODULE REQUIRED)
+    message(STATUS "ZLIB found via MODULE mode: ${ZLIB_VERSION_STRING}")
+  else()
+    message(STATUS "ZLIB found via CONFIG mode: ${ZLIB_VERSION}")
+  endif()
+
+  if(ZLIB_FOUND)
+    message(STATUS "ZLIB libraries: ${ZLIB_LIBRARIES}")
+
+    # Check if modern imported target exists
+    if(TARGET ZLIB::ZLIB)
+      message(STATUS "ZLIB::ZLIB imported target is available")
+    else()
+      message(STATUS "ZLIB::ZLIB target not available, will use variables")
+      # Create an imported target manually for consistency
+      if(NOT TARGET ZLIB::ZLIB AND ZLIB_LIBRARIES)
+        add_library(ZLIB::ZLIB UNKNOWN IMPORTED)
+        set_target_properties(ZLIB::ZLIB PROPERTIES
+          IMPORTED_LOCATION "${ZLIB_LIBRARIES}"
+        )
+        if(ZLIB_INCLUDE_DIRS)
+          set_target_properties(ZLIB::ZLIB PROPERTIES
+            INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIRS}"
+          )
+        endif()
+        message(STATUS "Created ZLIB::ZLIB imported target manually")
+      endif()
+    endif()
+  endif()
+endif()
+
+# libcurl 
+if(MSVC)
+  find_package(CURL CONFIG REQUIRED)
+else()
+  find_package(CURL REQUIRED)
+endif()
+if (CURL_FOUND)
+  message(STATUS "CURL found: ${CURL_VERSION}")
+  message(STATUS "CURL include dir: ${CURL_INCLUDE_DIR}")
+  message(STATUS "CURL libraries: ${CURL_LIBRARIES}")
+ else()
+  message(STATUS "CURL not found")
+endif()
+
 # TODO Make External Project?
 add_subdirectory(pugixml)
 
@@ -155,6 +200,7 @@ target_include_directories(${TARGET} PRIVATE
   ${FLTK_INCLUDE_DIR}
   ${Boost_INCLUDE_DIRS}
   ${pugixml_INCLUDE_DIR}
+  ${CURL_INCLUDE_DIRS}
 )
 if (MSVC)
   target_include_directories(${TARGET} PRIVATE
@@ -167,7 +213,22 @@ target_include_directories(${ZC_APP_LIBRARY} PRIVATE
 target_link_libraries(${TARGET}
   ${Boost_LIBRARIES}
   ${FLTK_LIBRARIES}
+  CURL::libcurl
 )
+
+# On MSVC, explicitly link ZLIB so it appears in TARGET_RUNTIME_DLLS
+if(MSVC AND ZLIB_FOUND)
+  if(TARGET ZLIB::ZLIB)
+    target_link_libraries(${TARGET} ZLIB::ZLIB)
+    message(STATUS "Linked ZLIB::ZLIB to ${TARGET}")
+  elseif(ZLIB_LIBRARIES)
+    # Fallback: use old-style variables if target doesn't exist
+    target_link_libraries(${TARGET} ${ZLIB_LIBRARIES})
+    message(STATUS "Linked ZLIB using variables: ${ZLIB_LIBRARIES}")
+  else()
+    message(WARNING "ZLIB found but no target or libraries available to link")
+  endif()
+endif()
 
 ## Export include directories
 if (NOT PROJECT_IS_TOP_LEVEL)
@@ -177,6 +238,8 @@ if (NOT PROJECT_IS_TOP_LEVEL)
   set(ZZACOMMON_VERSION ${ZZACOMMON_VERSION} PARENT_SCOPE)
   set(ZC_APP_LIBRARY ${ZC_APP_LIBRARY} PARENT_SCOPE)
   set(FLTK_INCLUDE_DIR ${FLTK_INCLUDE_DIR} PARENT_SCOPE)
+  set(VCPKG_TARGET_TRIPLET ${VCPKG_TARGET_TRIPLET} PARENT_SCOPE)
+  set(_VCPKG_INSTALLED_DIR ${_VCPKG_INSTALLED_DIR} PARENT_SCOPE)
 endif()
 
 # Set sources.
@@ -196,12 +259,17 @@ if (ZZACOMMON_DOX)
   add_dependencies(${TARGET} zzacommon_api_html)
 endif()
 
-#if (MSVC)
-#else()
-  if (BUILD_SHARED_LIBS)
-    install(TARGETS ${TARGET})
+# Installation rules
+if (BUILD_SHARED_LIBS)
+  install(TARGETS ${TARGET})
+endif()
+
+#[=[
+# Install runtime artifacts for distribution
+if (MSVC)
+  install(IMPORTED_RUNTIME_ARTIFACTS CURL::libcurl DESTINATION bin)
+  if (Boost_FOUND)
+    install(IMPORTED_RUNTIME_ARTIFACTS Boost::filesystem DESTINATION bin)
   endif()
-  if (MSVC)
-    install(IMPORTED_RUNTIME_ARTIFACTS ${Boost_LIBRARIES})
-  endif()
-#endif()
+endif()
+#]=]
