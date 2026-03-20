@@ -233,6 +233,12 @@ target_link_libraries(${TARGET}
   CURL::libcurl
 )
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(zlib_vcpkg_helper)
+if (MSVC)
+  find_zlib()
+endif(MSVC)
+
 # On MSVC, explicitly link ZLIB so it appears in TARGET_RUNTIME_DLLS
 if(MSVC AND ZLIB_FOUND)
   if(TARGET ZLIB::ZLIB)
