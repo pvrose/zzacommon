@@ -139,6 +139,7 @@ else()
 endif()
 
 # libboost
+message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 if (MSVC)
   find_package(Boost 1.85.0 CONFIG REQUIRED COMPONENTS filesystem)
 else()
@@ -153,6 +154,7 @@ endif()
 # zlib (CURL dependency - needed for runtime DLL detection)
 if(MSVC)
   # Try CONFIG mode first (vcpkg modern packages)
+  set(ZLIB_ROOT "${VCPKG_ROOT}/installed/x64-windows")
   find_package(ZLIB CONFIG QUIET)
 
   # If CONFIG mode fails, try MODULE mode
