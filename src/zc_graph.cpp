@@ -316,6 +316,8 @@ void zc_graph::draw_axes() {
 	int tx = dch - tw / 2;
 	int ty = y() + h() - 2;
 	fl_draw(x_options_.label.c_str(), tx, ty);
+
+	fl_pop_clip();
 }
 
 //! \brief Set value as data to display.
