@@ -18,9 +18,12 @@
 #pragma once
 
 #include <cstdint>
+#include <list>
+#include <map>
 #include <string>
 #include <vector>
 
+#include <FL/Enumerations.H>
 #include <FL/Fl_Rect.H>
 #include <FL/Fl_Widget.H>
 
@@ -52,10 +55,15 @@ public:
 	};
 
 	//! \brief Axis label multiplier
-	enum axis_xier_t {
+	enum axis_xier_t : uint8_t {
 		NONE,                       //!< No multipler - display values as is
 		SI_PREFIX,                  //!< Prefix label with SI multiplier, values between 0.1 and 100
 		POWER_10,                   //!< Prefix label with 10^N, values between 1 and 10.
+	};
+	//! \brief Y-axis identifier
+	enum y_axis_t : uint8_t {
+		Y_LEFT,                     //!< Left Y-axis
+		Y_RIGHT                     //!< Right Y-axis
 	};
 	//! \brief Graph axis options
 	struct options_t {
@@ -69,11 +77,42 @@ public:
 		int position_0;           //!< pixel position of 0 along the axis
 		float scale;              //!< Scale factor - Number of units per pixel
 		float inv_scale;          //!< Inverse scae factor - number of pixels per unit
+		std::string label;        //!< Label to display (base label plus multiplier if appropriate)
+		std::vector<tick_t> ticks; //!< Ticks to display
+
+		void set_ticks();         //!< Set the ticks and label based on the options
+
+		//! \brief. Normalise number to between 1 and 10 plus exponent
+		//! \param fin Input number
+		//! \param norm Normalised result
+		//! \param exp10 Exponent (power of 10)
+		//! \param si_prefix SI Prefix (if appropriate) - UTF-8 character
+		void normalise(float fin, float& norm, float& exp10, int& si_prefix);
+
+		//! \brief. Convert data point \p f from float to drawing position
+		int float_to_point(float f);
+
+
 	};
+
+	//! \brief Structure to describe a set of data points.
+	struct data_set_t {
+		y_axis_t y_axis;         //!< Y-axis to use for this data set
+		Fl_Color colour;         //!< Colour to use to draw this data set
+		int line_width;          //!< Line width to use to draw this data set
+		std::vector<coord>* data; //!< Data points - by reference to allow manipulation outwith display.
+	};
+
 	//! \brief Set parameters
 	//! \param x_options Options for displaying X-axis
 	//! \param y_options Options for displaying Y-axis
 	void set_params(const options_t& x_options, const options_t& y_options);
+
+	//! \brief Set parameters for double Y-axes
+	//! \param x_options Options for displaying X-axis
+	//! \param y_left_options Options for displaying left Y-axis
+	//! \param y_right_options Options for displaying right Y-axis
+	void set_params(const options_t& x_options, const options_t& y_left_options, const options_t& y_right_options);
 
 	//! \brief Set value as data to display.
 	//! It is intended that the data can be manipulated outwith display
@@ -83,9 +122,11 @@ public:
 	//! (25 or 30 frames/s).
 	void set_data(std::vector<coord>* data);
 
+	//! \brief Add a set of data to display.
+	//! \param data_set The data set to add.
+	void add_data_set(const data_set_t& data_set);
+
 protected:
-	//! \brief. Convert data point \p f from float to drawing position
-	int float_to_point(float f, const options_t& options);
 
 	//! \brief Returns true if the pixel at {\p x, \p y} is in the drawimg area
 	bool in_drawing_area(int x, int y);
@@ -105,37 +146,13 @@ protected:
 	////! \brief. Convert data to points
 	//void convert_data_to_points();
 
-	//! \brief. Normalise number to between 1 and 10 plus exponent
-	//! \param fin Input number
-	//! \param norm Normalised result
-	//! \param exp10 Exponent (power of 10)
-	//! \param si_prefix SI Prefix (if appropriate) - UTF-8 character
-	//! \param xier use of multplier
-	void normalise (float fin, float& norm, float& exp10, int& si_prefix, const axis_xier_t& xier);
-
-	//! Set the ticks
-	//! \param options - provides range and display options.
-	//! \param ticks - array of theticks to draw with their labels
-	//! \param label - drawn label
-	void set_ticks(const options_t& options, std::vector<tick_t>& ticks, std::string& label);
-
 	//! \brief The data to display.
-	std::vector<coord>* data_;
+	std::list<data_set_t> data_sets_;
 
-	//! Paarmeters for drawing the X values and axes.
+	//! Paarmeters for drawing the X values and axis.
 	options_t x_options_;
 	//! Parameters for drawing the Y values and axes.
-	options_t y_options_;
-
-	//! Drawn X-axis label
-	std::string x_label_;
-	//! Drawn Y-axis label
-	std::string y_label_;
-
-	//! Y-axis ticks
-	std::vector<tick_t> y_ticks_;
-	//! X-axis ticks
-	std::vector<tick_t> x_ticks_;
+	std::map<y_axis_t, options_t> y_options_;
 
 		//! Drawing area
 	Fl_Rect drawing_area_;
