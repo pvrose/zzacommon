@@ -52,8 +52,6 @@ static std::map<int, uint32_t> SI_PREFIXES = {
 zc_graph::zc_graph(int X, int Y, int W, int H, const char* L) :
 	Fl_Widget(X, Y, W, H, L)
 {
-	data_ = nullptr;
-	set_drawing_area();
 }
 
 zc_graph::~zc_graph() {
@@ -62,18 +60,38 @@ zc_graph::~zc_graph() {
 void zc_graph::set_params(const options_t& x_options, const options_t& y_options) 
 {
 	x_options_ = x_options;
-	y_options_ = y_options;
+	y_options_.clear();
+	y_options_[Y_LEFT] = y_options;
+	set_factors();
+}
+
+void zc_graph::set_params(const options_t& x_options, const options_t& y_left_options, const options_t& y_right_options) {
+	x_options_ = x_options;
+	y_options_[Y_LEFT] = y_left_options;
+	y_options_[Y_RIGHT] = y_right_options;
 	set_factors();
 }
 
 void zc_graph::set_drawing_area() {
+	// Booleans to show left and right Y-axes
+	bool show_left_axis = y_options_.find(Y_LEFT) != y_options_.end();
+	bool show_right_axis = y_options_.find(Y_RIGHT) != y_options_.end();
 	// See how much is needed for a label
 	fl_font(labelfont(), labelsize());
 	int dw = 0, dh = 0;
 	fl_measure("Dummy", dw, dh);
-	// Just leave one line of text - tick marks are inside area
-	int ax = x() + dh;
-	int aw = w() - dh;
+	// Set width of area.
+	int ax = x();
+	int aw = w();
+	// Leave space for left Y-axis label and tick labels if needed
+	if (show_left_axis) {
+		ax += dh;
+		aw -= dh;
+	}
+	// Leave space for right Y-axis label and tick labels if needed
+	if (show_right_axis) {
+		aw -= dh;
+	}
 	// Leave enough for label and outward (downward) tick labels
 	int ay = y();
 	int ah = h() - dh - dh;
@@ -81,30 +99,32 @@ void zc_graph::set_drawing_area() {
 }
 
 void zc_graph::set_factors() {
-	// Assumes drawing area has been set up.
+	set_drawing_area();
 	// Set X scaling factor (units per pixel)
 	float x_range = x_options_.maximum - x_options_.minimum;
 	x_options_.scale = x_range / drawing_area_.w();
 	x_options_.inv_scale = 1.0F / x_options_.scale;
 	// Set X origin
 	x_options_.position_0 = drawing_area_.x() + (x_options_.minimum * x_options_.inv_scale);
-	set_ticks(x_options_, x_ticks_, x_label_);
-	// And repeat for Y - Note increasing Y data value is decreasing pixel position
-	float y_range = y_options_.minimum - y_options_.maximum;
-	y_options_.scale = y_range / drawing_area_.h();
-	y_options_.inv_scale = 1.0F / y_options_.scale;
-	y_options_.position_0 = drawing_area_.y() - (y_options_.maximum * y_options_.inv_scale);
-	set_ticks(y_options_, y_ticks_, y_label_);
+	x_options_.set_ticks();
+	// And repeat for all Y - Note increasing Y data value is decreasing pixel position
+	for (auto& y_option : y_options_) {
+		float y_range = y_option.second.maximum - y_option.second.minimum;
+		y_option.second.scale = y_range / drawing_area_.h();
+		y_option.second.inv_scale = 1.0F / y_option.second.scale;
+		y_option.second.position_0 = drawing_area_.y() - (y_option.second.maximum * y_option.second.inv_scale);
+		y_option.second.set_ticks();
+	}
 }
 
-void zc_graph::set_ticks(const options_t& options, std::vector<tick_t>& ticks, std::string& label) {
+void zc_graph::options_t::set_ticks() {
 	// Now optimise the ticks - aim for a tick about every 20 pixels
-	float xtick = abs(options.suggested_gap * options.scale);
+	float xtick = abs(suggested_gap * scale);
 	float ntick;
 	float ptick;
 	int si_prefix = ' ';
-	normalise(xtick, ntick, ptick, si_prefix, options.xier_type);
-	switch (options.xier_type) {
+	normalise(xtick, ntick, ptick, si_prefix);
+	switch (xier_type) {
 	case SI_PREFIX:
 		// If 20 pixels is graeter that 7*10^N - set tick at 10^(N+1)
 		if (ntick > 70.0F) xtick = 100.0 * ptick;
@@ -142,34 +162,34 @@ void zc_graph::set_ticks(const options_t& options, std::vector<tick_t>& ticks, s
 	ticks.clear();
 	// Y < 0
 	float tick = -xtick;
-	while (tick >= options.minimum) {
+	while (tick >= minimum) {
 		char l[10];
-		if (tick <= options.maximum) {
-			snprintf(l, sizeof(l), "%g", options.xier_type == NONE ? tick : tick / ptick);
-			ticks.push_back({ float_to_point(tick, options), std::string(l)});
+		if (tick <= maximum) {
+			snprintf(l, sizeof(l), "%g", xier_type == NONE ? tick : tick / ptick);
+			ticks.push_back({ float_to_point(tick), std::string(l)});
 		}
 		tick -= xtick;
 	}
 	// Y > 0
 	tick = xtick;
-	while (tick <= options.maximum) {
+	while (tick <= maximum) {
 		char l[10];
-		if (tick >= options.minimum) {
-			snprintf(l, sizeof(l), "%g", options.xier_type == NONE ? tick : tick / ptick);
-			ticks.push_back({ float_to_point(tick, options), std::string(l) });
+		if (tick >= minimum) {
+			snprintf(l, sizeof(l), "%g", xier_type == NONE ? tick : tick / ptick);
+			ticks.push_back({ float_to_point(tick), std::string(l) });
 		}
 		tick += xtick;
 	}
 	char ll[128];
-	switch (options.xier_type) {
+	switch (xier_type) {
 	case SI_PREFIX:
-		snprintf(ll, sizeof(ll), "%c%s", si_prefix, options.base_label);
+		snprintf(ll, sizeof(ll), "%c%s", si_prefix, base_label);
 		break;
 	case POWER_10:
-		snprintf(ll, sizeof(ll), "\303\227%g %s", ptick, options.base_label);
+		snprintf(ll, sizeof(ll), "\303\227%g %s", ptick, base_label);
 		break;
 	case NONE:
-		strncpy(ll, options.base_label, sizeof(ll));
+		strncpy(ll, base_label, sizeof(ll));
 		break;
 	}
 	label = ll;
@@ -180,7 +200,6 @@ void zc_graph::resize(int X, int Y, int W, int H) {
 	// If we have actually resized...
 	if (X != x() || Y != y() || W != w() || H != h()) {
 		Fl_Widget::resize(X, Y, W, H);
-		set_drawing_area();
 		set_factors();
 //		convert_data_to_points();
 		redraw();
@@ -207,16 +226,20 @@ void zc_graph::draw_points() {
 	// Set FG colour
 	fl_color(color());
 
-	if (data_ && data_->size() > 1) {
-		for (size_t ix = 0; ix < data_->size() - 1; ix++) {
-			int x1 = float_to_point((*data_)[ix].x, x_options_);
-			int x2 = float_to_point((*data_)[ix + 1].x, x_options_);
-			int y1 = float_to_point((*data_)[ix].y, y_options_);
-			int y2 = float_to_point((*data_)[ix + 1].y, y_options_);
-			// If either end is in the drawing area...
-			if (in_drawing_area(x1, y1) || in_drawing_area(x2, y2)) {
-				// Draw the line between them - should be clipped at the edge of the area.
-				fl_line(x1, y1, x2, y2);
+	for (auto& data : data_sets_) {
+		fl_color(data.colour);
+		fl_line_style(0, data.line_width);
+		if (data.data && data.data->size() > 1) {
+			for (size_t ix = 0; ix < data.data->size() - 1; ix++) {
+				int x1 = x_options_.float_to_point((*data.data)[ix].x);
+				int x2 = x_options_.float_to_point((*data.data)[ix + 1].x);
+				int y1 = y_options_[data.y_axis].float_to_point((*data.data)[ix].y);
+				int y2 = y_options_[data.y_axis].float_to_point((*data.data)[ix + 1].y);
+				// If either end is in the drawing area...
+				if (in_drawing_area(x1, y1) || in_drawing_area(x2, y2)) {
+					// Draw the line between them - should be clipped at the edge of the area.
+					fl_line(x1, y1, x2, y2);
+				}
 			}
 		}
 	}
@@ -229,58 +252,91 @@ void zc_graph::draw_points() {
 void zc_graph::draw_axes() {
 	// Restrict the drawing area
 	fl_push_clip(x(), y(), w(), h());
-	// Draw the Y-axis
-	fl_color(FL_FOREGROUND_COLOR);
-	fl_line(x_options_.position_0, drawing_area_.y(), x_options_.position_0, drawing_area_.y() + drawing_area_.h());
-	// Draw the X-axis
-	fl_line(drawing_area_.x(), y_options_.position_0, drawing_area_.x() + drawing_area_.w(), y_options_.position_0);
-	// Now put the Y-axis
+	// Flagsto draw y-axes.
+	bool show_left_axis = y_options_.find(Y_LEFT) != y_options_.end();
+	bool show_right_axis = y_options_.find(Y_RIGHT) != y_options_.end();
+	// Tick width and height
 	int tw = 0;
 	int th = 0;
-	// Each tick extends into the drawing area
-	for (auto& l : y_ticks_) {
-		fl_line(x_options_.position_0, l.pos, x_options_.position_0 + 5, l.pos);
-		fl_measure(l.label.c_str(), tw, th);
-		fl_draw(l.label.c_str(), x_options_.position_0 + 5, l.pos + th / 2);
+	// Drawing area bounds
+	int dl = drawing_area_.x();
+	int dr = drawing_area_.x() + drawing_area_.w();
+	int dch = drawing_area_.x() + drawing_area_.w() / 2;
+	int dt = drawing_area_.y();
+	int db = drawing_area_.y() + drawing_area_.h();
+	int dcv = drawing_area_.y() + drawing_area_.h() / 2;
+	// Draw the left Y-axis
+	if (show_left_axis) {
+		fl_color(FL_FOREGROUND_COLOR);
+		fl_line(dl, dt, dl, db);
+		// Each tick extends into the drawing area
+		for (auto& l : y_options_[Y_LEFT].ticks) {
+			fl_line(dl, l.pos, dl + 5, l.pos);
+			fl_measure(l.label.c_str(), tw, th);
+			fl_draw(l.label.c_str(), dl + 5, l.pos + th / 2);
+		}
+		// Now add the Y- label
+		tw = 0;
+		th = 0;
+		fl_measure(y_options_[Y_LEFT].label.c_str(), tw, th);
+		// Position it in the middle of the axiis
+		fl_draw(90, y_options_[Y_LEFT].label.c_str(), dl - 1, dcv);
 	}
-	// Now add the Y- label
+	// Draw the right Y-axis
+	if (show_right_axis) {
+		fl_color(FL_FOREGROUND_COLOR);
+		fl_line(dr, dt, dr, db);
+		// Each tick extends into the drawing area
+		for (auto& l : y_options_[Y_RIGHT].ticks) {
+			fl_line(dr, l.pos, dr - 5, l.pos);
+			fl_measure(l.label.c_str(), tw, th);
+			fl_draw(l.label.c_str(), dr - 5 - tw, l.pos + th / 2);
+		}
+		// Now add the Y- label
+		tw = 0;
+		th = 0;
+		fl_measure(y_options_[Y_RIGHT].label.c_str(), tw, th);
+		// Position it in the middle of the axiis
+		fl_draw(90, y_options_[Y_RIGHT].label.c_str(), dr - 1, dcv);
+	}
+
+	// Draw the X-axis	
+	fl_line(dl, db, dr, db);
+	// Now put the Y-axis
 	tw = 0;
 	th = 0;
-	fl_measure(x_label_.c_str(), tw, th);
-	// Position it in the middle of the axiis
-	int tx = x_options_.position_0 - 1;
-	int ty = drawing_area_.y() + (drawing_area_.h() + tw) / 2;
-	fl_draw(90, y_label_.c_str(), tx, ty);
 	// Now add the X ticks
-	for (auto& l : x_ticks_) {
-		fl_line(l.pos, y_options_.position_0, l.pos, y_options_.position_0 + 5);
+	for (auto& l : x_options_.ticks) {
+		fl_line(l.pos, db, l.pos, db + 5);
 		fl_measure(l.label.c_str(), tw, th);
-		fl_draw(l.label.c_str(), l.pos - tw / 2, y_options_.position_0 + 5 + th);
+		fl_draw(l.label.c_str(), l.pos - tw / 2, db + 5 + th);
 	}
 	// Now add the X-label
-	fl_measure(x_label_.c_str(), tw, th);
-	tx = drawing_area_.x() + (drawing_area_.w() - tw) / 2;
-	ty = y() + h() - 2;
-	fl_draw(x_label_.c_str(), tx, ty);
-
-	fl_pop_clip();
+	fl_measure(x_options_.label.c_str(), tw, th);
+	int tx = dch - tw / 2;
+	int ty = y() + h() - 2;
+	fl_draw(x_options_.label.c_str(), tx, ty);
 }
 
 //! \brief Set value as data to display.
 void zc_graph::set_data(std::vector<coord>* data) {
-	data_ = data;
-//	convert_data_to_points();
+	data_sets_.push_back({ Y_LEFT, color(), 1, data });
+}
+
+//! \brief Add a set of data to display.
+void zc_graph::add_data_set(const data_set_t& ds) {
+	data_sets_.push_back(ds);
 }
 
 //! \brief. Convert data point \p f from float to y position
-int zc_graph::float_to_point(float f, const options_t& options) {
-	float fx = f < options.minimum ? options.minimum : (f > options.maximum ? options.maximum : f);
-	int result = options.position_0 + fx * options.inv_scale;
+int zc_graph::options_t::float_to_point(float f) {
+	float fx = f < minimum ? minimum : (f > maximum ? maximum : f);
+	int result = position_0 + fx * inv_scale;
 	return result;
 }
 
 // Normalise the number
-void zc_graph::normalise(float fin, float& norm, float& exp10, int& si_prefix, const axis_xier_t& xier) {
+void zc_graph::options_t::normalise(float fin, float& norm, float& exp10, int& si_prefix) {
 	exp10 = 1.0F;
 	norm = fabs(fin);
 	float step = 10.0F;
@@ -289,7 +345,7 @@ void zc_graph::normalise(float fin, float& norm, float& exp10, int& si_prefix, c
 	float minimum = 1.0F;
 	int pow_10 = 0;
 	int pow_step = 1;
-	switch (xier) {
+	switch (xier_type) {
 	case SI_PREFIX:
 		step = 1000.0F;
 		pow_step = 3;
@@ -320,7 +376,7 @@ void zc_graph::normalise(float fin, float& norm, float& exp10, int& si_prefix, c
 		pow_10 -= pow_step;
 	}
 	if (fin < 0) norm = -norm;
-	if (xier == SI_PREFIX) si_prefix = SI_PREFIXES.at(pow_10);
+	if (xier_type == SI_PREFIX) si_prefix = SI_PREFIXES.at(pow_10);
 }
 
 //// Convert data to points
