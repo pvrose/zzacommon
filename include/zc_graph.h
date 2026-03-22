@@ -18,7 +18,6 @@
 #pragma once
 
 #include <cstdint>
-#include <list>
 #include <map>
 #include <string>
 #include <vector>
@@ -124,7 +123,8 @@ public:
 
 	//! \brief Add a set of data to display.
 	//! \param data_set The data set to add.
-	void add_data_set(const data_set_t& data_set);
+	//! \return The index of the data set in the list of data sets.
+	int add_data_set(const data_set_t& data_set);
 
 protected:
 
@@ -147,7 +147,7 @@ protected:
 	//void convert_data_to_points();
 
 	//! \brief The data to display.
-	std::list<data_set_t> data_sets_;
+	std::vector<data_set_t> data_sets_;
 
 	//! Paarmeters for drawing the X values and axis.
 	options_t x_options_;

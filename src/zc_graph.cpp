@@ -109,7 +109,7 @@ void zc_graph::set_factors() {
 	x_options_.set_ticks();
 	// And repeat for all Y - Note increasing Y data value is decreasing pixel position
 	for (auto& y_option : y_options_) {
-		float y_range = y_option.second.maximum - y_option.second.minimum;
+		float y_range = y_option.second.minimum - y_option.second.maximum;
 		y_option.second.scale = y_range / drawing_area_.h();
 		y_option.second.inv_scale = 1.0F / y_option.second.scale;
 		y_option.second.position_0 = drawing_area_.y() - (y_option.second.maximum * y_option.second.inv_scale);
@@ -226,15 +226,16 @@ void zc_graph::draw_points() {
 	// Set FG colour
 	fl_color(color());
 
-	for (auto& data : data_sets_) {
-		fl_color(data.colour);
-		fl_line_style(0, data.line_width);
-		if (data.data && data.data->size() > 1) {
-			for (size_t ix = 0; ix < data.data->size() - 1; ix++) {
-				int x1 = x_options_.float_to_point((*data.data)[ix].x);
-				int x2 = x_options_.float_to_point((*data.data)[ix + 1].x);
-				int y1 = y_options_[data.y_axis].float_to_point((*data.data)[ix].y);
-				int y2 = y_options_[data.y_axis].float_to_point((*data.data)[ix + 1].y);
+	for (auto& ds : data_sets_) {
+		auto data = ds.data;
+		fl_color(ds.colour);
+		fl_line_style(0, ds.line_width);
+		if (data && data->size() > 1) {
+			for (size_t ix = 0; ix < data->size() - 1; ix++) {
+				int x1 = x_options_.float_to_point((*data)[ix].x);
+				int x2 = x_options_.float_to_point((*data)[ix + 1].x);
+				int y1 = y_options_[ds.y_axis].float_to_point((*data)[ix].y);
+				int y2 = y_options_[ds.y_axis].float_to_point((*data)[ix + 1].y);
 				// If either end is in the drawing area...
 				if (in_drawing_area(x1, y1) || in_drawing_area(x2, y2)) {
 					// Draw the line between them - should be clipped at the edge of the area.
@@ -321,13 +322,20 @@ void zc_graph::draw_axes() {
 }
 
 //! \brief Set value as data to display.
+//! Sets into the first 
 void zc_graph::set_data(std::vector<coord>* data) {
-	data_sets_.push_back({ Y_LEFT, color(), 1, data });
+	if (data_sets_.size() == 0) {
+		add_data_set({ Y_LEFT, color(), 1, data });
+	}
+	else {
+		data_sets_[0].data = data;
+	}
 }
 
 //! \brief Add a set of data to display.
-void zc_graph::add_data_set(const data_set_t& ds) {
+int zc_graph::add_data_set(const data_set_t& ds) {
 	data_sets_.push_back(ds);
+	return data_sets_.size() - 1;
 }
 
 //! \brief. Convert data point \p f from float to y position
