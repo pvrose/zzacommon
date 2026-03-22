@@ -138,6 +138,12 @@ else()
   message(FATAL_ERROR "FLTK not found")
 endif()
 
+# Local helper scripts
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+# Set CMake prefix path to pick up vcpkg-installed packages
+list(APPEND CMAKE_PREFIX_PATH "${VCPKG_ROOT}/installed/x64-windows/share")
+include(vcpkg_helper)
+
 # libboost
 message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 if (MSVC)
@@ -289,12 +295,3 @@ if (BUILD_SHARED_LIBS)
   install(TARGETS ${TARGET})
 endif()
 
-#[=[
-# Install runtime artifacts for distribution
-if (MSVC)
-  install(IMPORTED_RUNTIME_ARTIFACTS CURL::libcurl DESTINATION bin)
-  if (Boost_FOUND)
-    install(IMPORTED_RUNTIME_ARTIFACTS Boost::filesystem DESTINATION bin)
-  endif()
-endif()
-#]=]
