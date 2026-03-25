@@ -37,6 +37,11 @@ public:
 	//! \param name Name of the settings group.
 	zc_settings(zc_settings* parent, std::string name);
 
+	//! \brief Construct a sub-group of zc_settings.
+	//! \param parent Parent settings for which this object will form a group.
+	//! \param index Index of the subgroup to access.
+	zc_settings(zc_settings* parent, int index);
+
 	//! Destructor
 	~zc_settings();
 
@@ -45,6 +50,23 @@ public:
 
 	//! Flush the settings to filestore.
 	void flush();
+	
+	//! Get the settings name.
+	std::string name() const { return name_; }
+
+	//! \brief Get number of groups contained within this group.
+	//! \return The number of groups contained within this group.
+	int group_count() const;
+
+	//! \brief Get the name of the group at the given index.
+	//! \param index The index of the group to get the name of.
+	//! \return The name of the group at the given index.
+	std::string group_name(int index) const;
+
+	//! \brief Get a subgroup of this group at given index.
+	//! \param index The index of the subgroup to get.
+	//! \return A zc_settings object for the subgroup at the given index.
+	zc_settings& get_group(int index) const;
 
 protected:
 

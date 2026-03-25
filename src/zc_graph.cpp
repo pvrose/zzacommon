@@ -228,8 +228,8 @@ void zc_graph::draw_points() {
 
 	for (auto& ds : data_sets_) {
 		auto data = ds.data;
-		fl_color(ds.colour);
-		fl_line_style(0, ds.line_width);
+		fl_color(ds.style.colour);
+		fl_line_style(ds.style.style, ds.style.thickness);
 		if (data && data->size() > 1) {
 			for (size_t ix = 0; ix < data->size() - 1; ix++) {
 				int x1 = x_options_.float_to_point((*data)[ix].x);
@@ -325,17 +325,36 @@ void zc_graph::draw_axes() {
 //! Sets into the first 
 void zc_graph::set_data(std::vector<coord>* data) {
 	if (data_sets_.size() == 0) {
-		add_data_set({ Y_LEFT, color(), 1, data });
+		// If we don't have any data sets yet, add one for this data.
+		// Set default style for this data set - 
+		// -  Colour is the same as the graph colour, 
+		// -  Line width is 1 and 
+		// -  Style is solid.
+		add_data_set({ Y_LEFT, {color(), 1, FL_SOLID}, data} );
 	}
 	else {
 		data_sets_[0].data = data;
 	}
 }
 
+//! \brief Set value into specified data set.
+//! \param index The index of the data set to update.
+//! \param data The data to set for this data set.
+void zc_graph::set_data(int index, std::vector<coord>* data) {
+	if (index >= 0 && index < data_sets_.size()) {
+		data_sets_[index].data = data;
+	}
+}	
+
 //! \brief Add a set of data to display.
 int zc_graph::add_data_set(const data_set_t& ds) {
 	data_sets_.push_back(ds);
 	return data_sets_.size() - 1;
+}
+
+//! \brief Clear all data sets.
+void zc_graph::clear_data_sets() {
+	data_sets_.clear();
 }
 
 //! \brief. Convert data point \p f from float to y position

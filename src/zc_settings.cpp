@@ -81,6 +81,19 @@ zc_settings::zc_settings(zc_settings* parent, const std::string name) {
 	data_ = &parent->data_->at(name);
 }
 
+//! Construct a sub-group of settings by index
+zc_settings::zc_settings(zc_settings* parent, int index) {
+	parent_ = parent;
+	if (index < 0 || index >= parent->data_->size()) {
+		// Raise an error.
+		throw std::out_of_range("Group index out of range");
+	}
+	auto it = parent->data_->begin();
+	std::advance(it, index);
+	name_ = it.key();
+	data_ = &parent->data_->at(name_);
+}
+
 //! DEstructor - copy data back to file
 zc_settings::~zc_settings() {
 	if (parent_ == nullptr) {
@@ -113,3 +126,21 @@ void zc_settings::flush() {
 		o.close();
 	}
 }
+
+//! Get number of groups contained within this group.
+int zc_settings::group_count() const {
+	int result = data_->size();
+	return result;
+}
+
+//! Get the name of the group at the given index.
+std::string zc_settings::group_name(int index) const {
+	if (index < 0 || index >= data_->size()) {
+		// Raise an error.
+		throw std::out_of_range("Group index out of range");
+	}
+	auto it = data_->begin();
+	std::advance(it, index);
+	return it.key();
+}
+

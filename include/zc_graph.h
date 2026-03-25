@@ -26,6 +26,12 @@
 #include <FL/Fl_Rect.H>
 #include <FL/Fl_Widget.H>
 
+struct zc_graph_line_t {
+	Fl_Color colour;        //!< Colour to use to draw this line
+	int thickness;          //!< Line width to use to draw this line
+	int style;              //!< Line style to use to draw this line
+};
+
 //! \brief Class to display a graph of values.
 //! The data is presented as a list of floating point values.
 //! How the data is scaled and axes shown \see set_params.
@@ -96,9 +102,8 @@ public:
 
 	//! \brief Structure to describe a set of data points.
 	struct data_set_t {
-		y_axis_t y_axis;         //!< Y-axis to use for this data set
-		Fl_Color colour;         //!< Colour to use to draw this data set
-		int line_width;          //!< Line width to use to draw this data set
+		y_axis_t y_axis;          //!< Y-axis to use for this data set
+		zc_graph_line_t style;    //!< Line style to use to draw this data set
 		std::vector<coord>* data; //!< Data points - by reference to allow manipulation outwith display.
 	};
 
@@ -121,10 +126,18 @@ public:
 	//! (25 or 30 frames/s).
 	void set_data(std::vector<coord>* data);
 
+	//! \brief Set value into specified data set.
+	//! \param index The index of the data set to update.
+	//! \param data The data to set for this data set.
+	void set_data(int index, std::vector<coord>* data);
+
 	//! \brief Add a set of data to display.
 	//! \param data_set The data set to add.
 	//! \return The index of the data set in the list of data sets.
 	int add_data_set(const data_set_t& data_set);
+
+	//! \brief Clear all data sets.
+	void clear_data_sets();
 
 protected:
 
