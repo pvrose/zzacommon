@@ -37,6 +37,10 @@
 
 //! Multiplier to prefix map
 static std::map<int, uint32_t> SI_PREFIXES = {
+	{ -24, 'y' },
+	{  -21, 'z' },
+	{  -18, 'a' },
+	{  -15, 'f' },
 	{ -12, 'p' },
 	{ -9, 'n' },
 	{ -6, 0x3Bc },
@@ -46,12 +50,16 @@ static std::map<int, uint32_t> SI_PREFIXES = {
 	{ 6, 'M' },
 	{ 9, 'G'},
 	{ 12, 'T'},
+	{ 15, 'P' },
+	{ 18, 'E' },
+	{ 21, 'Z' },
+	{ 24, 'Y' }
 };
 
 
 zc_graph::zc_graph(int X, int Y, int W, int H, const char* L) :
 	Fl_Widget(X, Y, W, H, L)
-{
+{	
 }
 
 zc_graph::~zc_graph() {

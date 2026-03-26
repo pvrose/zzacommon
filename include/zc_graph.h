@@ -73,11 +73,11 @@ public:
 	//! \brief Graph axis options
 	struct options_t {
 		friend class zc_graph;
-		float minimum;            //!< Minimum  value
-		float maximum;            //!< Maximum  value
-		const char* base_label;   //!< Label (base unit)
-		axis_xier_t xier_type;    //!< How to display multipliers
-		int suggested_gap;        //!< Suggested gap between ticks
+		float minimum = 0.0F;            //!< Minimum  value
+		float maximum = 1.0F;            //!< Maximum  value
+		const char* base_label = "";     //!< Label (base unit)
+		axis_xier_t xier_type = SI_PREFIX;    //!< How to display multipliers
+		int suggested_gap = 20;          //!< Suggested gap between ticks
 	protected:
 		int position_0;           //!< pixel position of 0 along the axis
 		float scale;              //!< Scale factor - Number of units per pixel
