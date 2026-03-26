@@ -103,3 +103,21 @@ bool zc_serial::available_ports(int num_ports, std::string* ports, bool all_port
 	return (actual_ports <= num_ports);
 
 }
+
+// As available_ports but returns a set of strings instead of an array.
+std::set<std::string> zc_serial::available_ports(bool all_ports) {
+	std::set<std::string> ports;
+	int actual_ports = 0;
+	// First call available_ports to get the number of ports, then call it again with an array of the correct size to get the port names.
+	available_ports(0, nullptr, all_ports, actual_ports);
+	if (actual_ports > 0) {
+		std::string* port_array = new std::string[actual_ports];
+		if (available_ports(actual_ports, port_array, all_ports, actual_ports)) {
+			for (int i = 0; i < actual_ports; i++) {
+				ports.insert(port_array[i]);
+			}
+		}
+		delete[] port_array;
+	}
+	return ports;
+}

@@ -43,6 +43,10 @@
 		//! \param actual_ports Receives the number of ports in the list.
 		//! \return true if the array \p ports was big eneough.
 		bool available_ports(int num_ports, std::string* ports, bool all_ports, int& actual_ports);
+
+        //! As available_ports but returns a set of strings instead of an array.
+		std::set<std::string> available_ports(bool all_ports);
+		
 	};
 
 
