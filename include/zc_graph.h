@@ -78,12 +78,28 @@ public:
 		const char* base_label = "";     //!< Label (base unit)
 		axis_xier_t xier_type = SI_PREFIX;    //!< How to display multipliers
 		int suggested_gap = 20;          //!< Suggested gap between ticks
+
+		options_t(float min, float max, const char* label, axis_xier_t xier_type, int suggested_gap) :
+			minimum(min), maximum(max), base_label(label), xier_type(xier_type), suggested_gap(suggested_gap) {
+		}
+		options_t() {};
+
 	protected:
-		int position_0;           //!< pixel position of 0 along the axis
-		float scale;              //!< Scale factor - Number of units per pixel
-		float inv_scale;          //!< Inverse scae factor - number of pixels per unit
+		int position_0 = 0;           //!< pixel position of 0 along the axis
+		float scale = 0.0F;              //!< Scale factor - Number of units per pixel
+		float inv_scale = 0.0F;          //!< Inverse scae factor - number of pixels per unit
 		std::string label;        //!< Label to display (base label plus multiplier if appropriate)
 		std::vector<tick_t> ticks; //!< Ticks to display
+
+		/// \brief Set the scaling factors based on the options and drawing area size
+		void set_factors(int origin, int length, bool is_y) {
+			float x_range = maximum - minimum;
+			scale = x_range / length;
+			inv_scale = 1.0F / scale;
+			// Set origin
+			position_0 = is_y ? origin - (maximum * inv_scale) : origin + (minimum * inv_scale);
+			set_ticks();
+		};
 
 		void set_ticks();         //!< Set the ticks and label based on the options
 

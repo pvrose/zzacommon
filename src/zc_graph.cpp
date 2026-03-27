@@ -109,19 +109,10 @@ void zc_graph::set_drawing_area() {
 void zc_graph::set_factors() {
 	set_drawing_area();
 	// Set X scaling factor (units per pixel)
-	float x_range = x_options_.maximum - x_options_.minimum;
-	x_options_.scale = x_range / drawing_area_.w();
-	x_options_.inv_scale = 1.0F / x_options_.scale;
-	// Set X origin
-	x_options_.position_0 = drawing_area_.x() + (x_options_.minimum * x_options_.inv_scale);
-	x_options_.set_ticks();
+	x_options_.set_factors(drawing_area_.x(), drawing_area_.w(), false);
 	// And repeat for all Y - Note increasing Y data value is decreasing pixel position
 	for (auto& y_option : y_options_) {
-		float y_range = y_option.second.minimum - y_option.second.maximum;
-		y_option.second.scale = y_range / drawing_area_.h();
-		y_option.second.inv_scale = 1.0F / y_option.second.scale;
-		y_option.second.position_0 = drawing_area_.y() - (y_option.second.maximum * y_option.second.inv_scale);
-		y_option.second.set_ticks();
+		y_option.second.set_factors(drawing_area_.y(), drawing_area_.h(), true);
 	}
 }
 
