@@ -92,12 +92,12 @@ public:
 		std::vector<tick_t> ticks; //!< Ticks to display
 
 		/// \brief Set the scaling factors based on the options and drawing area size
-		void set_factors(int origin, int length, bool is_y) {
+		void set_factors(int origin, int length) {
 			float x_range = maximum - minimum;
 			scale = x_range / length;
 			inv_scale = 1.0F / scale;
 			// Set origin
-			position_0 = is_y ? origin - (maximum * inv_scale) : origin + (minimum * inv_scale);
+			position_0 = origin - (minimum * inv_scale);
 			set_ticks();
 		};
 
@@ -155,6 +155,16 @@ public:
 	//! \brief Clear all data sets.
 	void clear_data_sets();
 
+	//! \brief Adjust the ranges of the X axis to fit the data.
+	void adjust_scale_x();
+
+	//!\brief Adjust the ranges of the Y axis to fit the data.
+	void adjust_scale_y(y_axis_t axis);
+
+	//! \brief. Set the drawing area
+	void set_drawing_area();
+
+
 protected:
 
 	//! \brief Returns true if the pixel at {\p x, \p y} is in the drawimg area
@@ -165,9 +175,6 @@ protected:
 
 	//! \brief. Draw points
 	void draw_points();
-
-	//! \brief. Set the drawing area
-	void set_drawing_area();
 
 	//! \brief Set the scaling factors etc.
 	void set_factors();
