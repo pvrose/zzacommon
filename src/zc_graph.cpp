@@ -88,6 +88,8 @@ void zc_graph::set_drawing_area() {
 	fl_font(labelfont(), labelsize());
 	int dw = 0, dh = 0;
 	fl_measure("Dummy", dw, dh);
+	// Add some padding.
+	dh += 4;
 	// Set width of area.
 	int ax = x();
 	int aw = w();
@@ -209,7 +211,7 @@ void zc_graph::draw() {
 	Fl_Color save = fl_color();
 	draw_box();
 	draw_label();
-	//! \todo Add detaild
+	//! Clear the background - leave a 1 pixel border to show the box.
 	fl_color(FL_BACKGROUND_COLOR);
 	fl_rectf(x() + 1, y() + 1, w() - 2, h() - 2);
 	// Draw the axes
@@ -261,6 +263,7 @@ void zc_graph::draw_axes() {
 	// Drawing area bounds
 	int dl = drawing_area_.x();
 	int dr = drawing_area_.x() + drawing_area_.w();
+	int drt = x() + w() - 4;
 	int dch = drawing_area_.x() + drawing_area_.w() / 2;
 	int dt = drawing_area_.y();
 	int db = drawing_area_.y() + drawing_area_.h();
@@ -280,7 +283,7 @@ void zc_graph::draw_axes() {
 		th = 0;
 		fl_measure(y_options_[Y_LEFT].label.c_str(), tw, th);
 		// Position it in the middle of the axiis
-		fl_draw(90, y_options_[Y_LEFT].label.c_str(), dl - 1, dcv);
+		fl_draw(90, y_options_[Y_LEFT].label.c_str(), dl - 3, dcv);
 	}
 	// Draw the right Y-axis
 	if (show_right_axis) {
@@ -297,7 +300,7 @@ void zc_graph::draw_axes() {
 		th = 0;
 		fl_measure(y_options_[Y_RIGHT].label.c_str(), tw, th);
 		// Position it in the middle of the axiis
-		fl_draw(90, y_options_[Y_RIGHT].label.c_str(), dr - 1, dcv);
+		fl_draw(90, y_options_[Y_RIGHT].label.c_str(), drt, dcv);
 	}
 
 	// Draw the X-axis	
