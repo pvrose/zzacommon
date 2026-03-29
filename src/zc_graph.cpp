@@ -171,8 +171,8 @@ void zc_graph::options_t::set_ticks() {
 		}
 		tick -= xtick;
 	}
-	// Y > 0
-	tick = xtick;
+	// Y >= 0
+	tick = 0;
 	while (tick <= maximum) {
 		char l[10];
 		if (tick >= minimum) {
