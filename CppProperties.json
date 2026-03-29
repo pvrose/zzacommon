@@ -6,6 +6,10 @@
       ],
       "name": "x64-Debug",
       "includePath": [
+        "${workspaceRoot}\\..\\fltk\\FL",
+        "${workspaceRoot}\\..\\fltk\\FL",
+        "${workspaceRoot}\\..\\fltk\\FL",
+        "${workspaceRoot}\\..\\fltk\\FL",
         "${env.INCLUDE}",
         "${workspaceRoot}\\**"
       ],

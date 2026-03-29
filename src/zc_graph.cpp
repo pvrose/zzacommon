@@ -281,7 +281,7 @@ void zc_graph::draw_points() {
 	for (auto& ds : data_sets_) {
 		auto data = ds.data;
 		fl_color(ds.style.colour);
-		fl_line_style(ds.style.style, ds.style.thickness);
+		fl_line_style(ds.style.style, ds.style.width);
 		if (data && data->size() > 1) {
 			for (size_t ix = 0; ix < data->size() - 1; ix++) {
 				int x1 = x_options_.float_to_point((*data)[ix].x);
@@ -390,7 +390,7 @@ void zc_graph::set_data(std::vector<coord>* data) {
 		// -  Colour is the same as the graph colour, 
 		// -  Line width is 1 and 
 		// -  Style is solid.
-		add_data_set({ Y_LEFT, {color(), 1, FL_SOLID}, data} );
+		add_data_set({ Y_LEFT, zc_line_style(), data});
 	}
 	else {
 		data_sets_[0].data = data;

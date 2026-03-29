@@ -75,6 +75,7 @@ set(ZZACOMMON_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_filename_input.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_input_hierch.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_line_style.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_password_input.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_rpc_data_item.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_rpc_handler.cpp
@@ -94,6 +95,7 @@ set(ZZACOMMON_CPPFILES
 set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_app.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_banner.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_button_dialog.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_button_input.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_calendar.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_calendar_input.h
@@ -105,6 +107,7 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_filename_input.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_input_hierch.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_line_style.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_password_input.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_rpc_data_item.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_rpc_handler.h

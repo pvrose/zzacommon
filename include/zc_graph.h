@@ -17,6 +17,8 @@
 */
 #pragma once
 
+#include "zc_line_style.h"
+
 #include <cstdint>
 #include <map>
 #include <string>
@@ -25,12 +27,6 @@
 #include <FL/Enumerations.H>
 #include <FL/Fl_Rect.H>
 #include <FL/Fl_Widget.H>
-
-struct zc_graph_line_t {
-	Fl_Color colour;        //!< Colour to use to draw this line
-	int thickness;          //!< Line width to use to draw this line
-	int style;              //!< Line style to use to draw this line
-};
 
 //! \brief Class to display a graph of values.
 //! The data is presented as a list of floating point values.
@@ -120,7 +116,7 @@ public:
 	//! \brief Structure to describe a set of data points.
 	struct data_set_t {
 		y_axis_t y_axis;          //!< Y-axis to use for this data set
-		zc_graph_line_t style;    //!< Line style to use to draw this data set
+		zc_line_style style;    //!< Line style to use to draw this data set
 		std::vector<coord>* data; //!< Data points - by reference to allow manipulation outwith display.
 	};
 
