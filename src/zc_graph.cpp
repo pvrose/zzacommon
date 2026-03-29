@@ -123,44 +123,88 @@ void zc_graph::options_t::set_ticks() {
 	float xtick = abs(suggested_gap * scale);
 	float ntick;
 	float ptick;
+	float xline;   // Draw a line every few ticks.
 	int si_prefix = ' ';
 	normalise(xtick, ntick, ptick, si_prefix);
 	switch (xier_type) {
 	case SI_PREFIX:
-		// If 20 pixels is graeter that 7*10^N - set tick at 10^(N+1)
-		if (ntick > 70.0F) xtick = 100.0 * ptick;
-		// If 20 pixels is between 3.2 and 7 set tick at 5
-		else if (ntick > 32.0F) xtick = 50.0F * ptick;
-		// If 20 pixels is between 1.4 and 3.2 set tick at 2
-		else if (ntick > 14.0F) xtick = 20.0F * ptick;
-		// If 20 pixels is between 0.7 and 1.4 set tick at 1
-		else if (ntick > 7.0F) xtick = 10.0 * ptick;
-		// If 20 pixels is between 3.2 and 7 set tick at 5
-		else if (ntick > 3.2F) xtick = 5.0F * ptick;
-		// If 20 pixels is between 1.4 and 3.2 set tick at 2
-		else if (ntick > 1.4F) xtick = 2.0F * ptick;
-		// If 20 pixels is between 0.7 and 1.4 set tick at 1
-		else if (ntick > 0.7F) xtick = ptick;
+		// If 20 pixels is graeter that 7*10^N - set tick at 10^(N+1), line at 5*10^(N+1)
+		if (ntick > 70.0F) {
+			xtick = 100.0 * ptick;
+			xline = 5.0F * xtick;
+		}
+		// If 20 pixels is between 3.2 and 7 set tick at 5, line at 20.
+		else if (ntick > 32.0F) {
+			xtick = 50.0F * ptick;
+			xline = 4.0F * xtick;
+		}
+		// If 20 pixels is between 1.4 and 3.2 set tick at 2, line at 10.
+		else if (ntick > 14.0F) {
+			xtick = 20.0F * ptick;
+			xline = 5.0F * xtick;
+		}
+		// If 20 pixels is between 0.7 and 1.4 set tick at 1, line at 5.
+		else if (ntick > 7.0F) {
+			xtick = 10.0F * ptick;
+			xline = 5.0F * xtick;
+		}
+		// If 20 pixels is between 3.2 and 7 set tick at 5, line at 20.
+		else if (ntick > 3.2F) {
+			xtick = 5.0F * ptick;
+			xline = 4.0F * xtick;
+		}
+		// If 20 pixels is between 1.4 and 3.2 set tick at 2, line at 10.
+		else if (ntick > 1.4F) {
+			xtick = 2.0F * ptick;
+			xline = 5.0F * xtick;
+		}
+		// If 20 pixels is between 0.7 and 1.4 set tick at 1, line at 5.
+		else if (ntick > 0.7F) {
+			xtick = ptick;
+			xline = 5.0F * xtick;
+		}
 		// If 20 pixels is between 0.32 and 0.7
-		else if (ntick > 0.32F) xtick = 0.5 * ptick;
+		else if (ntick > 0.32F) {
+			xtick = 0.5 * ptick;
+			xline = 4.0F * xtick;
+		}
 		// If 20 pixels > 0.14
-		else if (ntick > 0.14F) xtick = 0.2 * ptick;
+		else if (ntick > 0.14F) {
+			xtick = 0.2 * ptick;
+			xline = 5.0F * xtick;
+		}
 		// If 20 pixels > 0.1
-		else xtick = 0.1 * ptick;
+		else {
+			xtick = 0.1 * ptick;
+			xline = 5.0F * xtick;
+		}
 		break;
 	case POWER_10:
 	case NONE:
-		if (ntick > 7.0F) xtick = 10.0 * ptick;
+		if (ntick > 7.0F) {
+			xtick = 10.0 * ptick;
+			xline = 5.0F * xtick;
+		}
 		// If 20 pixels is between 3.2 and 7 set tick at 5
-		else if (ntick > 3.2F) xtick = 5.0F * ptick;
+		else if (ntick > 3.2F) {
+			xtick = 5.0F * ptick;
+			xline = 4.0F * xtick;
+		}
 		// If 20 pixels is between 1.4 and 3.2 set tick at 2
-		else if (ntick > 1.4F) xtick = 2.0F * ptick;
+		else if (ntick > 1.4F) {
+			xtick = 2.0F * ptick;
+			xline = 5.0F * xtick;
+		}
 		// If 20 pixels is between 0.7 and 1.4 set tick at 1
-		else xtick = ptick;
+		else {
+			xtick = ptick;
+			xline = 5.0F * xtick;
+		}
 		break;
 	}
 	// Calculate the label positions
 	ticks.clear();
+	lines.clear();
 	// Y < 0
 	float tick = -xtick;
 	while (tick >= minimum) {
@@ -180,6 +224,13 @@ void zc_graph::options_t::set_ticks() {
 			ticks.push_back({ float_to_point(tick), std::string(l) });
 		}
 		tick += xtick;
+	}
+	// Set the lines
+	for (float line = 0; line <= maximum; line += xline) {
+		lines.push_back(float_to_point(line));
+	}
+	for (float line = -xline; line >= minimum; line -= xline) {
+		lines.push_back(float_to_point(line));
 	}
 	char ll[128];
 	switch (xier_type) {
@@ -284,6 +335,13 @@ void zc_graph::draw_axes() {
 		fl_measure(y_options_[Y_LEFT].label.c_str(), tw, th);
 		// Position it in the middle of the axiis
 		fl_draw(90, y_options_[Y_LEFT].label.c_str(), dl - 3, dcv);
+		// Draw the lines every few ticks
+		fl_color(fl_lighter(FL_FOREGROUND_COLOR));
+		fl_line_style(FL_DOT);
+		for (auto& l : y_options_[Y_LEFT].lines) {
+			fl_line(dl, l, dr, l);
+		}
+		fl_line_style(0);
 	}
 	// Draw the right Y-axis
 	if (show_right_axis) {

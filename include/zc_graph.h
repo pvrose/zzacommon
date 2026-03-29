@@ -90,6 +90,7 @@ public:
 		float inv_scale = 0.0F;          //!< Inverse scae factor - number of pixels per unit
 		std::string label;        //!< Label to display (base label plus multiplier if appropriate)
 		std::vector<tick_t> ticks; //!< Ticks to display
+		std::vector<int> lines;    //!< Pixel position of lines to draw every few ticks.
 
 		/// \brief Set the scaling factors based on the options and drawing area size
 		void set_factors(int origin, int length) {
