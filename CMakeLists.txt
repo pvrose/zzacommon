@@ -85,6 +85,7 @@ set(ZZACOMMON_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_status.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_symbols.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_tabs_nonav.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_text_style.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_ticker.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_url_handler.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_utils.cpp
@@ -117,6 +118,7 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_status.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_symbols.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_tabs_nonav.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_text_style.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_ticker.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_url_handler.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_utils.h

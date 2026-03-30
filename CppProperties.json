@@ -4,12 +4,10 @@
       "inheritEnvironments": [
         "msvc_x64"
       ],
-      "name": "x64-Debug",
+      "name": "x64 Debug",
       "includePath": [
-        "${workspaceRoot}\\..\\fltk\\FL",
-        "${workspaceRoot}\\..\\fltk\\FL",
-        "${workspaceRoot}\\..\\fltk\\FL",
-        "${workspaceRoot}\\..\\fltk\\FL",
+        "${workspaceRoot}\\..\\..\\fltk",
+        "${workspaceRoot}\\..\\fltk",
         "${env.INCLUDE}",
         "${workspaceRoot}\\**"
       ],

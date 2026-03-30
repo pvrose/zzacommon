@@ -83,7 +83,7 @@ public:
 		type_ = ZC_BUTTON_DIALOG_INOUT;
 		bn_ = new Fl_Button(X, Y, W, H);
 		bn_->callback(cb_button, (void*)&data_);
-		end();
+		Fl_Group::end();
 	}
 
 	//! Destructor.
@@ -105,6 +105,7 @@ public:
 	void value(const DATA& d) { 
 		data_ = d; 
 	    update_button_label(data_);
+		redraw();
 	}
 	//! Get the data to be passed to the dialog and returned from it.
 	const DATA& value() const { return data_; }
@@ -120,5 +121,8 @@ public:
 		}
 	//! Get the button type.
 	zc_button_dialog_type type() const { return type_; }
+
+	//! Get at the button widget, for example to set the label.
+	Fl_Button* button() { return bn_; }
 
 };
