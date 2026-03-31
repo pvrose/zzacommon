@@ -152,7 +152,7 @@ include(vcpkg_helper)
 # libboost
 message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 if (MSVC)
-  find_package(Boost 1.85.0 CONFIG REQUIRED COMPONENTS filesystem)
+  find_package(Boost 1.85.0 CONFIG REQUIRED COMPONENTS filesystem asio)
 else()
   find_package(Boost 1.83.0 CONFIG REQUIRED COMPONENTS ALL)
 endif()

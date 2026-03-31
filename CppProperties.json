@@ -8,6 +8,8 @@
       "includePath": [
         "${workspaceRoot}\\..\\..\\fltk",
         "${workspaceRoot}\\..\\fltk",
+        "${workspaceRoot}\\..\\..\\vcpkg\\installed\\x64-windows\\include",
+        "${workspaceRoot}\\..\\vcpkg\\installed\\x64-windows\\include",
         "${env.INCLUDE}",
         "${workspaceRoot}\\**"
       ],
