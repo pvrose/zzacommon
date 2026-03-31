@@ -24,14 +24,6 @@
 //! Include boost asio for cross-platform serial port access.
 #include <boost/asio.hpp>
 
-// Constructor - initialise "file" handle to port
-zc_serial::zc_serial() {
-};
-
-// Destrutor
-zc_serial::~zc_serial() {
-}
-
 // Find all existing COM ports - upto COM255
 // Returns true if the string array was large enough for all ports.
 bool zc_serial::available_ports(int num_ports, std::string* ports, bool all_ports, int& actual_ports) {
@@ -95,3 +87,6 @@ std::set<std::string> zc_serial::available_ports(bool all_ports) {
 	}
 	return ports;
 }
+
+
+

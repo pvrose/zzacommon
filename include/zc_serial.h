@@ -22,7 +22,8 @@
 #include <set>
 #include <string>
 
-
+//! Include boost asio for cross-platform serial port access.
+#include <boost/asio.hpp>
 
 
 
@@ -30,11 +31,7 @@
 	class zc_serial
 	{
 	public:
-		//! Constructor.
-		zc_serial();
-		//! Destructor. 
-		~zc_serial();
-
+	
 		//! Provides a set of all available ports
 		
 		//! \param num_ports the size of array \p ports.
@@ -42,11 +39,11 @@
 		//! \param all_ports Provide all ports even if they are not available for use.
 		//! \param actual_ports Receives the number of ports in the list.
 		//! \return true if the array \p ports was big eneough.
-		bool available_ports(int num_ports, std::string* ports, bool all_ports, int& actual_ports);
+		static bool available_ports(int num_ports, std::string* ports, bool all_ports, int& actual_ports);
 
         //! As available_ports but returns a set of strings instead of an array.
-		std::set<std::string> available_ports(bool all_ports);
-		
+		static std::set<std::string> available_ports(bool all_ports);
+
 	};
 
 
