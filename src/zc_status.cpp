@@ -86,17 +86,26 @@ void zc_status::progress(uint64_t max_value, uint8_t object, const char* descrip
 		object_map_.at(object).colour,
 		description, 
 		suffix);
+	else {
+		status_->misc_status(ST_PROGRESS, "PROGRESS: Starting % s - % lld % s", description, max_value, suffix);
+	}
 }
 
 // Update progress to the new specified value
 void zc_status::progress(uint64_t value, uint8_t object) {
 	// Update progress item
 	if (banner_) banner_->add_progress(value);
+	else {
+		status_->misc_status(ST_PROGRESS, "PROGRESS: % lld", value);
+	}
 }
 
 // Update progress with a message - e.g. cancel it and display why cancelled
 void zc_status::progress(const char* message, uint8_t object) {
 	if (banner_) banner_->cancel_progress(message);
+	else {
+		status_->misc_status(ST_PROGRESS, "PROGRESS: %s", message);
+	}
 }
 
 // Update miscellaneous status - set text and colour, log the status

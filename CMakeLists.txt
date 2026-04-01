@@ -240,6 +240,9 @@ endif()
 target_include_directories(${ZC_APP_LIBRARY} PRIVATE
   ${ZZACOMMON_INCLUDE_DIR}
 )
+target_compile_definitions(${TARGET} PRIVATE
+  _WIN32_WINNT=0x0601
+)
 target_link_libraries(${TARGET}
   ${Boost_LIBRARIES}
   ${FLTK_LIBRARIES}

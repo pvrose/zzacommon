@@ -24,6 +24,83 @@
 //! Include boost asio for cross-platform serial port access.
 #include <boost/asio.hpp>
 
+// Constructor for zc_serial.
+zc_serial::zc_serial(const std::string& port, int baud_rate) {
+	try {
+		boost::asio::io_service io;
+		serial_port_ = new boost::asio::serial_port(io, port);
+		serial_port_->set_option(boost::asio::serial_port_base::baud_rate(baud_rate));
+	}
+	catch (boost::system::system_error& e) {
+		if (serial_port_) {
+			delete serial_port_;
+			serial_port_ = nullptr;
+		}
+	}
+}
+
+// Destructor for zc_serial. It closes the serial connection.
+zc_serial::~zc_serial() {
+	if (serial_port_) {
+		try {
+			serial_port_->close();
+		}
+		catch (boost::system::system_error& e) {
+			// Ignore errors on close.
+		}
+		delete serial_port_;
+	}
+}
+
+// Read a line of text from the serial port.
+bool zc_serial::read_line(std::string& line) {
+	if (!serial_port_ || !serial_port_->is_open()) {
+		return false;
+	}
+	try {
+		boost::asio::read_until(*serial_port_, boost::asio::dynamic_buffer(line), "\n");
+		return true;
+	}
+	catch (boost::system::system_error& e) {
+		return false;
+	}
+}
+
+// Read whatever data is currently available on the serial port without blocking.
+bool zc_serial::read_any(std::string& data) {
+	if (!serial_port_ || !serial_port_->is_open()) {
+		return false;
+	}
+	try {
+		char buf[1024];
+		size_t bytes_read = serial_port_->read_some(boost::asio::buffer(buf));
+		if (bytes_read > 0) {
+			data.append(buf, bytes_read);
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	catch (boost::system::system_error& e) {
+		return false;
+	}
+}
+
+// Write a line of text to the serial port.
+bool zc_serial::write_line(const std::string& line) {
+	if (!serial_port_ || !serial_port_->is_open()) {
+		return false;
+	}
+	try {
+		boost::asio::write(*serial_port_, boost::asio::buffer(line + "\n"));
+		return true;
+	}
+	catch (boost::system::system_error& e) {
+		return false;
+	}
+}
+
 // Find all existing COM ports - upto COM255
 // Returns true if the string array was large enough for all ports.
 bool zc_serial::available_ports(int num_ports, std::string* ports, bool all_ports, int& actual_ports) {

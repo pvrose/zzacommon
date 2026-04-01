@@ -22,9 +22,7 @@
 #include <set>
 #include <string>
 
-//! Include boost asio for cross-platform serial port access.
 #include <boost/asio.hpp>
-
 
 
 	//! This class provides utilities to support zc_serial port access.
@@ -32,6 +30,35 @@
 	{
 	public:
 	
+		//! Constructor for zc_serial.
+		//! \param port The name of the serial port to connect to.
+		//! \param baud_rate The baud rate for the serial connection.
+		zc_serial(const std::string& port, int baud_rate);
+
+		//! Destructor for zc_serial. It closes the serial connection.
+		~zc_serial();
+
+		//! Read a line of text from the serial port. 
+		//! This is a blocking call that waits until a line of text is received from the serial port.
+		//! \param line A string to receive the line of text read from the serial port.
+		//! \return true if a line was successfully read, false otherwise.
+		bool read_line(std::string& line);
+
+		//! Read whatever data is currently available on the serial port without blocking.
+		//! \param data A string to receive the data read from the serial port.
+		//! \return true if data was successfully read, false otherwise.
+		bool read_any(std::string& data);
+
+		//! Write a line of text to the serial port.
+		//! \param line The line of text to write to the serial port.
+		//! \return true if the line was successfully written, false otherwise.
+		bool write_line(const std::string& line);
+
+		//! Check if the serial port is open and ready for communication.
+		bool is_connected() const {
+			return serial_port_ && serial_port_->is_open();
+		}
+
 		//! Provides a set of all available ports
 		
 		//! \param num_ports the size of array \p ports.
@@ -43,6 +70,9 @@
 
         //! As available_ports but returns a set of strings instead of an array.
 		static std::set<std::string> available_ports(bool all_ports);
+
+	private:
+		boost::asio::serial_port* serial_port_ = nullptr;
 
 	};
 
