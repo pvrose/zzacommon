@@ -263,7 +263,7 @@ void zc_graph::draw() {
 	draw_box();
 	draw_label();
 	//! Clear the background - leave a 1 pixel border to show the box.
-	fl_color(FL_BACKGROUND_COLOR);
+	fl_color(color());
 	fl_rectf(x() + 1, y() + 1, w() - 2, h() - 2);
 	// Draw the axes
 	draw_axes();
@@ -390,7 +390,7 @@ void zc_graph::set_data(std::vector<coord>* data) {
 		// -  Colour is the same as the graph colour, 
 		// -  Line width is 1 and 
 		// -  Style is solid.
-		add_data_set({ Y_LEFT, zc_line_style(color(), 1, FL_SOLID), data});
+		add_data_set({ Y_LEFT, zc_line_style(selection_color(), 1, FL_SOLID), data});
 	}
 	else {
 		data_sets_[0].data = data;
