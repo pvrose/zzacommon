@@ -217,7 +217,7 @@ void zc_button_dialog<zc_line_style_dialog, zc_line_style>::update_button_label(
 	Fl_Image_Surface* image_surface = new Fl_Image_Surface(bn_->w(), bn_->h());
 	Fl_Surface_Device::push_current(image_surface);
 	// Draw the background
-	fl_color(FL_BACKGROUND_COLOR);
+	fl_color(color());
 	fl_rectf(0, 0, bn_->w(), bn_->h());
 	// Set the line end coordinates.
 	int x1 = bn_->w() / 10;
