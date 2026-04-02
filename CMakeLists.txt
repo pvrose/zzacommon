@@ -72,6 +72,7 @@ set(ZZACOMMON_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar_input.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar_table.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_file_holder.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_file_viewer.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_filename_input.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_input_hierch.cpp
@@ -105,6 +106,7 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_drawing.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_fft.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_file_holder.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_file_viewer.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_filename_input.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_input_hierch.h
