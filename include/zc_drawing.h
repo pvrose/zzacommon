@@ -23,7 +23,7 @@ Standard drawing types and constants for use in views and dialogs.
 #ifndef __DRAWING__
 #define __DRAWING__
 
-#include <map>
+#include <array>
 
 #include<FL/Enumerations.H>
 
@@ -67,6 +67,10 @@ const Fl_Color COLOUR_NAVY = 136;        /*!< R=0/4, B=2/4, G=0/7 */
 const Fl_Color COLOUR_CLARET = 80;       /*!< R=3/4, B=0/4, G=0/4 */
 const Fl_Color COLOUR_GREY = fl_color_average(FL_FOREGROUND_COLOR, FL_BACKGROUND_COLOR, 0.33F);
 	//!< One third between fotreground and background colours.
+const Fl_Color COLOUR_BROWN = 74;       /*!< R=2/4, B=0/4, G=2/7 */
 
+// Colour codes for the digits 0-9, based on the resistor colour code.
+const std::array<Fl_Color, 10> COLOUR_CODE = {
+	FL_BLACK, COLOUR_BROWN, FL_RED, COLOUR_ORANGE, FL_YELLOW, FL_GREEN, FL_BLUE, COLOUR_MAUVE, COLOUR_GREY, FL_WHITE };
 
 #endif

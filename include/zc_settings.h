@@ -109,6 +109,15 @@ public:
 		return exists;
 	}
 
+	//! \brief Get object of type T - default to existing value or default if not exist.
+	//! \param name The name of the object.
+	//! \param value Reference to where the data will be stored.
+	//! \return Returns true if item existed.
+	template <class T>
+	bool get(std::string name, T& value) {
+		return get(name, value, value);
+	}
+
 	//! \brief Set object of type T.
 	//! \param name The name of the object.
 	//! \param value The value to be written.
