@@ -295,6 +295,7 @@ void zc_graph::draw_points() {
 				}
 			}
 		}
+		fl_line_style(0);
 	}
 
 	// POP the clip area

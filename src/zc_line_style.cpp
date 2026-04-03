@@ -228,6 +228,7 @@ void zc_button_dialog<zc_line_style_dialog, zc_line_style>::update_button_label(
 	fl_color(ls.colour);
 	fl_line_style(ls.style, ls.width);
 	fl_line(x1, y1, x2, y2);
+	fl_line_style(0); // reset to default line style
 	Fl_RGB_Image* image = image_surface->image();
 	Fl_Surface_Device::pop_current();
 	delete image_surface;
