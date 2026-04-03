@@ -107,7 +107,7 @@ zc_settings::~zc_settings() {
 
 //! Clear the settings
 void zc_settings::clear() {
-	// Do nothing for now
+	data_->clear();
 }
 
 //! Flush the settings to filestore
