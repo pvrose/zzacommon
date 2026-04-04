@@ -149,7 +149,8 @@ public:
 		}
 
 		//! \brief Update scroll_offset based on mouse movement during scrolling.
-		//! \param start_pos The pixel position where the scroll started.
+		//! \param origin The pixel position to use as the left- or bottom-most along the axis
+		//! \param length The length of the axis in pixels
 		//! \param mouse_pos The current pixel position of the mouse along the axis.
 		void update_scroll(int origin, int length, int mouse_pos) {
 			int scroll_offset = mouse_pos - scroll_start_pos;
