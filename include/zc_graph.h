@@ -78,17 +78,57 @@ public:
 		bool zoomable = false;             //!< Whether to allow zooming and scrolling on this axis
 		float absolute_minimum = -FLT_MAX;       //!< Absolute minimum value (for zooming limits)
 		float absolute_maximum = FLT_MAX;       //!< Absolute maximum value (for zooming limits)
-		options_t(float min, float max, const char* label, axis_xier_t xier_type, 
-			int suggested_gap, bool zoomable = false, 
-			float abs_min = -FLT_MAX, float abs_max = FLT_MAX) :
-			minimum(min), maximum(max), base_label(label), 
-			xier_type(xier_type), suggested_gap(suggested_gap),
-			zoomable(zoomable), absolute_minimum(abs_min), absolute_maximum(abs_max)
-		{
-			orig_minimum = minimum;
-			orig_maximum = maximum;
-		}
+		bool expandable = true;              //!< Whether to allow expanding the range to fit new data - if false, the range will be fixed and data outside the range will be clipped.
+
 		options_t() {};
+
+		options_t(float minimum, float maximum, bool expandable, const char* label, axis_xier_t xier_type, int suggested_gap, bool zoomable = false, float absolute_minimum = -FLT_MAX, float absolute_maximum = FLT_MAX) {
+			set_drawing_options(label, xier_type, suggested_gap);
+			set_range(minimum, maximum, expandable);
+			set_zoom_options(zoomable, absolute_minimum, absolute_maximum);
+		}
+
+		// Set the options for drawing this axis.
+		void set_drawing_options(const char* label, axis_xier_t xier_type, int suggested_gap) {
+			this->base_label = label;
+			this->xier_type = xier_type;
+			this->suggested_gap = suggested_gap;
+		}
+
+		// Set the range for this axis.
+		// If expandable is true, the range may be expanded to include the new minimum and maximum 
+		// if they are outside the current range.
+		void set_range(float minimum, float maximum, bool expandable = true){
+			if (this->expandable) {
+				this->minimum = minimum;
+				this->maximum = maximum;
+				this->orig_minimum = minimum;
+				this->orig_maximum = maximum;
+			} else {
+				if (minimum > this->minimum) {
+					this->minimum = minimum;
+					this->orig_minimum = minimum;
+				}
+				if (maximum < this->maximum) {
+					this->maximum = maximum;
+					this->orig_maximum = maximum;
+				}
+			}
+			this->expandable = expandable;
+		}
+
+		// Set the zooming options for this axis.
+		void set_zoom_options(bool zoomable, float absolute_minimum, float absolute_maximum) {
+			this->zoomable = zoomable;
+			this->absolute_minimum = absolute_minimum;
+			this->absolute_maximum = absolute_maximum;
+		}
+
+		//! \brief Set the drawing position of the axis.
+		void set_origin_length(int origin, int length) {
+			this->origin = origin;
+			this->length = length;
+		}
 
 		int position_0 = 0;              //!< pixel position of 0 along the axis
 		float scale = 0.0F;              //!< Scale factor - Number of units per pixel
@@ -103,7 +143,8 @@ public:
 		int scroll_start_pos = 0;        //!< Starting pixel position of scroll - used to calculate scroll offset on mouse move
 		float orig_minimum = 0.0F;          //!< Original minimum set before zooming - used to restore when unzooming.
 		float orig_maximum = 0.0F;          //!< Original maximum set before zooming - used to restore when unzooming.
-
+		int origin = 0;                   //!< Pixel position to use as the left- or bottom-most along the axis - used to restore when unzooming.
+		int length = 0;                   //!< Length of the axis in pixels - used to restore when unzooming.
     public:
 		/// \brief Set the scaling factors based on the options and drawing area size
 		//! This is called when the options are set and when the widget is resized,
@@ -111,7 +152,7 @@ public:
 		//! \param origin The pixel position to use as the left- or bottom-most along the axis
 		//! \param length The length of the axis in pixels
 		//! \param unzoom Whether to reset the zoom factor to 1.0F.
-		void set_factors(int origin, int length, bool unzoom) {
+		void set_factors(bool unzoom) {
 			if (unzoom) {
 				minimum = orig_minimum;
 				maximum = orig_maximum;
@@ -132,7 +173,7 @@ public:
 		//! \param length The length of the axis in pixels
 		//! \param mouse_pos The current pixel position of the mouse along the axis
 		//! \param delta The change in zoom factor (positive to zoom in, negative to zoom out)
-		void update_zoom(int origin, int length, int mouse_pos, int delta) {
+		void update_zoom(int mouse_pos, int delta) {
 			// Zoom change is 2^^(delta/10) - so every 10 units of delta doubles the zoom factor, every -10 units halves it.
 			float zoom_change = powf(2.0F, (float)delta / 10.0F);
 			// Get the value at the mouse position before the zoom change.
@@ -147,14 +188,14 @@ public:
 			if (maximum > absolute_maximum) {
 				maximum = absolute_maximum;
 			}
-			set_factors(origin, length, false);
+			set_factors(false);
 		}
 
 		//! \brief Update scroll_offset based on mouse movement during scrolling.
 		//! \param origin The pixel position to use as the left- or bottom-most along the axis
 		//! \param length The length of the axis in pixels
 		//! \param mouse_pos The current pixel position of the mouse along the axis.
-		void update_scroll(int origin, int length, int mouse_pos) {
+		void update_scroll(int mouse_pos) {
 			int scroll_offset = mouse_pos - scroll_start_pos;
 			maximum += scroll_offset * scale;
 			minimum += scroll_offset * scale;
@@ -169,7 +210,7 @@ public:
 				minimum = maximum - range;
 			}
 			scroll_start_pos = mouse_pos;
-			set_factors(origin, length, false);
+			set_factors(false);
 		}
 
 		void set_ticks();         //!< Set the ticks and label based on the options
@@ -201,11 +242,19 @@ public:
 			return in_scrolling;
 		}
 
+		//!\brief Set new range for the axis, reset zoom and scroll to fit the new
+		void set_range(float new_minimum, float new_maximum) {
+			minimum = new_minimum;
+			maximum = new_maximum;
+			orig_minimum = minimum;
+			orig_maximum = maximum;
+			set_factors(true);
+		}
 	};
 
 	//! \brief Structure to describe a set of data points.
 	struct data_set_t {
-		y_axis_t y_axis;          //!< Y-axis to use for this data set
+		y_axis_t y_axis = Y_LEFT;          //!< Y-axis to use for this data set
 		zc_line_style style;    //!< Line style to use to draw this data set
 		std::vector<coord>* data; //!< Data points - by reference to allow manipulation outwith display.
 	};
@@ -276,7 +325,7 @@ protected:
 	//! \brief The data to display.
 	std::vector<data_set_t> data_sets_;
 
-	//! Paarmeters for drawing the X values and axis.
+	//! Parameters for drawing the X values and axis.
 	options_t x_options_;
 	//! Parameters for drawing the Y values and axes.
 	std::map<y_axis_t, options_t> y_options_;

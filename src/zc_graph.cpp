@@ -110,11 +110,13 @@ void zc_graph::set_drawing_area() {
 
 void zc_graph::set_factors(bool unzoom) {
 	set_drawing_area();
+	x_options_.set_origin_length(drawing_area_.x(), drawing_area_.w());
 	// Set X scaling factor (units per pixel)
-	x_options_.set_factors(drawing_area_.x(), drawing_area_.w(), unzoom);
+	x_options_.set_factors(unzoom);
 	// And repeat for all Y - Note increasing Y data value is decreasing pixel position
 	for (auto& y_option : y_options_) {
-		y_option.second.set_factors(drawing_area_.y() + drawing_area_.h(), -drawing_area_.h(), unzoom);
+		y_option.second.set_origin_length(drawing_area_.y() + drawing_area_.h(), -drawing_area_.h());
+		y_option.second.set_factors(unzoom);
 	}
 }
 
@@ -288,18 +290,18 @@ int zc_graph::handle(int event) {
 		// Get the scroll direction and amount - positive is scroll up, negative is scroll down.
 		if (in_left_axis) {
 			int scroll = Fl::event_dy();
-			y_options_[Y_LEFT].update_zoom(drawing_area_.y() + drawing_area_.h(), -drawing_area_.h(), my, scroll);
+			y_options_[Y_LEFT].update_zoom(my, scroll);
 			zoom_or_scroll = true;
 		}
 		else if (in_right_axis) {
 			int scroll = Fl::event_dy();
-			y_options_[Y_RIGHT].update_zoom(drawing_area_.y() + drawing_area_.h(), -drawing_area_.h(), my, scroll);
+			y_options_[Y_RIGHT].update_zoom(my, scroll);
 			zoom_or_scroll = true;
 		}
 		else if (in_x_axis) {
 			int scroll = Fl::event_dy();
 			// Zoom in is positive scroll, zoom out is negative scroll. Zoom by 10% per scroll step.
-			x_options_.update_zoom(drawing_area_.x(), drawing_area_.w(), mx, scroll);
+			x_options_.update_zoom(mx, scroll);
 			zoom_or_scroll = true;
 		}
 		else {
@@ -329,15 +331,15 @@ int zc_graph::handle(int event) {
 		// If right button pushed, reset zoom on that axis.
 		else if (Fl::event_button() == FL_RIGHT_MOUSE) {
 			if (in_left_axis) {
-				y_options_[Y_LEFT].set_factors(drawing_area_.y() + drawing_area_.h(), -drawing_area_.h(), true);
+				y_options_[Y_LEFT].set_factors(true);
 				zoom_or_scroll = true;
 			}
 			else if (in_right_axis) {
-				y_options_[Y_RIGHT].set_factors(drawing_area_.y() + drawing_area_.h(), -drawing_area_.h(), true);
+				y_options_[Y_RIGHT].set_factors(true);
 				zoom_or_scroll = true;
 			}
 			else if (in_x_axis) {
-				x_options_.set_factors(drawing_area_.x(), drawing_area_.w(), true);
+				x_options_.set_factors(true);
 				zoom_or_scroll = true;
 			}
 			else {
@@ -362,15 +364,15 @@ int zc_graph::handle(int event) {
 		// If the mouse is moved while a scroll operation is in progress, update the scroll offset for that axis.
 	case FL_DRAG:
 		if (y_options_.find(Y_LEFT) != y_options_.end() && y_options_[Y_LEFT].is_scrolling()) {
-			y_options_[Y_LEFT].update_scroll(drawing_area_.y() + drawing_area_.h(), -drawing_area_.h(), my);
+			y_options_[Y_LEFT].update_scroll(my);
 			zoom_or_scroll = true;
 		}
 		else if (y_options_.find(Y_RIGHT) != y_options_.end() && y_options_[Y_RIGHT].is_scrolling()) {
-			y_options_[Y_RIGHT].update_scroll(drawing_area_.y() + drawing_area_.h(), -drawing_area_.h(), my);
+			y_options_[Y_RIGHT].update_scroll(my);
 			zoom_or_scroll = true;
 		}
 		else if (x_options_.is_scrolling()) {
-			x_options_.update_scroll(drawing_area_.x(), drawing_area_.w(), mx);
+			x_options_.update_scroll(mx);
 			zoom_or_scroll = true;
 		}
 		else {
@@ -631,7 +633,7 @@ void zc_graph::adjust_scale_x() {
 		}
 		x_options_.minimum = min_x;
 		x_options_.maximum = max_x;
-		x_options_.set_factors(drawing_area_.x(), drawing_area_.w(), true);
+		x_options_.set_factors(true);
 	}
 }
 
@@ -650,6 +652,6 @@ void zc_graph::adjust_scale_y(zc_graph::y_axis_t axis) {
 		}
 		y_options_[axis].minimum = min_y;
 		y_options_[axis].maximum = max_y;
-		y_options_[axis].set_factors(drawing_area_.y() + drawing_area_.h(), -drawing_area_.h(), true);
+		y_options_[axis].set_factors(true);
 	}
 }
