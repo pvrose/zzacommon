@@ -68,35 +68,106 @@ public:
 	};
 	//! \brief Graph axis options
 	struct options_t {
-		friend class zc_graph;
 		float minimum = 0.0F;            //!< Minimum  value
 		float maximum = 1.0F;            //!< Maximum  value
 		const char* base_label = "";     //!< Label (base unit)
 		axis_xier_t xier_type = SI_PREFIX;    //!< How to display multipliers
 		int suggested_gap = 20;          //!< Suggested gap between ticks
-
-		options_t(float min, float max, const char* label, axis_xier_t xier_type, int suggested_gap) :
-			minimum(min), maximum(max), base_label(label), xier_type(xier_type), suggested_gap(suggested_gap) {
+		bool zoomable = false;             //!< Whether to allow zooming and scrolling on this axis
+		float absolute_minimum = -FLT_MAX;       //!< Absolute minimum value (for zooming limits)
+		float absolute_maximum = FLT_MAX;       //!< Absolute maximum value (for zooming limits)
+		options_t(float min, float max, const char* label, axis_xier_t xier_type, 
+			int suggested_gap, bool zoomable = false, 
+			float abs_min = -FLT_MAX, float abs_max = FLT_MAX) :
+			minimum(min), maximum(max), base_label(label), 
+			xier_type(xier_type), suggested_gap(suggested_gap),
+			zoomable(zoomable), absolute_minimum(abs_min), absolute_maximum(abs_max)
+		{
+			orig_minimum = minimum;
+			orig_maximum = maximum;
 		}
 		options_t() {};
 
-	protected:
-		int position_0 = 0;           //!< pixel position of 0 along the axis
+		int position_0 = 0;              //!< pixel position of 0 along the axis
 		float scale = 0.0F;              //!< Scale factor - Number of units per pixel
 		float inv_scale = 0.0F;          //!< Inverse scae factor - number of pixels per unit
-		std::string label;        //!< Label to display (base label plus multiplier if appropriate)
-		std::vector<tick_t> ticks; //!< Ticks to display
-		std::vector<int> lines;    //!< Pixel position of lines to draw every few ticks.
+		std::string label;               //!< Label to display (base label plus multiplier if appropriate)
+		std::vector<tick_t> ticks;       //!< Ticks to display
+		std::vector<int> lines;          //!< Pixel position of lines to draw every few ticks.
 
+	protected:
+
+		bool in_scrolling = false;       //!< Whether we are currently scrolling - used to track whether to update scroll offset on mouse move
+		int scroll_start_pos = 0;        //!< Starting pixel position of scroll - used to calculate scroll offset on mouse move
+		float orig_minimum = 0.0F;          //!< Original minimum set before zooming - used to restore when unzooming.
+		float orig_maximum = 0.0F;          //!< Original maximum set before zooming - used to restore when unzooming.
+
+    public:
 		/// \brief Set the scaling factors based on the options and drawing area size
-		void set_factors(int origin, int length) {
+		//! This is called when the options are set and when the widget is resized,
+		//! and can be used to restore the scaling factors after zooming or scrolling.
+		//! \param origin The pixel position to use as the left- or bottom-most along the axis
+		//! \param length The length of the axis in pixels
+		//! \param unzoom Whether to reset the zoom factor to 1.0F.
+		void set_factors(int origin, int length, bool unzoom) {
+			if (unzoom) {
+				minimum = orig_minimum;
+				maximum = orig_maximum;
+			}
 			float x_range = maximum - minimum;
+			// Scale is number of units per pixel - so invert to get pixels per unit.
+			// And apply zoom factor - so zoom in is more units per pixel, zoom out is fewer units per pixel.
 			scale = x_range / length;
 			inv_scale = 1.0F / scale;
-			// Set origin
+			// Set origin and adjust by scroll offset
 			position_0 = origin - (minimum * inv_scale);
 			set_ticks();
 		};
+
+		//! \brief Update zoom factor and scroll offset based on mouse
+		//! movement during zooming or scrolling.
+		//! \param origin The pixel position to use as the left- or bottom-most along the axis
+		//! \param length The length of the axis in pixels
+		//! \param mouse_pos The current pixel position of the mouse along the axis
+		//! \param delta The change in zoom factor (positive to zoom in, negative to zoom out)
+		void update_zoom(int origin, int length, int mouse_pos, int delta) {
+			// Zoom change is 2^^(delta/10) - so every 10 units of delta doubles the zoom factor, every -10 units halves it.
+			float zoom_change = powf(2.0F, (float)delta / 10.0F);
+			// Get the value at the mouse position before the zoom change.
+			float mouse_value = (mouse_pos - position_0) * scale;
+			// Apply the zoom change to the zoomed range.
+			minimum = mouse_value - (mouse_value - minimum) * zoom_change;
+			maximum = mouse_value + (maximum - mouse_value) * zoom_change;
+			// Clamp the zoomed range to the absolute minimum and maximum.
+			if (minimum < absolute_minimum) {
+				minimum = absolute_minimum;
+			}
+			if (maximum > absolute_maximum) {
+				maximum = absolute_maximum;
+			}
+			set_factors(origin, length, false);
+		}
+
+		//! \brief Update scroll_offset based on mouse movement during scrolling.
+		//! \param start_pos The pixel position where the scroll started.
+		//! \param mouse_pos The current pixel position of the mouse along the axis.
+		void update_scroll(int origin, int length, int mouse_pos) {
+			int scroll_offset = mouse_pos - scroll_start_pos;
+			maximum += scroll_offset * scale;
+			minimum += scroll_offset * scale;
+			int range = maximum - minimum;
+			// Clamp the zoomed range to the absolute minimum and maximum.
+			if (minimum < absolute_minimum) {
+				minimum = absolute_minimum;
+				maximum = minimum + range;
+			}
+			if (maximum > absolute_maximum) {
+				maximum = absolute_maximum;
+				minimum = maximum - range;
+			}
+			scroll_start_pos = mouse_pos;
+			set_factors(origin, length, false);
+		}
 
 		void set_ticks();         //!< Set the ticks and label based on the options
 
@@ -110,6 +181,22 @@ public:
 		//! \brief. Convert data point \p f from float to drawing position
 		int float_to_point(float f);
 
+		//! \brief. Set the scrolling start position
+		void start_scroll(int mouse_pos) {
+			in_scrolling = true;
+			scroll_start_pos = mouse_pos;
+		}
+
+		//! \brief. End scrolling
+		void end_scroll() {
+			in_scrolling = false;
+			scroll_start_pos = 0;
+		}
+
+		//!\brief. In scrolling mode.
+		bool is_scrolling() const {
+			return in_scrolling;
+		}
 
 	};
 
@@ -161,6 +248,9 @@ public:
 	//! \brief. Set the drawing area
 	void set_drawing_area();
 
+	//! Overload handle to capture mouse events for zooming and scrolling
+	int handle(int event) override;
+
 
 protected:
 
@@ -174,7 +264,8 @@ protected:
 	void draw_points();
 
 	//! \brief Set the scaling factors etc.
-	void set_factors();
+	//! \param unzoom Whether to reset the zoom factors to 1.0F.
+	void set_factors(bool unzoom);
 
 	////! \brief. Convert data to points
 	//void convert_data_to_points();
