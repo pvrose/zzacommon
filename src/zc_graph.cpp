@@ -620,38 +620,3 @@ bool zc_graph::in_drawing_area(int px, int py) {
 	return true;
 }
 
-// Adjust the X axis to fit the data
-void zc_graph::adjust_scale_x() {
-	if (data_sets_.size() > 0) {
-		float min_x = data_sets_[0].data->size() > 0 ? (*data_sets_[0].data)[0].x : 0.0F;
-		float max_x = min_x;
-		for (auto& ds : data_sets_) {
-			for (auto& c : *ds.data) {
-				if (c.x < min_x) min_x = c.x;
-				if (c.x > max_x) max_x = c.x;
-			}
-		}
-		x_options_.minimum = min_x;
-		x_options_.maximum = max_x;
-		x_options_.set_factors(true);
-	}
-}
-
-// Adjust the Y axis to fit the data
-void zc_graph::adjust_scale_y(zc_graph::y_axis_t axis) {
-	if (data_sets_.size() > 0) {
-		float min_y = data_sets_[0].data->size() > 0 ? (*data_sets_[0].data)[0].y : 0.0F;
-		float max_y = min_y;
-		for (auto& ds : data_sets_) {
-			if (ds.y_axis == axis) {
-				for (auto& c : *ds.data) {
-					if (c.y < min_y) min_y = c.y;
-					if (c.y > max_y) max_y = c.y;
-				}
-			}
-		}
-		y_options_[axis].minimum = min_y;
-		y_options_[axis].maximum = max_y;
-		y_options_[axis].set_factors(true);
-	}
-}

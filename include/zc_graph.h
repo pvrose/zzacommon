@@ -104,8 +104,8 @@ public:
 				this->maximum = std::max(maximum, this->maximum);
 				this->orig_minimum = this->minimum;
 				this->orig_maximum = this->maximum;
+				this->expandable = expandable;
 			}
-			this->expandable = expandable;
 		}
 
 		// Set the zooming options for this axis.
@@ -274,15 +274,22 @@ public:
 	//! \brief Clear all data sets.
 	void clear_data_sets();
 
-	//! \brief Adjust the ranges of the X axis to fit the data.
-	void adjust_scale_x();
-
-	//!\brief Adjust the ranges of the Y axis to fit the data.
-	void adjust_scale_y(y_axis_t axis);
-
 	//! \brief. Set the drawing area
 	void set_drawing_area();
 
+	//! \brief. Get axis options for X axis
+	options_t* get_x_options() {
+		return &x_options_;
+	}
+	//! \brief. Get axis options for Y axis
+	options_t* get_y_options(y_axis_t axis) {
+		if (y_options_.find(axis) == y_options_.end()) {
+			// If we don't have options for this axis yet, add some with default values.
+			return nullptr;
+		}
+		return &y_options_[axis];
+	}
+	
 	//! Overload handle to capture mouse events for zooming and scrolling
 	int handle(int event) override;
 
