@@ -20,6 +20,8 @@
 #include "zc_line_style.h"
 
 #include <cstdint>
+#include <cmath>
+#include <cfloat>
 #include <map>
 #include <string>
 #include <vector>
