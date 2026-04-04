@@ -100,19 +100,10 @@ public:
 		// if they are outside the current range.
 		void set_range(float minimum, float maximum, bool expandable = true){
 			if (this->expandable) {
-				this->minimum = minimum;
-				this->maximum = maximum;
-				this->orig_minimum = minimum;
-				this->orig_maximum = maximum;
-			} else {
-				if (minimum > this->minimum) {
-					this->minimum = minimum;
-					this->orig_minimum = minimum;
-				}
-				if (maximum < this->maximum) {
-					this->maximum = maximum;
-					this->orig_maximum = maximum;
-				}
+				this->minimum = std::min(minimum, this->minimum);
+				this->maximum = std::max(maximum, this->maximum);
+				this->orig_minimum = this->minimum;
+				this->orig_maximum = this->maximum;
 			}
 			this->expandable = expandable;
 		}
@@ -242,14 +233,6 @@ public:
 			return in_scrolling;
 		}
 
-		//!\brief Set new range for the axis, reset zoom and scroll to fit the new
-		void set_range(float new_minimum, float new_maximum) {
-			minimum = new_minimum;
-			maximum = new_maximum;
-			orig_minimum = minimum;
-			orig_maximum = maximum;
-			set_factors(true);
-		}
 	};
 
 	//! \brief Structure to describe a set of data points.
