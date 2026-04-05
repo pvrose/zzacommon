@@ -17,34 +17,42 @@
 */
 #pragma once
 #include <complex>
+#include <cstdint>
 #include <vector>
+
+// Include FFTW3.
+#include <fftw3.h>
 
 using namespace std;
 
-// Allow simple testing with double or long double
-
 class zc_fft {
 
-    const float PI = 3.14159265358979323846264338327950288419716939937510;
-    
-    public:
+public:
+
+	//! FFT direction
+	enum direction_t : uint8_t { FORWARD, BACKWARD };
+
     //! Constructor
-    //! \param size Number of FFT bins (must be power of 2)
-    zc_fft(unsigned int size);
+	//! \param direction Direction of the FFT (FORWARD or BACKWARD)
+	//! \param size Size of the FFT (number of points)
+	//! \param in_buff Input buffer (array of complex numbers)
+	//! \param out_buff Output buffer (array of complex numbers)
+	zc_fft( direction_t direction, 
+		unsigned int size, 
+		std::complex<double>*& in_buff, 
+		std::complex<double>*& out_buff
+	);
 
-    //! Calculate
-    //! \param data Contains data to be transformed - returned in place.
-    void calculate(std::vector<float>* data);
+	//! Run the FFT
+	void execute();
 
-    //! Complex version for transform
-    std::vector<std::complex<float> > data_;
-    //! bitswap lookup table
-    unsigned int* bitswap_lut_;
-    //! Size
-    unsigned int size_;
-    //! Logarithm base 2 of size_
-    unsigned int log2_size_;
-    //!  \316\251 (Omega) factors -- 
-    std::vector<std::complex<float> > omega_factor_;
- 
+	//! Destructor
+	~zc_fft();
+
+private:
+	fftw_plan plan_; //!< FFTW plan
+	// Buffers
+	fftw_complex* in_buff_; //!< Input buffer (array of complex numbers)
+	fftw_complex* out_buff_; //!< Output buffer (array of complex numbers)
+
 };

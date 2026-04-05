@@ -10,12 +10,34 @@
         "${workspaceRoot}\\..\\fltk",
         "${workspaceRoot}\\..\\..\\vcpkg\\installed\\x64-windows\\include",
         "${workspaceRoot}\\..\\vcpkg\\installed\\x64-windows\\include",
+        "${env.USERPROFILE}\\Downloads\\fftw-3.3.5-dll64",
         "${env.INCLUDE}",
         "${workspaceRoot}\\**"
       ],
       "defines": [
         "WIN32",
         "_DEBUG",
+        "UNICODE",
+        "_UNICODE"
+      ],
+      "intelliSenseMode": "windows-msvc-x64"
+    },
+    {
+      "inheritEnvironments": [
+        "msvc_x64"
+      ],
+      "name": "x64 Release",
+      "includePath": [
+        "${workspaceRoot}\\..\\..\\fltk",
+        "${workspaceRoot}\\..\\fltk",
+        "${workspaceRoot}\\..\\..\\vcpkg\\installed\\x64-windows\\include",
+        "${workspaceRoot}\\..\\vcpkg\\installed\\x64-windows\\include",
+        "${env.USERPROFILE}\\Downloads\\fftw-3.3.5-dll64",
+        "${env.INCLUDE}",
+        "${workspaceRoot}\\**"
+      ],
+      "defines": [
+        "WIN32",
         "UNICODE",
         "_UNICODE"
       ],

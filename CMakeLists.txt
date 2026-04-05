@@ -150,6 +150,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # Set CMake prefix path to pick up vcpkg-installed packages
 list(APPEND CMAKE_PREFIX_PATH "${VCPKG_ROOT}/installed/x64-windows/share")
 include(vcpkg_helper)
+include(fftw_helper)
 
 # libboost
 message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
@@ -217,6 +218,11 @@ if (CURL_FOUND)
   message(STATUS "CURL not found")
 endif()
 
+# fftw
+find_fftw()
+message(STATUS "FFTW include dir: ${FFTW3_INCLUDE_DIRS}")   
+message(STATUS "FFTW libraries: ${FFTW3_LIBRARIES}")
+
 # TODO Make External Project?
 add_subdirectory(pugixml)
 
@@ -233,6 +239,7 @@ target_include_directories(${TARGET} PRIVATE
   ${Boost_INCLUDE_DIRS}
   ${pugixml_INCLUDE_DIR}
   ${CURL_INCLUDE_DIRS}
+  ${FFTW3_INCLUDE_DIRS}
 )
 if (MSVC)
   target_include_directories(${TARGET} PRIVATE
