@@ -66,7 +66,6 @@ message(STATUS "ZZACOMMON for parent ${APP_NAME}")
 
 # Source files
 set(ZZACOMMON_CPPFILES 
-#  ${ZZACOMMON_SOURCE_DIR}/src/zc_app.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_banner.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar_input.cpp
@@ -90,8 +89,8 @@ set(ZZACOMMON_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_ticker.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_url_handler.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_utils.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_fft.cpp
 )
+
 
 # Header files - used as dependencies for API documentation
 set(ZZACOMMON_HPPFILES
@@ -104,7 +103,6 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_calendar_table.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_callback.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_drawing.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_fft.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_file_holder.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_file_viewer.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_filename_input.h
@@ -150,7 +148,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # Set CMake prefix path to pick up vcpkg-installed packages
 list(APPEND CMAKE_PREFIX_PATH "${VCPKG_ROOT}/installed/x64-windows/share")
 include(vcpkg_helper)
-include(fftw_helper)
 
 # libboost
 message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
@@ -217,11 +214,6 @@ if (CURL_FOUND)
  else()
   message(STATUS "CURL not found")
 endif()
-
-# fftw
-find_fftw()
-message(STATUS "FFTW include dir: ${FFTW3_INCLUDE_DIRS}")   
-message(STATUS "FFTW libraries: ${FFTW3_LIBRARIES}")
 
 # TODO Make External Project?
 add_subdirectory(pugixml)
