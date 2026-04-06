@@ -56,9 +56,6 @@ See \ref zc_callback.h.
 This is a set of drawing constants to maintain a consistent "look-and-feel" across
 all projects.
 See \ref zc_drawing.h.
-\par zc_fft
-This class provides a fast Fourier Transform.
-See \ref zc_fft.
 \par zc_filename_input
 This is a version of button_input where the button opens a file browser and the selected
 filename is then copied to the text value of the input widget.

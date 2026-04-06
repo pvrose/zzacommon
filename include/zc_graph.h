@@ -140,8 +140,6 @@ public:
 		/// \brief Set the scaling factors based on the options and drawing area size
 		//! This is called when the options are set and when the widget is resized,
 		//! and can be used to restore the scaling factors after zooming or scrolling.
-		//! \param origin The pixel position to use as the left- or bottom-most along the axis
-		//! \param length The length of the axis in pixels
 		//! \param unzoom Whether to reset the zoom factor to 1.0F.
 		void set_factors(bool unzoom) {
 			if (unzoom) {
@@ -160,8 +158,6 @@ public:
 
 		//! \brief Update zoom factor and scroll offset based on mouse
 		//! movement during zooming or scrolling.
-		//! \param origin The pixel position to use as the left- or bottom-most along the axis
-		//! \param length The length of the axis in pixels
 		//! \param mouse_pos The current pixel position of the mouse along the axis
 		//! \param delta The change in zoom factor (positive to zoom in, negative to zoom out)
 		void update_zoom(int mouse_pos, int delta) {
@@ -183,8 +179,6 @@ public:
 		}
 
 		//! \brief Update scroll_offset based on mouse movement during scrolling.
-		//! \param origin The pixel position to use as the left- or bottom-most along the axis
-		//! \param length The length of the axis in pixels
 		//! \param mouse_pos The current pixel position of the mouse along the axis.
 		void update_scroll(int mouse_pos) {
 			int scroll_offset = mouse_pos - scroll_start_pos;
