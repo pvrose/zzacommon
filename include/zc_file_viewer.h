@@ -31,6 +31,13 @@ class zc_file_viewer :
     public Fl_Window
 {
 public:
+
+    //! Types of viewer.
+    enum viewer_type_t : uint8_t {
+        VT_FILE,         //!< Viewer for a file, with "Save" and "Reload" buttons.
+        VT_DATA,         //!< Viewer for data, with "Save"  and "Recover" buttons.
+    };
+
     //! Constructor.
 
     //! \param W width 
@@ -48,11 +55,21 @@ public:
     //! Load  specified file \p name into the editor.
     void load_file(std::string name);
 
+	//! Set data to be displayed in the editor. This will
+    //! be kept as a pointer with an internal copy.
+	void set_data(std::string* data);
+
     //! Returns name of displayed file
     std::string file();
 
     //! File has been changed and not saved.
     bool is_dirty() const;
+
+    //! Set type of viewer, which determines behaviour.
+	void type(viewer_type_t t) { type_ = t; }
+
+	//! Get type of viewer.
+	viewer_type_t type() const { return type_; }
 
     //! Callback from window close button.
     static void cb_close(Fl_Widget* w, void* v);
@@ -77,6 +94,12 @@ protected:
     //! Save edited data back to the file.
     void save_file();
 
+	//! Update supplied data pointer with contents of editor.
+	void save_data();
+
+    //! Recover data to the editor from the data pointer.
+	void recover_data();
+
     Fl_Text_Editor* display_;    //!< Text editor widget.
 
     Fl_Text_Buffer* buffer_;     //!< Data buffer used in editor.
@@ -87,6 +110,11 @@ protected:
     std::string filename_;            //!< Name of file being edited.
     bool dirty_;                 //!< Data is "dirty", ie it has been changed and 
                                  //!< not written to store.
+	viewer_type_t type_ = VT_FILE;         //!< Type of viewer, which determines behaviour.
+
+	std::string* data_;           //!< Pointer to data being edited, used when type is VT_DATA. 
+    //!< This will be copied into the text buffer and changes will be written back to
+    //! this pointer when saved.
 
 };
 

@@ -82,15 +82,34 @@ void zc_file_viewer::create() {
 // Enable widgets
 void zc_file_viewer::enable_widgets() {
 	char l[128];
-	if (is_dirty()) {
-		bn_reload_->activate();
-		bn_save_->activate();
-		snprintf(l, sizeof(l), "%s %s", filename_.c_str(), "[Modified]");
-		copy_label(l);
-	} else {
-		bn_reload_->deactivate();
-		bn_save_->deactivate();
-		copy_label(filename_.c_str());
+	switch (type_) {
+	case VT_FILE:
+		if (is_dirty()) {
+			bn_reload_->activate();
+			bn_save_->activate();
+			snprintf(l, sizeof(l), "%s %s", filename_.c_str(), "[Modified]");
+			copy_label(l);
+		}
+		else {
+			bn_reload_->deactivate();
+			bn_save_->deactivate();
+			copy_label(filename_.c_str());
+		}
+		bn_reload_->label("Reload");
+		bn_save_->label("Save");
+		break;
+	case VT_DATA:
+		if (is_dirty()) {
+			bn_reload_->activate();
+			bn_save_->activate();
+		}
+		else {
+			bn_reload_->deactivate();
+			bn_save_->deactivate();
+		}
+		bn_reload_->label("Recover");
+		bn_save_->label("Save");
+		break;
 	}
 }
 
@@ -100,18 +119,27 @@ void zc_file_viewer::cb_close(Fl_Widget* w, void* v) {
 	win->hide();
 }
 
-// Reload file
+// Reload file or recover data
 void zc_file_viewer::cb_reload(Fl_Widget* w, void* v) {
 	zc_file_viewer* that = zc::ancestor_view<zc_file_viewer>(w);
 	int len = that->buffer_->length();
 	that->buffer_->remove(0, len);
-	that->load_file(that->filename_);
+	if (that->type() == VT_FILE) {
+		that->load_file(that->filename_);
+	} else {
+		that->recover_data();
+	}
 }
 
-// Save file
+// Save file or data
 void zc_file_viewer::cb_save(Fl_Widget* w, void* v) {
 	zc_file_viewer* that = zc::ancestor_view<zc_file_viewer>(w);
-	that->save_file();
+	if (that->type() == VT_FILE) {
+		that->save_file();
+	}
+	else {
+		that->save_data();
+	}
 }
 
 // Buffer modified
@@ -139,11 +167,11 @@ void zc_file_viewer::load_file(std::string name) {
 	filename_ = name;
 	char msg[128];
 	switch (buffer_->loadfile(filename_.c_str())) {
-		case 1:
+	case 1:
 		snprintf(msg, sizeof(msg), "APPS: File %s failed to open %s", filename_.c_str(), strerror(errno));
 		status_->misc_status(ST_ERROR, msg);
 		break;
-		case 2:
+	case 2:
 		snprintf(msg, sizeof(msg), "APPS: File %s failed to read completely", filename_.c_str());
 		status_->misc_status(ST_WARNING, msg);
 		break;
@@ -196,3 +224,31 @@ int zc_file_viewer::kf_close(int key, Fl_Text_Editor* editor) {
 	return 0;
 }
 
+// Recover data
+void zc_file_viewer::recover_data() {
+	if (data_) {
+		buffer_->text(data_->c_str());
+		dirty_ = false;
+		enable_widgets();
+	}
+}
+
+// Set data
+void zc_file_viewer::set_data(std::string* data) {
+	data_ = data;
+	if (data_) {
+		buffer_->text(data_->c_str());
+		dirty_ = false;
+		enable_widgets();
+	}
+	show();
+}
+
+// Save data
+void zc_file_viewer::save_data() {
+	if (data_) {
+		*data_ = buffer_->text_str();
+		dirty_ = false;
+		enable_widgets();
+	}
+}
