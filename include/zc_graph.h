@@ -100,8 +100,8 @@ public:
 		// if they are outside the current range.
 		void set_range(float minimum, float maximum, bool expandable = true){
 			if (this->expandable) {
-				this->minimum = minimum;
-				this->maximum = maximum;
+				this->minimum = std::min(minimum, this->minimum);
+				this->maximum = std::max(maximum, this->maximum);
 				this->orig_minimum = this->minimum;
 				this->orig_maximum = this->maximum;
 				this->expandable = expandable;
