@@ -22,6 +22,9 @@
 
 #include <FL/Fl_Widget.H>
 
+#include <cstdint>
+#include <vector>
+
 //! \brief Header for zc_graph_plot.cpp - the main graph plotting widget.
 //! This is the main widget for plotting graphs. Data is supplied
 //! as a list of pixel coordinates, and the widgets just draws these as points or lines.

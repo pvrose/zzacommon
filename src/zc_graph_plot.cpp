@@ -59,7 +59,7 @@ void zc_graph_plot::draw() {
 			}
 			break;
 		case CONNECTED_POINTS:
-			for (size_t i = 0; i < ds->points.size() - 1; i++) {
+			for (size_t i = 0; ds->points.size() != 0 && i < ds->points.size() - 1; i++) {
 				auto& p1 = ds->points[i];
 				auto& p2 = ds->points[i + 1];
 				// Only draw the line if either of the points is within the
