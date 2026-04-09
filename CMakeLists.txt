@@ -74,6 +74,10 @@ set(ZZACOMMON_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_file_viewer.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_filename_input.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_base.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_plot.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_xy.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_input_hierch.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_line_style.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_password_input.cpp
@@ -107,6 +111,10 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_file_viewer.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_filename_input.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_base.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_plot.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_xy.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_input_hierch.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_line_style.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_password_input.h
