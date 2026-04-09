@@ -78,6 +78,7 @@ set(ZZACOMMON_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_base.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_plot.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_xy.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_x2y.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_input_hierch.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_line_style.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_password_input.cpp
@@ -115,6 +116,7 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph_base.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph_plot.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph_xy.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_x2y.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_input_hierch.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_line_style.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_password_input.h
@@ -297,11 +299,11 @@ endif()
 target_sources(${TARGET} 
   PRIVATE 
     ${ZZACOMMON_CPPFILES}
-)
+ "include/zc_graph_x2y.h")
 target_sources(${ZC_APP_LIBRARY}
   PRIVATE
     ${ZZACOMMON_SOURCE_DIR}/src/zc_app.cpp
-)
+ "include/zc_graph_x2y.h")
 
 # generate API documentation
 if (ZZACOMMON_DOX)
