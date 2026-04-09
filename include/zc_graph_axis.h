@@ -59,7 +59,25 @@ public:
 		std::string unit;              //!< Unit to display on the axis (e.g. "Hz")
 		std::string label;             //!< Base label for the axis (e.g. "Frequency")
 		int tick_spacing_pixels;       //!< Suggested spacing between ticks in pixels
+
 		axis_params_t() {};
+
+		//! Minimalist constructor with mostly default values.
+		//! \param orientation Orientation of the axis
+		//! \param range Range for the axis (outer, inner, and default all set to the same value)
+		//! \param modifier Modifier for axis labels
+		//! \param unit Unit to display on the axis (e.g. "Hz")
+		//! \param label Base label for the axis (e.g. "Frequency")
+		axis_params_t(orientation_t orientation, range range, modifier_t modifier = NO_MODIFIER, const std::string& unit = "", const std::string& label = "") :
+			orientation(orientation), 
+			outer_range(range), 
+			inner_range(range), 
+			default_range(range),
+			modifier(modifier), 
+			unit(unit), 
+			label(label), 
+			tick_spacing_pixels(30) {
+		};
 	};
 
 	//! \brief Constructor
@@ -115,7 +133,7 @@ public:
 
 	//! \brief Return the pixel value for the given data value \p f.
 	int float_to_pixel(float f) const {
-		return origin_ + (int)((f - current_range_.min) * inv_scale_);
+		return origin_ + (int)(f * inv_scale_);
 	}
 
 	//! \brief Return the current tick spacing in units.
@@ -188,9 +206,6 @@ private:
 	//! \param exp10 Exponent (power of 10)
 	//! \param si_prefix SI Prefix (if appropriate) - UTF-8 character
 	void normalise(float fin, float& norm, float& exp10, uint32_t& si_prefix) const;
-
-	//! \brief Update the scale and position_0 based on the current range and drawing area.
-	void update_scale_and_position();
 
 	//! \brief Draw the line for the axis.
 	void draw_axis_line();

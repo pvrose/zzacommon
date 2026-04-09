@@ -80,6 +80,7 @@ void zc_graph_axis::set_params(const axis_params_t& params) {
 	copy_label(params.label.c_str());
 	// Set the current range to the default range and calculate the scale factors and ticks.
 	set_range(default_range_);
+	redraw();
 }
 
 //! \brief Attempt to set the range to \p new_range.
@@ -108,10 +109,10 @@ bool zc_graph_axis::set_range(range new_range) {
 	else {
 		current_range_.max = new_range.max;
 	}
-	scale_ = (current_range_.max - current_range_.min) / (orientation_ == X_AXIS ? w() : h());
+	scale_ = (current_range_.max - current_range_.min) / (orientation_ == X_AXIS ? w() : -h());
 	inv_scale_ = 1.0F / scale_;
 	pre_zoom_scroll_range_ = current_range_;
-	update_scale_and_position();
+	origin_ = (orientation_ == X_AXIS ? x() : y() + h()) - current_range_.min * inv_scale_;
 	set_ticks();
 	return ok;
 }
@@ -151,7 +152,7 @@ void zc_graph_axis::draw() {
 //! \brief Draw the axis line.
 void zc_graph_axis::draw_axis_line() {
 	// Set the color and line width for the axis line.
-	fl_color(color());
+	fl_color(FL_FOREGROUND_COLOR);
 	fl_line_style(FL_SOLID, 1);
 	// Draw the axis line based on the orientation.
 	switch (orientation_) {
@@ -175,7 +176,7 @@ void zc_graph_axis::draw_axis_line() {
 //! \brief Draw the ticks and tick labels.
 void zc_graph_axis::draw_ticks() {
 	// Set the color and line width for the ticks.
-	fl_color(color());
+	fl_color(FL_FOREGROUND_COLOR);
 	fl_line_style(FL_SOLID, 1);
 	// Get the font and size for the tick labels.
 	fl_font(labelfont(), labelsize() - 2);
@@ -188,21 +189,21 @@ void zc_graph_axis::draw_ticks() {
 		switch (orientation_) {
 		case zc_graph_axis::X_AXIS:
 			// Draw the tick extending down from the axis line.
-			fl_line(x() + tick.position, y(), x() + tick.position, y() + 5);
+			fl_line(tick.position, y(), tick.position, y() + 5);
 			// Draw the tick label centered below the tick.
-			fl_draw(tick.label.c_str(), x() + tick.position - tw / 2, y() + 5 + th);
+			fl_draw(tick.label.c_str(), tick.position - tw / 2, y() + 5 + th);
 			break;
 		case zc_graph_axis::YL_AXIS:
 			// Draw the tick extending left from the axis line.
-			fl_line(x() + w(), y() + tick.position, x() + w() - 5, y() + tick.position);
+			fl_line(x() + w(), tick.position, x() + w() - 5, tick.position);
 			// Draw the tick label centered to the right of the tick.
-			fl_draw(tick.label.c_str(), x() + w() - 5 - tw, y() + tick.position + th / 2);
+			fl_draw(tick.label.c_str(), x() + w() - 5 - tw, tick.position + th / 2);
 			break;
 		case zc_graph_axis::YR_AXIS:
 			// Draw the tick extending right from the axis line.
-			fl_line(x(), y() + tick.position, x() + 5, y() + tick.position);
+			fl_line(x(), tick.position, x() + 5, tick.position);
 			// Draw the tick label centered to the left of the tick.
-			fl_draw(tick.label.c_str(), x() + 5, y() + tick.position + th / 2);
+			fl_draw(tick.label.c_str(), x() + 5, tick.position + th / 2);
 			break;
 		}
 	}
@@ -212,7 +213,7 @@ void zc_graph_axis::draw_ticks() {
 void zc_graph_axis::draw_label() {
 	//Centre the label on the axis and draw it.
 	// Set the color and font for the label.
-	fl_color(color());
+	fl_color(FL_FOREGROUND_COLOR);
 	fl_font(labelfont(), labelsize());
 	// Get the size of the label.
 	int tw = 0, th = 0;
@@ -225,11 +226,11 @@ void zc_graph_axis::draw_label() {
 		break;
 	case zc_graph_axis::YL_AXIS:
 		// Draw centered to the left of the axis line.
-		fl_draw(label_.c_str(), x() + w() - 5 - tw, y() + h() / 2 + th / 2);
+		fl_draw(90, label_.c_str(), x() + th, y() + h() / 2 + tw / 2);
 		break;
 	case zc_graph_axis::YR_AXIS:
 		// Draw centered to the right of the axis line.
-		fl_draw(label_.c_str(), x() + 5, y() + h() / 2 + th / 2);
+		fl_draw(90, label_.c_str(), x() + 5, y() + h() / 2 + tw / 2);
 		break;
 	}
 }
@@ -323,6 +324,8 @@ void zc_graph_axis::set_ticks() {
 		}
 		break;
 	}
+	// TODO - for now place grid lines at every tick
+	grid_spacing_units = tick_spacing_units;
 	// Calculate the tick positions and labels based on the current range and tick spacing.
 	ticks_.clear();
 	// Start at the first tick position less than or equal to the minimum of the current range.
@@ -342,7 +345,7 @@ void zc_graph_axis::set_ticks() {
 			break;
 		}
 		// Calculate the pixel position of the tick and add it to the list of ticks.
-		int tick_position = (int)((tick_value - current_range_.min) * inv_scale_);
+		int tick_position = float_to_pixel(tick_value);
 		ticks_.push_back({ tick_position, std::string(label) });
 		tick_value += tick_spacing_units;
 	}
@@ -356,19 +359,19 @@ void zc_graph_axis::set_ticks() {
 		grid_value += grid_spacing_units;
 	}
 	// Add the SI prefix or power of 10 to the axis label if applicable.
-	char label_prefix[10];
+	char ll[100];
 	switch (modifier_) {
 	case NO_MODIFIER:
-		strcpy(label_prefix, "");
+		snprintf(ll, sizeof(ll), "%s (%s)", label(), unit_.c_str());
 		break;
 	case POWER_OF_10:
-		snprintf(label_prefix, sizeof(label_prefix), "\303\227%g ", tick_power10);
+		snprintf(ll, sizeof(ll), "%s (\303\227%g %s)", label(), tick_power10, unit_.c_str());
 		break;
 	case SI_PREFIX:
-		snprintf(label_prefix, sizeof(label_prefix), "%c", SI_PREFIXES.at(si_prefix_exponent));
+		snprintf(ll, sizeof(ll), "%s (%c%s)", label(), si_prefix_exponent, unit_.c_str());
 		break;
 	}
-	label_ = std::string(label_prefix) + label_;
+	label_ = ll;
 }
 
 //! \brief Normalise the value \p fin to a mantissa and power of 10.
@@ -416,14 +419,3 @@ void zc_graph_axis::normalise(float fin, float& mantissa, float& power10, uint32
 
 }
 
-// Update the scale and position of the axis based on the current range and widget size
-void zc_graph_axis::update_scale_and_position() {
-	if (orientation_ == X_AXIS) {
-		scale_ = w() / (current_range_.max - current_range_.min);
-		origin_ = x() - (int)(current_range_.min * scale_);
-	}
-	else {
-		scale_ = h() / (current_range_.max - current_range_.min);
-		origin_ = y() + h() + (int)(current_range_.min * scale_);
-	}
-}

@@ -27,9 +27,6 @@
 //! \brief Constructor
 zc_graph_base::zc_graph_base(int X, int Y, int W, int H, const char* L) :
 	Fl_Group(X, Y, W, H, L) {
-	define_data_types();
-	create_components();
-	show();
 }
 
 //! \brief Destructor
@@ -56,6 +53,7 @@ void zc_graph_base::clear_data_sets() {
 
 // Update plot data
 void zc_graph_base::update_plot() {
+	plot_->clear_data();
 	for (auto& pp : plot_points_) {
 		plot_->add_data(pp);
 	}
@@ -186,12 +184,15 @@ void zc_graph_base::resize(int X, int Y, int W, int H) {
 
 // Draw the graph - override of Fl_Group draw to draw the components of the graph.
 void zc_graph_base::draw() {
+	plot_points_.clear();
 	// Update the data points for the new scaling factors.
 	for (auto& ds : data_sets_) {
 		convert_data_to_points(ds);
 	}
 	// Update the grid for the new scaling factors.
 	generate_grid();
+	// Update plot
+	update_plot();
 	// And redraw the components with the new scaling factors.
 	Fl_Group::draw();
 }

@@ -30,7 +30,11 @@
 //! \brief Constructor
 zc_graph_xy::zc_graph_xy(int X, int Y, int W, int H, const char* L) :
 	zc_graph_base(X, Y, W, H, L) {
+	define_data_types();
+	create_components();
+	show();
 }
+
 //! \brief Destructor
 zc_graph_xy::~zc_graph_xy() {
 }
@@ -94,16 +98,16 @@ void zc_graph_xy::convert_data_to_points(data_set_t* ds) {
 		return;
 	}
 	// Get scaling factors for X and Y axes.
-	float x_scale = axes_.at(zc_graph_axis::X_AXIS)->get_scale();
-	float y_scale = axes_.at(zc_graph_axis::YL_AXIS)->get_scale();
+	float x_inv_scale = axes_.at(zc_graph_axis::X_AXIS)->get_inv_scale();
+	float y_inv_scale = axes_.at(zc_graph_axis::YL_AXIS)->get_inv_scale();
 	// Get origin for X and Y axes.
 	int x_origin = axes_.at(zc_graph_axis::X_AXIS)->get_origin();
 	int y_origin = axes_.at(zc_graph_axis::YL_AXIS)->get_origin();
 	// Convert each data point to a plot point.
 	for (const auto& datum : *ds->data) {
 		zc_graph_plot::plot_point_t p;
-		p.x = x_origin + static_cast<int>(datum.a * x_scale);
-		p.y = y_origin - static_cast<int>(datum.b * y_scale);
+		p.x = x_origin + static_cast<int>(datum.a * x_inv_scale);
+		p.y = y_origin - static_cast<int>(datum.b * y_inv_scale);
 		(pd->points).push_back(p);
 	}
 	// Set the line style for the plot data.
@@ -146,7 +150,7 @@ void zc_graph_xy::generate_grid() {
 		pd->lines.push_back(l);
 	}
 	// Set the line style for the grid lines.
-	pd->style = { FL_LIGHT2, 1, FL_DOT };
+	pd->style = { FL_GRAY0, 1, FL_DOT };
 	// Set the plot type to LINES for grid lines.
 	pd->type = zc_graph_plot::LINES;
 	// Add the plot data to be sent to the plot for drawing.
