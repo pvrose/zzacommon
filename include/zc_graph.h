@@ -100,8 +100,16 @@ public:
 		// if they are outside the current range.
 		void set_range(float minimum, float maximum, bool expandable = true){
 			if (this->expandable) {
-				this->minimum = std::min(minimum, this->minimum);
-				this->maximum = std::max(maximum, this->maximum);
+				if (initialised) {
+					this->minimum = std::min(minimum, this->minimum);
+					this->maximum = std::max(maximum, this->maximum);
+				}
+				else {
+					// First time we do not have a range, so just set it to the new values.
+					this->minimum = minimum;
+					this->maximum = maximum;
+					initialised = true;
+				}
 				this->orig_minimum = this->minimum;
 				this->orig_maximum = this->maximum;
 				this->expandable = expandable;
@@ -136,7 +144,8 @@ public:
 		float orig_maximum = 0.0F;          //!< Original maximum set before zooming - used to restore when unzooming.
 		int origin = 0;                   //!< Pixel position to use as the left- or bottom-most along the axis - used to restore when unzooming.
 		int length = 0;                   //!< Length of the axis in pixels - used to restore when unzooming.
-    public:
+		bool initialised = false;         //!< Whether the factors have been initialised - used to set the factors on first draw.
+	public:
 		/// \brief Set the scaling factors based on the options and drawing area size
 		//! This is called when the options are set and when the widget is resized,
 		//! and can be used to restore the scaling factors after zooming or scrolling.
