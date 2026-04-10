@@ -19,6 +19,7 @@
 
 #include <FL/Fl_Widget.H>
 
+#include <algorithm>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -158,6 +159,14 @@ public:
 	std::vector<float> get_grid_lines() const {
 		return grid_lines_;
 	}
+
+	//! \brief Combine two ranges into one that encompasses both.
+	static range combine_ranges(const range& r1, const range& r2) {
+		range combined;
+		combined.min = std::min(r1.min, r2.min);
+		combined.max = std::max(r1.max, r2.max);
+		return combined;
+	};
 
 private:
 

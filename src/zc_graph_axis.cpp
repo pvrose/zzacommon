@@ -226,11 +226,11 @@ void zc_graph_axis::draw_label() {
 		break;
 	case zc_graph_axis::YL_AXIS:
 		// Draw centered to the left of the axis line.
-		fl_draw(90, label_.c_str(), x() + th, y() + h() / 2 + tw / 2);
+		fl_draw(90, label_.c_str(), x() + th + 5, y() + h() / 2 + tw / 2);
 		break;
 	case zc_graph_axis::YR_AXIS:
 		// Draw centered to the right of the axis line.
-		fl_draw(90, label_.c_str(), x() + 5, y() + h() / 2 + tw / 2);
+		fl_draw(90, label_.c_str(), x() + w() - 5, y() + h() / 2 + tw / 2);
 		break;
 	}
 }
@@ -335,13 +335,13 @@ void zc_graph_axis::set_ticks() {
 		char label[20];
 		switch (modifier_) {
 		case NO_MODIFIER:
-			snprintf(label, sizeof(label), "%g", tick_value);
+			snprintf(label, sizeof(label), "%0.1f", tick_value);
 			break;
 		case POWER_OF_10:
-			snprintf(label, sizeof(label), "%g", tick_value / tick_power10);
+			snprintf(label, sizeof(label), "%0.1f", tick_value / tick_power10);
 			break;
 		case SI_PREFIX:
-			snprintf(label, sizeof(label), "%g", tick_value / tick_power10);
+			snprintf(label, sizeof(label), "%0.1f", tick_value / tick_power10);
 			break;
 		}
 		// Calculate the pixel position of the tick and add it to the list of ticks.

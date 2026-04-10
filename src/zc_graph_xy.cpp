@@ -150,7 +150,7 @@ void zc_graph_xy::generate_grid() {
 		pd->lines.push_back(l);
 	}
 	// Set the line style for the grid lines.
-	pd->style = { FL_GRAY0, 1, FL_DOT };
+	pd->style = { FL_LIGHT2, 1, FL_DOT };
 	// Set the plot type to LINES for grid lines.
 	pd->type = zc_graph_plot::LINES;
 	// Add the plot data to be sent to the plot for drawing.

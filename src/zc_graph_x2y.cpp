@@ -17,6 +17,7 @@
 */
 #include "zc_graph_x2y.h"
 
+#include "zc_drawing.h"
 #include "zc_graph_axis.h"
 #include "zc_graph_base.h"
 #include "zc_graph_plot.h"
@@ -64,18 +65,19 @@ void zc_graph_x2y::create_components() {
 	int dw = 0, dh = 0;
 	fl_measure("dummy", dw, dh);
 	// Add label height and tick label height to axis width.
-	axis_width += dh + dh;
+	axis_width += dh;
 	// Add components.
 	int cx = x();
-	int cy = y();
+	int cy = y() + GAP;
 	int cw = w();
-	int ch = h() - axis_width;
+	int ch = h() - axis_width - GAP;
 	// Add Y axis on the left.
 	axes_.at(zc_graph_axis::YL_AXIS) = new zc_graph_axis(cx, cy, axis_width, ch, "Y");
 	add(axes_.at(zc_graph_axis::YL_AXIS));
 	// Add the plot area
 	cx += axis_width;
-	cw -= axis_width - axis_width;
+	cw -= axis_width;
+	cw -= axis_width;
 	plot_ = new zc_graph_plot(cx, cy, cw, ch);
 	add(plot_);
 	// Add Y axis on the right.
@@ -83,6 +85,8 @@ void zc_graph_x2y::create_components() {
 	axes_.at(zc_graph_axis::YR_AXIS) = new zc_graph_axis(cx, cy, axis_width, ch, "Y2");	
 	add(axes_.at(zc_graph_axis::YR_AXIS));
 	// Add X axis on the bottom.
+	cx = plot_->x();
+	cw = plot_->w();
 	cy += ch;
 	axes_.at(zc_graph_axis::X_AXIS) = new zc_graph_axis(cx, cy, cw, axis_width, "X");
 	add(axes_.at(zc_graph_axis::X_AXIS));
@@ -165,7 +169,7 @@ void zc_graph_x2y::generate_grid() {
 		pd->lines.push_back(l);
 	}
 	// Set the line style for the grid lines.
-	pd->style = { FL_GRAY0, 1, FL_DOT };
+	pd->style = { FL_LIGHT2, 1, FL_DOT };
 	// Set the plot type to LINES for grid lines.
 	pd->type = zc_graph_plot::LINES;
 	// Add the plot data to be sent to the plot for drawing.
@@ -184,7 +188,7 @@ void zc_graph_x2y::generate_grid() {
 		pd->lines.push_back(l);
 	}
 	// Set the line style for the grid lines.
-	pd->style = { FL_GRAY0, 1, FL_DASH };
+	pd->style = { FL_LIGHT2, 1, FL_DASH };
 	// Set the plot type to LINES for grid lines.
 	pd->type = zc_graph_plot::LINES;
 	// Add the plot data to be sent to the plot for drawing.

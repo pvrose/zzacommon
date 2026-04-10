@@ -67,6 +67,12 @@ public:
 		data_type_t type_b;     //!< Type of data in this set - second coordinate.
 		zc_line_style style;  //!< Line style to use to draw this data set
 		std::vector<coord>* data; //!< Data points - by reference to allow manipulation outwith display.
+	
+		//! \brief Default creator adds an empty data vector.
+		data_set_t() {
+			data = new std::vector<coord>();
+		}
+	
 	};
 
 	//! \brief Constructor
@@ -116,6 +122,9 @@ public:
 	//! \param new_range The new range to set for this data type.
 	//! \return True if the range was updated, False if not.
 	bool set_data_range(data_type_t type, zc_graph_axis::range new_range);
+
+	//! \brief Get the current range supported by the axis.
+	zc_graph_axis::range get_data_range(zc_graph_axis::orientation_t orientation) const;
 
 
 protected:

@@ -42,10 +42,46 @@ void zc_graph_plot::clear_data() {
 void zc_graph_plot::draw() {
 	// Clear the background to white
 	fl_rectf(x(), y(), w(), h(), FL_WHITE);
+	// Draw a border around the widget area
+	fl_rect(x(), y(), w(), h(), FL_FOREGROUND_COLOR);
 	// Set drawing clip to the widget area as some
 	// of the data may be outside the widget area and we don't want to draw this.
 	fl_push_clip(x(), y(), w(), h());
-	// Draw the data sets
+	// Draw the data sets - first LINES and ARCS.
+	for (auto& ds : data_sets_) {
+		fl_color(ds->style.colour);
+		fl_line_style(ds->style.style, ds->style.width);
+		switch (ds->type) {
+		case LINES:
+			for (auto& l : ds->lines) {
+				// Draw the line if one end is within the drawing
+				// area of the widget, or if the line may cross the
+				// drawing area of the widget such as a grid line.
+				if (is_within_drawing_area(l.x1, l.y1) ||
+					is_within_drawing_area(l.x2, l.y2) ||
+					crosses_drawing_area(l)) {
+					fl_line(l.x1, l.y1, l.x2, l.y2);
+				}
+			}
+			break;
+		case ARCS:
+			for (auto& a : ds->arcs) {
+				// Draw the arc if any of the corners of the bounding box
+				// are within the drawing area.
+				if (is_within_drawing_area(a.x, a.y) ||
+					is_within_drawing_area(a.x + a.w, a.y + a.h) ||
+					is_within_drawing_area(a.x, a.y + a.h) ||
+					is_within_drawing_area(a.x + a.w, a.y)) {
+					fl_arc(a.x, a.y, a.w, a.h, a.a1, a.a2);
+				}
+			}
+			break;
+		default:
+			break;
+		}
+	}
+	// Draw the data sets - then POINTS and CONNECTED_POINTS 
+	// so they are on top of the lines and arcs.
 	for (auto& ds : data_sets_) {
 		fl_color(ds->style.colour);
 		fl_line_style(ds->style.style, ds->style.width);
@@ -70,34 +106,11 @@ void zc_graph_plot::draw() {
 				}
 			}
 			break;
-		case LINES:
-			for (auto& l : ds->lines) {
-				// Draw the line if one end is within the drawing
-				// area of the widget, or if the line may cross the
-				// drawing area of the widget such as a grid line.
-				if (is_within_drawing_area(l.x1, l.y1) ||
-					is_within_drawing_area(l.x2, l.y2) ||
-					crosses_drawing_area(l)) {
-					fl_line(l.x1, l.y1, l.x2, l.y2);
-				}
-			}
-			break;
-		case ARCS:
-			for (auto& a : ds->arcs) {
-				// Draw the arc if any of the corners of the bounding box
-				// are within the drawing area.
-				if (is_within_drawing_area(a.x, a.y) || 
-					is_within_drawing_area(a.x + a.w, a.y + a.h) ||
-					is_within_drawing_area(a.x, a.y + a.h) ||
-					is_within_drawing_area(a.x + a.w, a.y)) {
-					fl_arc(a.x, a.y, a.w, a.h, a.a1, a.a2);
-				}
-			}
-			break;
 		default:
 			break;
 		}
 	}
+	fl_line_style(0); // reset to default line style
 	fl_pop_clip();
 }
 

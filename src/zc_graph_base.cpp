@@ -83,6 +83,15 @@ bool zc_graph_base::set_data_range(data_type_t type, zc_graph_axis::range new_ra
 	return true;
 }
 
+//! Get the range for the specific axis.
+zc_graph_axis::range zc_graph_base::get_data_range(zc_graph_axis::orientation_t orientation) const {
+	auto it = axes_.find(orientation);
+	if (it == axes_.end() || !it->second) {
+		return {0.0F, 1.0F};
+	}
+	return it->second->get_range();
+}
+
 //! \brief override of Fl_Group handle to allow for zooming and scrolling on axes.
 int zc_graph_base::handle(int event) {
 	// TODO: Using the return value from zoom and scroll is not ideal as
