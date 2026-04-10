@@ -244,104 +244,116 @@ void zc_graph_axis::set_ticks() {
 	float tick_mantissa;
 	float tick_power10;
 	float grid_spacing_units = tick_spacing_units;
+	std::string format = "%0.0f";
 	uint32_t si_prefix_exponent = ' ';
 	normalise(tick_spacing_units, tick_mantissa, tick_power10, si_prefix_exponent);
 	// Calculate the actual tick spacing in data units.
 	switch (modifier_) {
 	case NO_MODIFIER:
+		if (tick_spacing_units >= 0.7F) format = "%0.0f";
+		else if (tick_spacing_units >= 0.07F) format = "%0.1F";
+		else if (tick_spacing_units >= 0.007F) format = "%0.2F";
+		else format = "%g";
+		// Fall through to the same tick spacing as POWER_OF_10 - but with different formatting.
 	case POWER_OF_10:
 		// If normalised value > 7 - set tick at 10 * power10 
 		if (tick_mantissa > 7.0F) {
 			tick_spacing_units = 10.0F * tick_power10;
-			grid_spacing_units = 5.0F * tick_spacing_units;
+			grid_spacing_units = 20.0F * tick_power10;
 		}
 		// If normalised value is between 3.2 and 7 - set tick at 5*10^N		
 		else if (tick_mantissa > 3.2F) {
 			tick_spacing_units = 5.0F * tick_power10;
-			grid_spacing_units = 4.0F * tick_spacing_units;
+			grid_spacing_units = 10.0F * tick_power10;
 		}
 		// If normalised value is between 1.4 and 3.2 - set tick at 2*10^N
 		else if (tick_mantissa > 1.4F) {
 			tick_spacing_units = 2.0F * tick_power10;
-			grid_spacing_units = 5.0F * tick_spacing_units;
+			grid_spacing_units = 5.0F * tick_power10;
 		}
 		// Otherwise set tick at 10^N
 		else {
 			tick_spacing_units = tick_power10;
-			grid_spacing_units = 5.0F * tick_spacing_units;
+			grid_spacing_units = 2.0F * tick_power10;
 		}
 		break;
 	case SI_PREFIX:
 		// If normalised value > 70 - set tick at 100 * power10
 		if (tick_mantissa > 70.0F) {
 			tick_spacing_units = 100.0F * tick_power10;
-			grid_spacing_units = 5.0F * tick_spacing_units;
+			grid_spacing_units = 200.0F * tick_power10;
 		}
 		// If normalised value is between 32 and 70 - set tick at 50*10^N		
 		else if (tick_mantissa > 32.0F) {
 			tick_spacing_units = 50.0F * tick_power10;
-			grid_spacing_units = 4.0F * tick_spacing_units;
+			grid_spacing_units = 100.0F * tick_power10;
 		}
 		// If normalised value is between 14 and 32 - set tick at 20*10^N
 		else if (tick_mantissa > 14.0F) {
 			tick_spacing_units = 20.0F * tick_power10;
-			grid_spacing_units = 5.0F * tick_spacing_units;
+			grid_spacing_units = 50.0F * tick_power10;
 		}
 		// If normalised value is between 7 and 14 - set tick at 10*10^N
 		else if (tick_mantissa > 7.0F) {
 			tick_spacing_units = 10.0F * tick_power10;
-			grid_spacing_units = 5.0F * tick_spacing_units;
+			grid_spacing_units = 20.0F * tick_power10;
 		}
 		// If normalised value is between 3.2 and 7 - set tick at 5*10^N		
 		else if (tick_mantissa > 3.2F) {
 			tick_spacing_units = 5.0F * tick_power10;
-			grid_spacing_units = 4.0F * tick_spacing_units;
+			grid_spacing_units = 10.0F * tick_power10;
 		}
 		// If normalised value is between 1.4 and 3.2 - set tick at 2*10^N
 		else if (tick_mantissa > 1.4F) {
 			tick_spacing_units = 2.0F * tick_power10;
-			grid_spacing_units = 5.0F * tick_spacing_units;
+			grid_spacing_units = 5.0F * tick_power10;
 		}
 		// If normalised value is between 0.7 and 1.4 - set tick at 10^N
 		else if (tick_mantissa > 0.7F) {
 			tick_spacing_units = tick_power10;
-			grid_spacing_units = 5.0F * tick_spacing_units;
+			grid_spacing_units = 2.0F * tick_power10;
 		}
 		// If normalised value is between 0.32 and 0.7 - set tick at 0.5*10^N
 		else if (tick_mantissa > 0.32F) {
 			tick_spacing_units = 0.5F * tick_power10;
-			grid_spacing_units = 4.0F * tick_spacing_units;
+			grid_spacing_units = 1.0F * tick_power10;
+			format = "%0.1f";
 		}
 		// If normalised value is between 0.14 and 0.32 - set tick at 0.2*10^N
 		else if (tick_mantissa > 0.14F) {
 			tick_spacing_units = 0.2F * tick_power10;
-			grid_spacing_units = 5.0F * tick_spacing_units;
+			grid_spacing_units = 0.5F * tick_power10;
+			format = "%0.1f";
 		}
 		// Otherwise set tick at 0.1*10^N
 		else {
 			tick_spacing_units = 0.1F * tick_power10;
-			grid_spacing_units = 5.0F * tick_spacing_units;
+			grid_spacing_units = 0.2F * tick_power10;
+			format = "%0.1f";
 		}
 		break;
 	}
-	// TODO - for now place grid lines at every tick
-	grid_spacing_units = tick_spacing_units;
 	// Calculate the tick positions and labels based on the current range and tick spacing.
 	ticks_.clear();
 	// Start at the first tick position less than or equal to the minimum of the current range.
 	float tick_value = floorf(current_range_.min / tick_spacing_units) * tick_spacing_units;
 	while (tick_value <= current_range_.max) {
+		// Ignore tick_value ledd than the minimum.
+		if (tick_value < current_range_.min) {
+			tick_value += tick_spacing_units;
+			continue;
+		}
 		// Format the tick label based on the modifier.
 		char label[20];
 		switch (modifier_) {
 		case NO_MODIFIER:
-			snprintf(label, sizeof(label), "%0.1f", tick_value);
+			snprintf(label, sizeof(label), format.c_str(), tick_value);
 			break;
 		case POWER_OF_10:
-			snprintf(label, sizeof(label), "%0.1f", tick_value / tick_power10);
+			snprintf(label, sizeof(label), format.c_str(), tick_value / tick_power10);
 			break;
 		case SI_PREFIX:
-			snprintf(label, sizeof(label), "%0.1f", tick_value / tick_power10);
+			snprintf(label, sizeof(label), format.c_str(), tick_value / tick_power10);
 			break;
 		}
 		// Calculate the pixel position of the tick and add it to the list of ticks.
