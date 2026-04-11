@@ -48,7 +48,8 @@ public:
 	enum orientation_t : uint8_t {
 		X_AXIS,                 //!< X-axis (horizontal)
 		YL_AXIS,                //!< Y-axis (vertical to left of graph)
-		YR_AXIS                 //!< Y-axis (vertical to right of graph)
+		YR_AXIS,                //!< Y-axis (vertical to right of graph)
+		R_AXIS,                 //!< Radius axis for polar graph
 	};
 
 	//! \brief Parameter structure for axis configuration.

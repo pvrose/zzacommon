@@ -126,6 +126,11 @@ public:
 	//! \brief Get the current range supported by the axis.
 	zc_graph_axis::range get_data_range(zc_graph_axis::orientation_t orientation) const;
 
+	//! \brief Get the axis for the specified data type.
+	zc_graph_axis::orientation_t get_axis(data_type_t type) const {
+		return data_type_to_axis_.at(type);
+	};
+
 
 protected:
 
