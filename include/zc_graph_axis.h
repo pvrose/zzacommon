@@ -123,6 +123,12 @@ public:
 		return scale_;
 	}
 
+	//! \brief Reset the range after reizing the axis.
+	void resize(int X, int Y, int W, int H) override {
+		Fl_Widget::resize(X, Y, W, H);
+		set_range(current_range_);
+	}
+
 	//! \brief Return the current inverse scaling factor (pixels per unit).
 	float get_inv_scale() const {
 		return inv_scale_;
