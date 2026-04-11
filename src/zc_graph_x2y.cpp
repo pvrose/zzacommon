@@ -114,17 +114,14 @@ void zc_graph_x2y::convert_data_to_points(data_set_t* ds) {
 	} else {
 		y_axis_type = zc_graph_axis::YR_AXIS;
 	}
-	// Get scaling factors for X and Y axes.
-	float x_inv_scale = axes_.at(zc_graph_axis::X_AXIS)->get_inv_scale();
-	float y_inv_scale = axes_.at(y_axis_type)->get_inv_scale();
-	// Get origin for X and Y axes.
-	int x_origin = axes_.at(zc_graph_axis::X_AXIS)->get_origin();
-	int y_origin = axes_.at(y_axis_type)->get_origin();
+	// Get axes.
+	auto& x_axis = axes_.at(zc_graph_axis::X_AXIS);
+	auto& y_axis = axes_.at(y_axis_type);
 	// Convert each data point to a plot point.
 	for (const auto& datum : *ds->data) {
 		zc_graph_plot::plot_point_t p;
-		p.x = x_origin + static_cast<int>(datum.a * x_inv_scale);
-		p.y = y_origin - static_cast<int>(datum.b * y_inv_scale);
+		p.x = x_axis->float_to_pixel(datum.a);
+		p.y = y_axis->float_to_pixel(datum.b);
 		(pd->points).push_back(p);
 	}
 	// Set the line style for the plot data.
