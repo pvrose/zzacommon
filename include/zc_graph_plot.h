@@ -149,7 +149,7 @@ private:
 
 	//! \brief Check if a point is within the drawing area of the widget.
 	bool is_within_drawing_area(zc_graph_base::data_type_t type, plot_vertex_t v) const {
-		auto& it = data_sets_.find(type);
+		auto it = data_sets_.find(type);
 		auto schema = it->second->xform_schema;
 		return v.x >= schema.x_min_ && v.x <= schema.x_max_ && v.y >= schema.y_min_ && v.y <= schema.y_max_;
 	}

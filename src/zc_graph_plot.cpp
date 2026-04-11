@@ -41,7 +41,7 @@ void zc_graph_plot::clear_data() {
 
 // Apply the transformation schema to the point for plotting.
 void zc_graph_plot::apply_transformation(zc_graph_base::data_type_t type) {
-	auto& it = data_sets_.find(type);
+	auto it = data_sets_.find(type);
 	auto schema = it->second->xform_schema;
 	// Calculate the scaling factors and origin for the transformation.
 	// I think this is how the transformation should work.

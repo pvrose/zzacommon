@@ -21,6 +21,7 @@
 #include "zc_utils.h"
 #include "zc_drawing.h"
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -247,7 +248,7 @@ void zc_file_viewer::set_data(std::string* data) {
 // Save data
 void zc_file_viewer::save_data() {
 	if (data_) {
-		*data_ = buffer_->text_str();
+		*data_ = std::string(buffer_->text());
 		dirty_ = false;
 		enable_widgets();
 	}
