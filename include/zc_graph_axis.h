@@ -20,6 +20,7 @@
 #include <FL/Fl_Widget.H>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -134,7 +135,7 @@ public:
 
 	//! \brief Return the pixel value for the given data value \p f.
 	int float_to_pixel(float f) const {
-		return origin_ + (int)(f * inv_scale_);
+		return origin_ + rint(f * inv_scale_);
 	}
 
 	//! \brief Return the current tick spacing in units.

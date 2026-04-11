@@ -17,6 +17,7 @@
 */
 #include "zc_graph_xy.h"
 
+#include "zc_drawing.h"
 #include "zc_graph_axis.h"
 #include "zc_graph_base.h"
 #include "zc_graph_plot.h"
@@ -62,18 +63,19 @@ void zc_graph_xy::create_components() {
 	int dw = 0, dh = 0;
 	fl_measure("dummy", dw, dh);
 	// Add label height and tick label height to axis width.
-	axis_width += dh + dh;
+	axis_width += dh;
 	// Add components.
 	int cx = x();
-	int cy = y();
+	int cy = y() +GAP;
 	int cw = w();
-	int ch = h() - axis_width;
+	int ch = h() - axis_width - GAP;
 	// Add Y axis on the left.
 	axes_.at(zc_graph_axis::YL_AXIS) = new zc_graph_axis(cx, cy, axis_width, ch, "Y");
 	add(axes_.at(zc_graph_axis::YL_AXIS));
 	// Add the plot area
 	cx += axis_width;
 	cw -= axis_width;
+	cw -= GAP;
 	plot_ = new zc_graph_plot(cx, cy, cw, ch);
 	add(plot_);
 	// Add X axis on the bottom.

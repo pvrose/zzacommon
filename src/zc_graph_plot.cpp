@@ -79,6 +79,7 @@ void zc_graph_plot::draw() {
 		default:
 			break;
 		}
+		fl_line_style(0); // reset to default line style after drawing lines and arcs
 	}
 	// Draw the data sets - then POINTS and CONNECTED_POINTS 
 	// so they are on top of the lines and arcs.
@@ -109,8 +110,8 @@ void zc_graph_plot::draw() {
 		default:
 			break;
 		}
+		fl_line_style(0); // reset to default line style
 	}
-	fl_line_style(0); // reset to default line style
 	fl_pop_clip();
 }
 
