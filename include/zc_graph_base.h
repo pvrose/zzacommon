@@ -18,7 +18,6 @@
 #pragma once
 
 #include "zc_graph_axis.h"
-#include "zc_graph_plot.h"
 #include "zc_line_style.h"
 
 #include <FL/Fl_Group.H>
@@ -26,6 +25,9 @@
 #include <cstdint>
 #include <map>
 #include <vector>
+
+// Forward declaration to avoid circular dependency
+class zc_graph_plot;
 
 //! \brief Base class for graph widgets.
 //! This provides a standard API for the various types of graphs.
@@ -81,6 +83,9 @@ public:
 	//! \brief Destructor
 	~zc_graph_base();
 
+	//! \brief Create the graph components and define the data types - to be implemented by derived classes.
+	virtual void create() = 0;
+
 	//! \brief Define and map the data types for the graph -
 	//! to be implemented by derived classes to define the data types
 	//! they support and how they map to axes or plot components.
@@ -96,6 +101,9 @@ public:
 
 	//! \brief Clear all data sets.
 	void clear_data_sets();
+
+	//! \brief Define transformation schemata for the plot based on the axis ranges.
+	virtual void define_plot_xforms() = 0;
 
 	//! \brief Convert data set to points to plot - to be implemented by derived classes.
 	virtual void convert_data_to_points(data_set_t* ds) = 0;
@@ -139,14 +147,7 @@ protected:
 		return data_type_to_axis_.find(type) != data_type_to_axis_.end();
 	}
 
-	//! \brief Send the data points to the plot component for drawing.
-	void update_plot();
-
 	std::vector<data_set_t*> data_sets_;  //!< Data sets to plot
-
-	//! List of data points to plot, generated from the data sets in data_sets.
-	//! This will include the grid plots as well.
-	std::vector<zc_graph_plot::plot_data_t*> plot_points_;
 
 	// Components of the graph - to be created by derived classes in create_components()
 	std::map<zc_graph_axis::orientation_t, zc_graph_axis*> axes_;    //!< List of axes on the graph

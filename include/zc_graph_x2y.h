@@ -18,9 +18,10 @@
 #pragma once
 
 #include "zc_graph_base.h"
+#include "zc_graph_xy.h"
 
 //! \brief Class for X-Y+Y line graph.
-class zc_graph_x2y : public zc_graph_base {
+class zc_graph_x2y : public zc_graph_xy {
 
 public:
 	//! \brief Constructor
@@ -31,9 +32,5 @@ public:
 	void define_data_types() override;
 
 	void create_components() override;
-
-	void convert_data_to_points(data_set_t* ds) override;
-
-	void generate_grid() override;
 
 };

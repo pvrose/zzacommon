@@ -31,12 +31,26 @@ zc_graph_plot::~zc_graph_plot() {
 	clear_data();
 }
 
-void zc_graph_plot::add_data(plot_data_t* data) {
-	data_sets_.push_back(data);
+void zc_graph_plot::clear_data() {
+	// Delete the data in each dataser.
+	for (auto& ds : data_sets_) {
+		delete ds.second;
+	}
+	data_sets_.clear();
 }
 
-void zc_graph_plot::clear_data() {
-	data_sets_.clear();
+// Apply the transformation schema to the point for plotting.
+void zc_graph_plot::apply_transformation(zc_graph_base::data_type_t type) {
+	auto& it = data_sets_.find(type);
+	auto schema = it->second->xform_schema;
+	// Calculate the scaling factors and origin for the transformation.
+	// I think this is how the transformation should work.
+	double scale_x = w() / (schema.x_max_ - schema.x_min_);
+	double scale_y = h() / (schema.y_min_ - schema.y_max_);
+	double origin_x = x()  - schema.x_min_ * scale_x;
+	double origin_y = y() + h() - schema.y_min_ * scale_y;
+	fl_translate(origin_x, origin_y);
+	fl_scale(scale_x, scale_y);
 }
 
 void zc_graph_plot::draw() {
@@ -47,70 +61,46 @@ void zc_graph_plot::draw() {
 	// Set drawing clip to the widget area as some
 	// of the data may be outside the widget area and we don't want to draw this.
 	fl_push_clip(x(), y(), w(), h());
-	// Draw the data sets - first LINES and ARCS.
+	// Draw the data sets - first the background lines
+	// For each data type, apply the transformation schema, then draw the bg lines.
 	for (auto& ds : data_sets_) {
-		fl_color(ds->style.colour);
-		fl_line_style(ds->style.style, ds->style.width);
-		switch (ds->type) {
-		case LINES:
-			for (auto& l : ds->lines) {
-				// Draw the line if one end is within the drawing
-				// area of the widget, or if the line may cross the
-				// drawing area of the widget such as a grid line.
-				if (is_within_drawing_area(l.x1, l.y1) ||
-					is_within_drawing_area(l.x2, l.y2) ||
-					crosses_drawing_area(l)) {
-					fl_line(l.x1, l.y1, l.x2, l.y2);
+		fl_push_matrix();
+		apply_transformation(ds.first);
+		for (auto& line : ds.second->background_lines) {
+			fl_color(line.style.colour);
+			fl_line_style(line.style.style, line.style.width);
+			fl_begin_line();
+			for (auto& seg : line.segments) {
+				if (seg.type == plot_segment_t::VERTEX) {
+					fl_vertex(seg.v.x, seg.v.y);
+				} else if (seg.type == plot_segment_t::ARC) {
+					fl_arc(seg.a.x, seg.a.y, seg.a.r, seg.a.r, seg.a.a1, seg.a.a2);
 				}
 			}
-			break;
-		case ARCS:
-			for (auto& a : ds->arcs) {
-				// Draw the arc if any of the corners of the bounding box
-				// are within the drawing area.
-				if (is_within_drawing_area(a.x, a.y) ||
-					is_within_drawing_area(a.x + a.w, a.y + a.h) ||
-					is_within_drawing_area(a.x, a.y + a.h) ||
-					is_within_drawing_area(a.x + a.w, a.y)) {
-					fl_arc(a.x, a.y, a.w, a.h, a.a1, a.a2);
-				}
-			}
-			break;
-		default:
-			break;
+			fl_end_line();
+			fl_line_style(0); // reset to default line style
 		}
-		fl_line_style(0); // reset to default line style after drawing lines and arcs
+		fl_pop_matrix();
 	}
-	// Draw the data sets - then POINTS and CONNECTED_POINTS 
-	// so they are on top of the lines and arcs.
+	// Then draw the foreground lines
 	for (auto& ds : data_sets_) {
-		fl_color(ds->style.colour);
-		fl_line_style(ds->style.style, ds->style.width);
-		switch (ds->type) {
-		case POINTS:
-			for (auto& p : ds->points) {
-				// Only draw the point if it is within the drawing area of the widget.
-				if (is_within_drawing_area(p)) {
-					fl_point(p.x, p.y);
+		fl_push_matrix();
+		apply_transformation(ds.first);
+		for (auto& line : ds.second->foreground_lines) {
+			fl_color(line.style.colour);
+			fl_line_style(line.style.style, line.style.width);
+			fl_begin_line();
+			for (auto& seg : line.segments) {
+				if (seg.type == plot_segment_t::VERTEX) {
+					fl_vertex(seg.v.x, seg.v.y);
+				} else if (seg.type == plot_segment_t::ARC) {
+					fl_arc(seg.a.x, seg.a.y, seg.a.r, seg.a.r, seg.a.a1, seg.a.a2);
 				}
 			}
-			break;
-		case CONNECTED_POINTS:
-			for (size_t i = 0; ds->points.size() != 0 && i < ds->points.size() - 1; i++) {
-				auto& p1 = ds->points[i];
-				auto& p2 = ds->points[i + 1];
-				// Only draw the line if either of the points is within the
-				// drawing area of the widget. Lines are ordered pairs of points, 
-				// so if either point is within the drawing area draw it.
-				if (is_within_drawing_area(p1) || is_within_drawing_area(p2)) {
-					fl_line(p1.x, p1.y, p2.x, p2.y);
-				}
-			}
-			break;
-		default:
-			break;
+			fl_end_line();
+			fl_line_style(0); // reset to default line style
 		}
-		fl_line_style(0); // reset to default line style
+		fl_pop_matrix();
 	}
 	fl_pop_clip();
 }

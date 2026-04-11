@@ -28,9 +28,13 @@ public:
 	//! \brief Destructor
 	~zc_graph_xy();
 
+	void create() override;
+
 	void define_data_types() override;
 
 	void create_components() override;
+
+	void define_plot_xforms() override;
 
 	void convert_data_to_points(data_set_t* ds) override;
 

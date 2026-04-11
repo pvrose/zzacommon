@@ -48,15 +48,6 @@ bool zc_graph_base::add_data_set(data_set_t* ds) {
 //! \brief Clear all data sets.
 void zc_graph_base::clear_data_sets() {
 	data_sets_.clear();
-	plot_points_.clear();
-}
-
-// Update plot data
-void zc_graph_base::update_plot() {
-	plot_->clear_data();
-	for (auto& pp : plot_points_) {
-		plot_->add_data(pp);
-	}
 }
 
 //! \brief Set the parameters of an axis.
@@ -193,15 +184,17 @@ void zc_graph_base::resize(int X, int Y, int W, int H) {
 
 // Draw the graph - override of Fl_Group draw to draw the components of the graph.
 void zc_graph_base::draw() {
-	plot_points_.clear();
+	// The axes should have been resized by the Fl_Group resize, 
+	// so now we can get the new scaling factors from the axes and
+	// update the plot data points and grid lines accordingly.
+	plot_->clear_data();
+	define_plot_xforms();
 	// Update the data points for the new scaling factors.
 	for (auto& ds : data_sets_) {
 		convert_data_to_points(ds);
 	}
 	// Update the grid for the new scaling factors.
 	generate_grid();
-	// Update plot
-	update_plot();
 	// And redraw the components with the new scaling factors.
 	Fl_Group::draw();
 }

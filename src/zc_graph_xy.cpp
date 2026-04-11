@@ -21,6 +21,7 @@
 #include "zc_graph_axis.h"
 #include "zc_graph_base.h"
 #include "zc_graph_plot.h"
+#include "zc_line_style.h"
 
 #include <FL/Enumerations.H>
 #include <FL/fl_draw.H>
@@ -31,6 +32,9 @@
 //! \brief Constructor
 zc_graph_xy::zc_graph_xy(int X, int Y, int W, int H, const char* L) :
 	zc_graph_base(X, Y, W, H, L) {
+}
+
+void zc_graph_xy::create() {
 	define_data_types();
 	create_components();
 	show();
@@ -85,73 +89,110 @@ void zc_graph_xy::create_components() {
 	end();
 }
 
+// Define the transformation schemata for the plot based on the axis ranges.
+void zc_graph_xy::define_plot_xforms() {
+	for (const auto& combo : data_type_combos_) {
+		// Get the axes for this data type combination.
+		auto axis_a = axes_.at(data_type_to_axis_.at(combo.first));
+		auto axis_b = axes_.at(data_type_to_axis_.at(combo.second));
+		// Get the range of the axes to pass to plot_.
+		zc_graph_axis::range x_range = axis_a->get_range();
+		zc_graph_axis::range y_range = axis_b->get_range();
+		zc_graph_plot::plot_xform_t xform = {
+			x_range.min, y_range.min, x_range.max, y_range.max
+		};
+		plot_->set_xform_schema(combo.second, xform);
+	}
+}
+
+
 // Convert data to points for plotting.
 void zc_graph_xy::convert_data_to_points(data_set_t* ds) {
-	// Convert the data in the data set to points for plotting.
-	zc_graph_plot::plot_data_t* pd = new zc_graph_plot::plot_data_t;
 	// Check that the data set exists
 	if (!ds || !ds->data) {
 		throw std::invalid_argument("Data set is null");
 		return;
 	}
-	// This dataset should be X vs Y, so type_a is X and type_b is Y. Throw if not.
-	if (ds->type_a != X_VALUE || ds->type_b != Y_VALUE) {
-		throw std::invalid_argument("Invalid data type combination for zc_graph_xy - expected X_VALUE vs Y_VALUE");
+	// Check that the data type combination is valid for this graph.
+	bool valid_combo = false;
+	for (const auto& combo : data_type_combos_) {
+		if (ds->type_a == combo.first && ds->type_b == combo.second) {
+			valid_combo = true;
+			break;
+		}
+	}
+	if (!valid_combo) {
+		throw std::invalid_argument("Invalid data type combination for this graph");
 		return;
 	}
-	// Get the axes
-	auto& x_axis = axes_.at(zc_graph_axis::X_AXIS);
-	auto& y_axis = axes_.at(zc_graph_axis::YL_AXIS);
+
+	// Select the appropriate Y axis based on the data type of type_b.
+	zc_graph_axis::orientation_t y_axis_type = data_type_to_axis_.at(ds->type_b);
+	zc_graph_axis::orientation_t x_axis_type = data_type_to_axis_.at(ds->type_a);
+	// Get axes.
+	auto& x_axis = axes_.at(x_axis_type);
+	auto& y_axis = axes_.at(y_axis_type);
+
+	// Create new plot line for this data set.
+	zc_graph_plot::plot_line_t line;
+	line.style = ds->style;
+	line.transform = ds->type_b;
+
 	// Convert each data point to a plot point.
 	for (const auto& datum : *ds->data) {
-		zc_graph_plot::plot_point_t p;
-		p.x = x_axis->float_to_pixel(datum.a);
-		p.y = y_axis->float_to_pixel(datum.b);
-		(pd->points).push_back(p);
+		zc_graph_plot::plot_vertex_t v(datum.a, datum.b);
+		zc_graph_plot::plot_segment_t segment(v);
+		line.segments.push_back(segment);
 	}
-	// Set the line style for the plot data.
-	pd->style = ds->style;
-	// Set the plot type to CONNECTED_POINTS for line graph.
-	pd->type = zc_graph_plot::CONNECTED_POINTS;
-	// Add the plot data to be sent to the plot for drawing.
-	plot_points_.push_back(pd);
+	// Add the line to the plot for this data type.
+	plot_->add_line(ds->type_b, true, line);
 }
 
 // Generate grid lines for the graph.
 void zc_graph_xy::generate_grid() {
-	zc_graph_plot::plot_data_t* pd = new zc_graph_plot::plot_data_t;
 	// Generate grid lines for the graph based on the tick spacing of the axes.
-	// Get X and Y axes.
-	auto x_axis = axes_.at(zc_graph_axis::X_AXIS);
-	auto y_axis = axes_.at(zc_graph_axis::YL_AXIS);
-	// Get the grid line values for the X axis.
-	std::vector<float> x_grid_values = x_axis->get_grid_lines();
-	// Add vertical grid lines for each X grid value.
-	for (const auto& x_val : x_grid_values) {
-		int lx = x_axis->float_to_pixel(x_val);
-		zc_graph_plot::plot_line_t l;
-		l.x1 = lx;
-		l.y1 = plot_->y();
-		l.x2 = lx;
-		l.y2 = plot_->y() + plot_->h();
-		pd->lines.push_back(l);
+	// For each axis, get the grid line values and add lines to the plot data for drawing.
+	for (auto& axis : axes_) {
+		if (!axis.second) continue; // Skip if axis not defined
+		auto grid_values = axis.second->get_grid_lines();
+		for (const auto& value : grid_values) {
+			zc_graph_plot::plot_line_t line;
+			line.style = zc_line_style(FL_LIGHT2, 1, FL_DOT);
+			if (axis.first == zc_graph_axis::X_AXIS) {
+				// Default data type for X-axis to Y_VALUE for grid line transform.
+				// and use the YL axis range for the grid line endpoints.
+				line.transform = zc_graph_base::Y_VALUE;
+				// Vertical grid line at x = value
+				line.segments.push_back(zc_graph_plot::plot_segment_t(
+					zc_graph_plot::plot_vertex_t(value, axes_.at(zc_graph_axis::YL_AXIS)->get_range().min)
+				));
+				line.segments.push_back(zc_graph_plot::plot_segment_t(
+					zc_graph_plot::plot_vertex_t(value, axes_.at(zc_graph_axis::YL_AXIS)->get_range().max)
+				));
+			}
+			else {
+				// Get the data type for the grid line transform based on the axis orientation.
+				bool found = false;
+				for (const auto& dt_axis : data_type_to_axis_) {
+					if (dt_axis.second == axis.first) {
+						line.transform = dt_axis.first;
+						found = true;
+						break;
+					}
+				}
+				if (!found) {
+					throw std::runtime_error("No data type mapping found for axis in grid generation");
+				}
+				// Horizontal grid line at y = value
+				line.segments.push_back(zc_graph_plot::plot_segment_t(
+					zc_graph_plot::plot_vertex_t(axes_.at(zc_graph_axis::X_AXIS)->get_range().min, value)
+				));
+				line.segments.push_back(zc_graph_plot::plot_segment_t(
+					zc_graph_plot::plot_vertex_t(axes_.at(zc_graph_axis::X_AXIS)->get_range().max, value)
+				));
+			}
+			// Add the grid line to the plot data for this data type.
+			plot_->add_line(line.transform, false, line);
+		}
 	}
-	// Get the grid line values for the Y axis.
-	std::vector<float> y_grid_values = y_axis->get_grid_lines();
-	// Add horizontal grid lines for each Y grid value.
-	for (const auto& y_val : y_grid_values) {
-		int ly = y_axis->float_to_pixel(y_val);
-		zc_graph_plot::plot_line_t l;
-		l.x1 = plot_->x();
-		l.y1 = ly;
-		l.x2 = plot_->x() + plot_->w();
-		l.y2 = ly;
-		pd->lines.push_back(l);
-	}
-	// Set the line style for the grid lines.
-	pd->style = { FL_LIGHT2, 1, FL_DOT };
-	// Set the plot type to LINES for grid lines.
-	pd->type = zc_graph_plot::LINES;
-	// Add the plot data to be sent to the plot for drawing.
-	plot_points_.push_back(pd);
 }
