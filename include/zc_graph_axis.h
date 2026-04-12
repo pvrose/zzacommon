@@ -20,6 +20,7 @@
 #include <FL/Fl_Widget.H>
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include <cstdint>
 #include <string>
@@ -33,8 +34,36 @@ public:
 
 	//! Data range pair.
 	struct range {
-		float min = 0.0F;   //!< Minimum value
-		float max = 1.0F;   //!< Maximum value
+		float min = FLT_MAX;   //!< Minimum value 
+		float max = -FLT_MAX;      //!< Maximum value
+
+		void set_union(const range& other)
+		{
+			min = std::min(min, other.min);
+			max = std::max(max, other.max);
+		};
+		void set_intersection(const range& other)
+		{
+			min = std::max(min, other.min);
+			max = std::min(max, other.max);
+			if (min > max) {
+				// No intersection - set to empty range.
+				min = FLT_MAX;
+				max = -FLT_MAX;
+			}
+		}
+		range& get_union(const range& other) const
+		{
+			range result = *this;
+			result.set_union(other);
+			return result;
+		};
+		range& get_intersection(const range& other) const
+		{
+			range result = *this;
+			result.set_intersection(other);
+			return result;
+		}
 	};
 
 	//! Axis label modifier type.
@@ -99,20 +128,17 @@ public:
 
 	//!\brief Attempt to set the range to \p new_range.
 	//! \param new_range The new range to set.
-	//! \return True if the range was updated,
 	//! False if the range was not or only partially updated due to the zoom limits.
-	bool set_range(range new_range);
+	void set_range(range new_range);
 
 	//! \brief Zoom by a factor of \p zoom_factor around the value at \p mouse_pos.
 	//! \param mouse_pos The pixel position of the mouse along the axis.
 	//! \param zoom_factor The factor to zoom by: +10 indictaes x2 zoom, -10 indicates x0.5 zoom.
-	//! \return True if the zoom was applied, False if the zoom was not applied due to limits.
-	bool zoom(int mouse_pos, int zoom_factor);
+	void zoom(int mouse_pos, int zoom_factor);
 
 	//! \brief Scroll by an offset of \p scroll_offset pixels.
 	//! \param scroll_offset The offset to scroll by in pixels (positive or negative).
-	//! \return True if the scroll was applied, False if the scroll was not applied due to limits.
-	bool scroll(int scroll_offset);
+	void scroll(int scroll_offset);
 
 	//! \brief Return current range of the axis.
 	const range& get_range() const {
@@ -145,6 +171,11 @@ public:
 		return origin_ + rint(f * inv_scale_);
 	}
 
+	//! \brief Return the data value for the given pixel position \p p.
+	float pixel_to_float(int p) const {
+		return (p - origin_) * scale_;
+	}
+
 	//! \brief Return the current tick spacing in units.
 	float get_tick_spacing() const {
 		return tick_spacing_;
@@ -168,14 +199,6 @@ public:
 		return grid_lines_;
 	}
 
-	//! \brief Combine two ranges into one that encompasses both.
-	static range combine_ranges(const range& r1, const range& r2) {
-		range combined;
-		combined.min = std::min(r1.min, r2.min);
-		combined.max = std::max(r1.max, r2.max);
-		return combined;
-	};
-
 private:
 
 	// Specified parameters
@@ -198,6 +221,8 @@ private:
 	range current_range_;         //!< Current range for display (may be zoomed or scrolled)
 	// Range before zooming or scrolling - used to restore when unzooming or ending scroll.
 	range pre_zoom_scroll_range_;
+	// Upper zoom limit - set by the data range, used to prevent zooming out beyound the data range.
+	range zoom_limit_range_;
 
 	//! Tick structure to represent a tick mark on the axis.
 	struct tick_t {
@@ -232,6 +257,7 @@ private:
 	void draw_label();
 
 };
+
 
 
 

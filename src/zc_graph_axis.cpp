@@ -25,9 +25,9 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <cmath>
 #include <map>
+#include <stdexcept>
 #include <string>
 
 //! Multiplier to prefix map
@@ -74,6 +74,7 @@ void zc_graph_axis::set_params(const axis_params_t& params) {
 	outer_range_ = params.outer_range;
 	inner_range_ = params.inner_range;
 	default_range_ = params.default_range;
+	current_range_ = default_range_;
 	modifier_ = params.modifier;
 	unit_ = params.unit;
 	tick_spacing_pixels_ = params.tick_spacing_pixels;
@@ -85,61 +86,49 @@ void zc_graph_axis::set_params(const axis_params_t& params) {
 
 //! \brief Attempt to set the range to \p new_range.
 //! \param new_range The new range to set.
-//! \return True if the range was updated,
-//! False if the range was not or only partially updated due to the zoom limits.
-bool zc_graph_axis::set_range(range new_range) {
+void zc_graph_axis::set_range(range new_range) {
 	// Check if the new range is valid.
 	if (new_range.min >= new_range.max) {
 		// Invalid range - do not update.
-		return false;
+		/*throw std::invalid_argument("Invalid range: min must be less than max");*/
+		return;
 	}
 	// Check if the new range is within the zoom limits.
-	bool ok = true;
-	if (new_range.min < outer_range_.min) {
-		current_range_.min = outer_range_.min;
-		ok = false;
-	}
-	else {
-		current_range_.min = new_range.min;
-	}
-	if (new_range.max > outer_range_.max) {
-		current_range_.max = outer_range_.max;
-		ok = false;
-	} 
-	else {
-		current_range_.max = new_range.max;
-	}
+	current_range_ = outer_range_.get_intersection(new_range);
 	scale_ = (current_range_.max - current_range_.min) / (orientation_ == X_AXIS ? w() : -h());
 	inv_scale_ = 1.0F / scale_;
 	pre_zoom_scroll_range_ = current_range_;
+	zoom_limit_range_.set_union(new_range);
 	origin_ = (orientation_ == X_AXIS ? x() : y() + h()) - current_range_.min * inv_scale_;
 	set_ticks();
-	return ok;
 }
 
 //! \brief Zoom by a factor of \p zoom_factor around the value at \p mouse_pos.
 //! \param mouse_pos The pixel position of the mouse along the axis.	
 //! \param zoom_factor The factor to zoom by: +10 indictaes x2 zoom, -10 indicates x0.5 zoom.
-//! \return True if the zoom was applied, False if the zoom was not applied due to limits.
-bool zc_graph_axis::zoom(int mouse_pos, int zoom_factor) {
+void zc_graph_axis::zoom(int mouse_pos, int zoom_factor) {
 	// Calculate the value at the mouse position before the zoom change.
-	float mouse_value = current_range_.min + (mouse_pos - origin_) * scale_;
+	float mouse_value = pixel_to_float(mouse_pos);
 	// Zoom change is 2^^(delta/10) - so every 10 units of delta doubles the zoom factor, every -10 units halves it.
 	float zoom_change = powf(2.0F, (float)zoom_factor / 10.0F);
 	// Calculate the new range based on the zoom change and mouse value.
 	float new_min = mouse_value - (mouse_value - current_range_.min) * zoom_change;
 	float new_max = mouse_value + (current_range_.max - mouse_value) * zoom_change;
-	return set_range({ new_min, new_max });
+	// Check if the new range is within the zoom limits.
+	range new_range = zoom_limit_range_.get_intersection({ new_min, new_max });
+	set_range(new_range);
 }
 
 //! \brief Scroll by an offset of \p scroll_offset pixels.
 //! \param scroll_offset The offset to scroll by in pixels (positive or negative).
 //! \return True if the scroll was applied, False if the scroll was not applied due to limits.
-bool zc_graph_axis::scroll(int scroll_offset) {
+void zc_graph_axis::scroll(int scroll_offset) {
 	// Calculate the new range based on the scroll offset and current scale.
 	float new_min = current_range_.min + scroll_offset * scale_;
 	float new_max = current_range_.max + scroll_offset * scale_;
-	return set_range({ new_min, new_max });
+	// Check if the new range is within the zoom limits.
+	range new_range = zoom_limit_range_.get_intersection({ new_min, new_max });
+	set_range(new_range);
 }
 
 //! \brief Override draw to draw the axis.

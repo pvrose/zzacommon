@@ -109,11 +109,12 @@ int zc_graph_base::handle(int event) {
 			if (is_x_axis && is_y_axis) {
 				if (shift_pressed) {
 					// Scroll by 10 pixels per click if shift is pressed, otherwise zoom.
-					handled = it.second->scroll(dy * 10);
+					it.second->scroll(dy * 10);
 				} else {
 					int mouse_pos = (it.second->w() > it.second->h()) ? (mouse_x - it.second->x()) : (mouse_y - it.second->y());
-					handled = it.second->zoom(mouse_pos, -dy);
+					it.second->zoom(mouse_pos, -dy);
 				}
+				handled = true;
 
 				if (handled) {
 					redraw();
@@ -127,7 +128,8 @@ int zc_graph_base::handle(int event) {
 			for (auto& it : axes_) {
 				if (!it.second) continue;
 				int mouse_pos = (it.second->w() > it.second->h()) ? (mouse_x - it.second->x()) : (mouse_y - it.second->y());
-				handled |= it.second->zoom(mouse_pos, -dy);
+				it.second->zoom(mouse_pos, -dy);
+				handled = true;
 			}
 			if (handled) {
 				redraw();
