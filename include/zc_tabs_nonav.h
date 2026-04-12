@@ -28,7 +28,11 @@ class zc_tabs_nonav : public Fl_Tabs {
 public:
 
 	//! \brief Constructor.
-	//! \param X,Y,W,H,L Standard FLTK widget parameters.
+	//! \param X horizontal position within host window
+	//! \param Y vertical position within host window
+	//! \param W width of the tab widget
+	//! \param H height of the tab widget
+	//! \param L label for the tab widget
 	zc_tabs_nonav(int X, int Y, int W, int H, const char* L = nullptr);
 
 	//! \brief Destructor.

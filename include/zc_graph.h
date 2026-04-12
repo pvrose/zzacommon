@@ -32,7 +32,9 @@
 
 //! \brief Class to display a graph of values.
 //! The data is presented as a list of floating point values.
-//! How the data is scaled and axes shown \see set_params.
+//! \see set_params.
+//! \note This has been replaced by zc_graph_xy an extension
+//! of zc_graph_base.
 class zc_graph : public Fl_Widget {
 
 public:

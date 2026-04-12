@@ -21,6 +21,8 @@
 #include "zc_drawing.h"
 #include "zc_utils.h"
 
+#include <FL/Enumerations.H>
+
 #include <map>
 #include <string>
 #include <fstream>
@@ -79,7 +81,8 @@ class zc_banner;
 		{ ST_SEVERE, 'S'},
 		{ ST_FATAL, 'F'}
 	};
-	// Abbreviations
+
+	//! Abbreviations used to indicate the status of a message.
 	const std::map < status_t, const char* > STATUS_ABBREV = {
 		{ ST_NONE, "    "},
 		{ ST_LOG, " LOG "},
@@ -188,6 +191,7 @@ class zc_banner;
 		object_data_map object_map_;
 	};
 
+	//! Global status object pointer.
 	extern zc_status* status_;
 #endif
 

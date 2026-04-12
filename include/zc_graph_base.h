@@ -21,9 +21,11 @@
 #include "zc_line_style.h"
 
 #include <FL/Fl_Group.H>
+#include <FL/Fl_Widget.H>
 
 #include <cstdint>
 #include <map>
+#include <utility>
 #include <vector>
 
 // Forward declaration to avoid circular dependency
@@ -31,6 +33,8 @@ class zc_graph_plot;
 
 //! \brief Base class for graph widgets.
 //! This provides a standard API for the various types of graphs.
+//! It can only be used as a base class and must be derived to
+//! implement the specific graph types and their components.
 
 class zc_graph_base : public Fl_Group {
 
@@ -38,12 +42,12 @@ public:
 
 	//! Graph types.
 	enum graph_type_t : uint8_t {
-		XY_LINE,                    //!< X-Y line graph
-		X2Y_LINE,                   //!< X-Y line graph with two Y axes
-		XY_SCATTER,                 //!< X-Y scatter graph
-		POLAR,                     //!< Polar graph (Radius vs angle)
-		COMPLEX,                   //!< Complex graph (imaginary vs real)
-		SMITH,                     //!< Smith chart
+		XY_LINE,                    //!< X-Y line graph (zc_graph_xy)
+		X2Y_LINE,                   //!< X-Y line graph with two Y axes (zc_graph_x2y)
+		XY_SCATTER,                 //!< X-Y scatter graph (not yet implemented)
+		POLAR,                      //!< Polar graph (Radius vs angle) (not yet implemented)
+		COMPLEX,                    //!< Complex graph (imaginary vs real) (not yet implemented)
+		SMITH,                      //!< Smith chart (not yet implemented)
 	};
 
 	//! Data value pair.
@@ -52,7 +56,9 @@ public:
 		float b = 0.0F;     //!< Second coordinate (Y, radius, or imaginary part)
 	};
 
-	//! Data value type.
+	//! \brief Data value type. A data set will typically consist of pairs of these data types.
+	//! Derived graph classes will define which data types they support and how they map
+	//! to axes or plot components.
 	enum data_type_t : uint8_t {
 		X_VALUE,                      //!< X-axis data
 		Y_VALUE,                      //!< Y-axis data
@@ -60,10 +66,11 @@ public:
 		RADIUS,                     //!< Radius data (for POLAR graph)
 		THETA,                      //!< Angle data (for POLAR graph)
 		REAL,                       //!< Real part data (for COMPLEX and SMITH graph)
-		IMAGINARY,                  //!< Imaginary part data (for COMPLEX and SMITHgraph)
+		IMAGINARY,                  //!< Imaginary part data (for COMPLEX and SMITH graph)
 	};
 
-		//! Structure to describe a set of data points.
+	//! \brief Structure to describe a set of data points. This includes the data types,
+	//! line style, and pointer to the data.
 	struct data_set_t {
 		data_type_t type_a;     //!< Type of data in this set - first coordinate.
 		data_type_t type_b;     //!< Type of data in this set - second coordinate.
@@ -78,23 +85,33 @@ public:
 	};
 
 	//! \brief Constructor
+	//! \param X The X coordinate of the top-left corner of the graph drawing area
+	//! \param Y The Y coordinate of the top-left corner of the graph drawing area
+	//! \param W The width of the graph drawing area
+	//! \param H The height of the graph drawing area
+	//! \param L The label for the graph
 	zc_graph_base(int X, int Y, int W, int H, const char* L = nullptr);
 
 	//! \brief Destructor
 	~zc_graph_base();
 
-	//! \brief Create the graph components and define the data types - to be implemented by derived classes.
+	//! \brief Create the graph components and define the data types.
+	//! This must be implemeneted by derived classes to create the
+	//! specific components of the graph: the axes and plot area.
+	//!
+	//! When a derived class is instantiated, this method must be called.
 	virtual void create() = 0;
 
-	//! \brief Define and map the data types for the graph -
-	//! to be implemented by derived classes to define the data types
+	//! \brief Define and map the data types for the graph.
+	//! This must be implemented by derived classes to define the data types
 	//! they support and how they map to axes or plot components.
 	virtual void define_data_types() = 0;
 
-	//!\brief Create the components of the graph - to be implemented by derived classes.
+	//!\brief Create the components of the graph.
+	//! This must be implemented by derived classes to create the specific components of the graph.
 	virtual void create_components() = 0;
 
-	//! \brief Add the data to plot.
+	//! \brief Add data to plot.
 	//! \param ds The data set to add, including the data type, line style, and pointer to the data.
 	//! \return True if the data set was added successfully, False if there was an error (e.g. invalid data type).
 	bool add_data_set(data_set_t* ds);
@@ -103,12 +120,23 @@ public:
 	void clear_data_sets();
 
 	//! \brief Define transformation schemata for the plot based on the axis ranges.
+	//! This must be implemented by derived classes to define in particular the 
+	//! data ranges for each data set, so that the plot widget can transform the data points
+	//! to the appropriate coordinates for rendering.
+	//! 
+	//! Currently this only 
+	//! supports linear transformations based on the axis ranges.
 	virtual void define_plot_xforms() = 0;
 
-	//! \brief Convert data set to points to plot - to be implemented by derived classes.
+	//! \brief Convert data set to points to plot.
+	//! This must be implemented by derived classes to convert the data.
+	//! 
+	//! Typically this will involve checking the data and chaining the data points
+	//! into a line per data set for the plot widget to render
 	virtual void convert_data_to_points(data_set_t* ds) = 0;
 
-	//! \brief Generate background grid lines - to be implemented by derived classes.
+	//! \brief Generate background grid lines.
+	//! This must be implemented by derived classes to generate the grid lines for the graph.
 	virtual void generate_grid() = 0;
 
 	//! \brief override of Fl_Group handle to allow for zooming and scrolling on axes.
@@ -124,17 +152,22 @@ public:
 	int handle(int event) override;
 
 	//! \brief override of Fl_Group resize to reset scaling factors on resize.
+	//! \param X The new X coordinate of the top-left corner of the graph drawing area
+	//! \param Y The new Y coordinate of the top-left corner of the graph drawing area
+	//! \param W The new width of the graph drawing area
+	//! \param H The new height of the graph drawing area
 	void resize(int X, int Y, int W, int H) override;
 
 	//! \brief Draw the graph - override of Fl_Group draw to draw the components of the graph.
+	//! This should not need to be implemented by derived classes.
 	void draw() override;
 
 	//! \brief Define the parameters for an axis.
-	//! \param Parameter structure for one axis, specified by prinetation field.
+	//! \param axis_params Parameter structure for one axis, specified by orientation field.
 	//! \return True if the parameters were set successfully, False if there was an error (e.g. missing parameters for an axis).
 	bool set_axis_params(const zc_graph_axis::axis_params_t& axis_params);
 
-	//! \brief Set the range for the specified dara.
+	//! \brief Set the range for the specified data type.
 	//! \param type The data type to set the range for.
 	//! \param new_range The new range to set for this data type.
 	//! \return True if the range was updated, False if not.
@@ -167,18 +200,23 @@ protected:
 		return nullptr;
 	}
 
-	std::vector<data_set_t*> data_sets_;  //!< Data sets to plot
+	//! \brief The data sets to plot. Each data set includes the data types, line style, and pointer to the data.
+	std::vector<data_set_t*> data_sets_;
 
-	// Components of the graph - to be created by derived classes in create_components()
-	std::map<zc_graph_axis::orientation_t, zc_graph_axis*> axes_;    //!< List of axes on the graph
-	zc_graph_plot* plot_;                 //!< Plot area of the graph
+	//! \brief List of axis widgets for this graph, mapped by orientation.
+	//! The presence of an axis in this map indicates that the graph supports the
+	//! corresponding orientation and any data types mapped to that orientation.
+	std::map<zc_graph_axis::orientation_t, zc_graph_axis*> axes_; 
 
-	//! Valid data types for this graph, mapped to the axis component
+	//! Pointer to the plot widget for this graph.
+	zc_graph_plot* plot_;
+
+	//! \brief Valid data types for this graph, mapped to the axis component
 	//! that they should be plotted on - to be defined by derived classes in 
 	//! define_data_types()
 	std::map<data_type_t, zc_graph_axis::orientation_t> data_type_to_axis_;
 
-	//! Valid combinations of data types for a single data set - 
+	//! \brief Valid combinations of data types for a single data set - 
 	//! to be defined by derived classes in define_data_types()
 	std::vector<std::pair<data_type_t, data_type_t>> data_type_combos_;
 

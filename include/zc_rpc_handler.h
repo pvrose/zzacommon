@@ -22,11 +22,11 @@
 
 #include "pugixml.hpp"
 
-#include <string>
-#include<istream>
-#include<ostream>
-#include <regex>
+#include <istream>
 #include <map>
+#include <ostream>
+#include <sstream>
+#include <string>
 
 class zc_socket_server;
 class zc_url_handler;

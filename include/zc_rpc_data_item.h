@@ -18,10 +18,11 @@
 #ifndef __RPC_DATA_ITEM__
 #define __RPC_DATA_ITEM__
 
-#include <string>
-#include <map>
-#include <vector>
+#include <cstdint>
 #include <list>
+#include <map>
+#include <string>
+#include <vector>
 
 
 	//! XML-RPC data types

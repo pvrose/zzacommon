@@ -27,7 +27,6 @@
 #include <vector>
 
 //! \brief Class to represent an axis on a graph, including scaling and zooming options.
-
 class zc_graph_axis : public Fl_Widget {
 
 public:
@@ -37,11 +36,17 @@ public:
 		float min = FLT_MAX;   //!< Minimum value 
 		float max = -FLT_MAX;      //!< Maximum value
 
+		//! Set the range to the union of this and another range. 
+		//! The resulting range will include all values that are in either this range or the other range.
+		//! \param other The other range to union with this range.
 		void set_union(const range& other)
 		{
 			min = std::min(min, other.min);
 			max = std::max(max, other.max);
 		};
+		//! Set the range to the intersection of this and another range.
+		//! The resulting range will include only values that are in both this range and the other range.
+		//! \param other The other range to intersect with this range.
 		void set_intersection(const range& other)
 		{
 			min = std::max(min, other.min);
@@ -52,12 +57,18 @@ public:
 				max = -FLT_MAX;
 			}
 		}
+		//! Get the union of this and another range, returning a new range object.
+		//! \param other The other range to union with this range.
+		//! \return A new range object representing the union of this range and the other range.
 		range get_union(const range& other) const
 		{
 			range result = *this;
 			result.set_union(other);
 			return result;
 		};
+		//! Get the intersection of this and another range, returning a new range object.
+		//! \param other The other range to intersect with this range.
+		//! \return A new range object representing the intersection of this range and the other range.
 		range get_intersection(const range& other) const
 		{
 			range result = *this;
@@ -66,19 +77,21 @@ public:
 		}
 	};
 
-	//! Axis label modifier type.
+	//! \brief Axis label modifier type. This indicates how the axis labels should be
+	//! modified to indicate the scale of the axis.
 	enum modifier_t : uint8_t {
-		NO_MODIFIER,            //!< No modifier
+		NO_MODIFIER,            //!< No modifier: use the base label and unit as is.
 		SI_PREFIX,              //!< SI prefix (e.g. k for kilo, M for mega)
-		POWER_OF_10,            //!< Power of 10 (e.g. 10^3)
+		POWER_OF_10,            //!< Power of 10 (e.g. 10^3) - displayed as "x10^3" in the label.
 	};
 
 	//!\brief Axis orientation type.
 	enum orientation_t : uint8_t {
-		X_AXIS,                 //!< X-axis (horizontal)
-		YL_AXIS,                //!< Y-axis (vertical to left of graph)
-		YR_AXIS,                //!< Y-axis (vertical to right of graph)
-		R_AXIS,                 //!< Radius axis for polar graph
+		X_AXIS,                 //!< X-axis (horizontal).
+		YL_AXIS,                //!< Y-axis (vertical to left of graph).
+		YR_AXIS,                //!< Y-axis (vertical to right of graph).
+		R_AXIS,                 //!< Radius axis for polar graph. Will be
+		//!< drawn horizontally at the 3 o'clock position and the labels will be rotated.
 	};
 
 	//! \brief Parameter structure for axis configuration.
@@ -92,6 +105,7 @@ public:
 		std::string label;             //!< Base label for the axis (e.g. "Frequency")
 		int tick_spacing_pixels;       //!< Suggested spacing between ticks in pixels
 
+		//! \brief Default constructor - sets all values to defaults.
 		axis_params_t() {};
 
 		//! Minimalist constructor with mostly default values.
@@ -126,17 +140,18 @@ public:
 	//! \brief Destructor
 	~zc_graph_axis();
 
-	//!\brief Attempt to set the range to \p new_range.
-	//! \param new_range The new range to set.
-	//! False if the range was not or only partially updated due to the zoom limits.
+	//! \brief Attempt to set the range to \p new_range.
+	//! \param new_range The new range to set. The range will be limited by the outer range.
 	void set_range(range new_range);
 
 	//! \brief Zoom by a factor of \p zoom_factor around the value at \p mouse_pos.
+	//! The zoom will be limited by the outer range.
 	//! \param mouse_pos The pixel position of the mouse along the axis.
 	//! \param zoom_factor The factor to zoom by: +10 indictaes x2 zoom, -10 indicates x0.5 zoom.
 	void zoom(int mouse_pos, int zoom_factor);
 
 	//! \brief Scroll by an offset of \p scroll_offset pixels.
+	//! The final scroll position will be limited by the outer range.
 	//! \param scroll_offset The offset to scroll by in pixels (positive or negative).
 	void scroll(int scroll_offset);
 
@@ -150,7 +165,7 @@ public:
 		return scale_;
 	}
 
-	//! \brief Reset the range after reizing the axis.
+	//! \brief Override the widget default to reset the range after reizing the axis.
 	void resize(int X, int Y, int W, int H) override {
 		Fl_Widget::resize(X, Y, W, H);
 		set_range(current_range_);
@@ -176,7 +191,7 @@ public:
 		return (p - origin_) * scale_;
 	}
 
-	//! \brief Return the current tick spacing in units.
+	//! \brief Return the current tick spacing in data units.
 	float get_tick_spacing() const {
 		return tick_spacing_;
 	}
@@ -186,7 +201,7 @@ public:
 		return orientation_;
 	}
 
-	//! Override draw to draw the axis.
+	//! Override draw to draw the axis, ticks and labels.
 	void draw() override;
 
 	//! Reset the zoom and scroll to the default range and position.
@@ -213,13 +228,13 @@ private:
 	// Calculated parameters
 	float scale_;                //!< Scale factor - number of units per pixel
 	float inv_scale_;            //!< Inverse scale factor - number of pixels per unit
-	int origin_;             //!< Pixel position of 0 along the axis
+	int origin_;                 //!< Pixel position of 0 along the axis
 	float tick_spacing_;         //!< Spacing between ticks in units
-	std::string label_;           //!< Label to display (base label plus multiplier if appropriate)
-
+	std::string label_;          //!< Actual label to display (base label plus multiplier if appropriate)
+                                 //!< The base label is set by the widget label() method.
 	// Current state
 	range current_range_;         //!< Current range for display (may be zoomed or scrolled)
-	// Upper zoom limit - set by the data range, used to prevent zooming out beyound the data range.
+	//! Upper zoom limit - set by the data range, used to prevent zooming out beyond the data range.
 	range zoom_limit_range_;
 
 	//! Tick structure to represent a tick mark on the axis.
@@ -232,7 +247,6 @@ private:
 	std::vector<tick_t> ticks_;
 
 	//! Lines to draw every few ticks - float values in units,
-	//! converted to pixel positions when drawing onto plot.
 	std::vector<float> grid_lines_;
 
 	// Internal methods.
@@ -240,7 +254,10 @@ private:
 	//!\brief Set the tick positions and labels based on the current range and tick spacing.
 	void set_ticks();
 
-	//! \brief Normalise a number to between 1 and 10 plus an exponent and SI prefix if appropriate.
+	//! \brief Normalise a number and generate the appropriate multiplier.
+	//! For modifier_t values:
+	//! - SI_PREFIX: normalise to a value between 0.1 and 100 and generate the appropriate SI prefix (e.g. k for kilo, M for mega).
+	//! - POWER_OF_10: normalise to a value between 1 and 10 and generate the appropriate power of 10 multiplier (e.g. x10^4).
 	//! \param fin Input number
 	//! \param norm Normalised result (mantissa)
 	//! \param exp10 Exponent (power of 10)

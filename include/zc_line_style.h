@@ -62,12 +62,14 @@ class zc_line_style_dialog :
 	public Fl_Double_Window
 {
 public:
-	//! Constructor.
+	//! Constructor. 
+	//! The dialog defines its own size and layout.
 	zc_line_style_dialog();
 	//! Destructor.
 	~zc_line_style_dialog();
 
 	//! Set the line style to be edited.
+	//! \param ls The line style to be edited.
 	void set_data(const zc_line_style& ls);
 	//! Get the line style that has been edited.
 	const zc_line_style& get_data() const;
@@ -101,7 +103,9 @@ private:
 	zc_button_dialog<zc_line_style_dialog, zc_line_style>* output_;
 	//! The colour chooser widget.
 	Fl_Color_Chooser* colour_chooser_;
+	//! The width drop-down browser widget.
 	Fl_Hold_Browser* width_browser_;
+	//! The style drop-down browser widget.
 	Fl_Hold_Browser* style_browser_;
 
 	//! OK button clicked;

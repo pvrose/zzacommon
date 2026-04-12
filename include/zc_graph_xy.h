@@ -24,20 +24,32 @@ class zc_graph_xy : public zc_graph_base {
 
 public:
 	//! \brief Constructor
+	//! \param X The X coordinate of the top-left corner of the plot drawing area
+	//! \param Y The Y coordinate of the top-left corner of the plot drawing area
+	//! \param W The width of the plot drawing area
+	//! \param H The height of the plot drawing area
+	//! \param L The label of the plot
 	zc_graph_xy(int X, int Y, int W, int H, const char* L = nullptr);
 	//! \brief Destructor
 	~zc_graph_xy();
 
+	//! \brief Create the graph components and define the data types.
 	void create() override;
 
+	//! \brief Define and map the data types for the graph.
 	void define_data_types() override;
 
+	//! \brief Create the graph components - axes and plot area.
 	void create_components() override;
 
+	//!\brief Define the data type to axis mappings for the graph.
 	void define_plot_xforms() override;
 
+	//! \brief Convert the data sets to points for plotting.
+	//! \param ds The data set to convert.
 	void convert_data_to_points(data_set_t* ds) override;
 
+	//! \brief Generate the grid lines for the graph.
 	void generate_grid() override;
 
 };

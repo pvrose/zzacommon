@@ -122,6 +122,8 @@
 		static std::recursive_mutex lock_;
 	};
 
+
+	//! Global URL handler object.
 	extern zc_url_handler* url_handler_;
 
 #endif

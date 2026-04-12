@@ -27,24 +27,28 @@
 #include <map>
 #include <vector>
 
-//! \brief Header for zc_graph_plot.cpp - the main graph plotting widget.
+//! \brief Header for the main graph plotting widget.
 //! This is the main widget for plotting graphs. Data is supplied
-//! as a list of pixel coordinates, and the widgets just draws these as points or lines.
-//! The widget also handles the drawing of the grids supplied as a list
-//! of lines or arcs supplied by the caller.
+//! as a list of drawing instructions and drawn in the foreground.
+//! Grid information is supplied as a list of drawing instructions and
+//! drawn in the background. Thus data will appear drawn on top of the grid. 
+//! Each instruction is either a list
+//! of data points to be plotted as a line, or a list of arcs to be plotted as curves.
 class zc_graph_plot : public Fl_Widget {
 
 public:
 
+	//! \brief Structure to represent a vertex (point) in the plot.
 	struct plot_vertex_t {
 		double x = 0;        //!< X-coordinate of point
 		double y = 0;        //!< Y-coordinate of point
-		plot_vertex_t() : x(0), y(0) {} // Default constructor initializes to (0, 0)
-		plot_vertex_t(double x_, double y_) : x(x_), y(y_) {} // Constructor with parameters
-		plot_vertex_t(const plot_vertex_t& other) : x(other.x), y(other.y) {} // Copy constructor
-		plot_vertex_t(float x_, float y_) : x(x_), y(y_) {} // Constructor with float parameters
+		plot_vertex_t() : x(0), y(0) {} //!< Default constructor initializes to (0, 0)
+		plot_vertex_t(double x_, double y_) : x(x_), y(y_) {} //!< Constructor with parameters
+		plot_vertex_t(const plot_vertex_t& other) : x(other.x), y(other.y) {} //!< Copy constructor
+		plot_vertex_t(float x_, float y_) : x(x_), y(y_) {} //!< Constructor with float parameters
 	};
 
+	//! \brief Structure to represent an arc segment in the plot.
 	struct plot_arc_t {
 		double x = 0;        //!< X-coordinate of center of arc
 		double y = 0;        //!< Y-coordinate of center of arc
@@ -53,20 +57,27 @@ public:
 		double a2 = 0;       //!< Ending angle of arc in degrees (0 is to the right, positive is counter-clockwise)
 	};
 
+	//! \brief Structure to represent either a vertex or an arc segment in the plot.
+	//! This allows a single data structure to represent both types of plot segments.
 	struct plot_segment_t {
+		//! The type of segment.
 		enum segment_type_t :uint8_t {
-			VERTEX,          //!< Line segment between two points
-			ARC              //!< Arc segment defined by center, radius, and angles
-		} type;              //!< Type of segment
+			VERTEX,          //!< A single vertex (point) defined by X and Y coordinates.
+			ARC              //!< Arc segment defined by center, radius, and angles.
+		} type;  
+		//! The data for the segment.
 		union {
 			plot_vertex_t v; //!< Vertex for line segment
 			plot_arc_t a;    //!< Arc for arc segment
 		};
-		plot_segment_t() : type(VERTEX), v{ 0.0, 0.0 } {} // Default constructor initializes to a vertex at (0, 0)
-		plot_segment_t(const plot_vertex_t& vertex) : type(VERTEX), v(vertex) {} // Constructor for vertex segment
-		plot_segment_t(const plot_arc_t& arc) : type(ARC), a(arc) {} // Constructor for arc segment
+		//! Default constructor initializes to a vertex at (0, 0).
+		plot_segment_t() : type(VERTEX), v{ 0.0, 0.0 } {} 
+		//! Constructor for vertex segment.
+		plot_segment_t(const plot_vertex_t& vertex) : type(VERTEX), v(vertex) {} 
+		//! Constructor for arc segment.
+		plot_segment_t(const plot_arc_t& arc) : type(ARC), a(arc) {} 
 		
-		// Copy constructor
+		//! Copy constructor
 		plot_segment_t(const plot_segment_t& other) : type(other.type) {
 			if (type == VERTEX) {
 				v = other.v;
@@ -75,7 +86,7 @@ public:
 			}
 		}
 		
-		// Copy assignment operator
+		//! Copy assignment operator
 		plot_segment_t& operator=(const plot_segment_t& other) {
 			if (this != &other) {
 				type = other.type;
@@ -97,11 +108,12 @@ public:
 	};
 
 	//! \brief Transformation schema for the plot data. 
+	//! Currently this is a simple linear transformation defined by the minimum and maximum X and Y coordinates of the plot in pixels, which map onto the corresponding coordinates of the widget. This allows for scaling and translation of the data points to fit within the widget drawing area. More complex transformations (e.g. logarithmic) could be added in future if needed. 
 	struct plot_xform_t {
-		double x_min_ = 0;    //!< Minimum X-coordinate of the plot in pixels
-		double y_min_ = 0;    //!< Minimum Y-coordinate of the plot in pixels
-		double x_max_ = 1;     //!< Maximum X-coordinate of the plot in pixels
-		double y_max_ = 1;     //!< Maximum Y-coordinate of the plot in pixels
+		double x_min_ = 0;    //!< Minimum X-coordinate of the plot in pixels. Maps onto x() of the widget.
+		double y_min_ = 0;    //!< Minimum Y-coordinate of the plot in pixels. Maps onto y() + h() of the widget (i.e. Y increases upwards).
+		double x_max_ = 1;     //!< Maximum X-coordinate of the plot in pixels. Maps onto x() + w() of the widget.
+		double y_max_ = 1;     //!< Maximum Y-coordinate of the plot in pixels. Maps onto y() of the widget.
 	};
 
 	//! \brief All the data for specific data type to be plotted.
@@ -112,12 +124,19 @@ public:
 	};
 
 	//! \brief Constructor
+	//! \param X The X coordinate of the top-left corner of the plot drawing area
+	//! \param Y The Y coordinate of the top-left corner of the plot drawing area
+	//! \param W The width of the plot drawing area
+	//! \param H The height of the plot drawing area
+	//! \param L The label of the plot
 	zc_graph_plot(int X, int Y, int W, int H, const char* L = nullptr);
 
 	//! \brief Destructor
 	~zc_graph_plot();
 
 	//! \brief Set the transformation schema for the plot data.
+	//! \param type The data type to set the transformation schema for.
+	//! \param schema The transformation schema to apply to the data points for this data type.
 	void set_xform_schema(zc_graph_base::data_type_t type, const plot_xform_t& schema) {
 		// Check that the data type exists in the data sets map, and if not, create a new plot_data_t for it.
 		if (data_sets_.find(type) == data_sets_.end()) {
@@ -127,6 +146,9 @@ public:
 	}
 
 	//! \brief Add a line to the plot for a specific data type.
+	//! \param type The data type to add the line for.
+	//! \param fg Whether the line is a foreground line (true) or a background line (false).
+	//! \param line The line to add to the plot.
 	void add_line(zc_graph_base::data_type_t type, bool fg, const plot_line_t& line) {
 		// Check that the data type exists in the data sets map, and if not, create a new plot_data_t for it.
 		if (data_sets_.find(type) == data_sets_.end()) {
@@ -148,6 +170,9 @@ public:
 private:
 
 	//! \brief Check if a point is within the drawing area of the widget.
+	//! \param type The data type of the point.
+	//! \param v The point to check.
+	//! \return True if the point is within the drawing area, false otherwise.
 	bool is_within_drawing_area(zc_graph_base::data_type_t type, plot_vertex_t v) const {
 		auto it = data_sets_.find(type);
 		auto schema = it->second->xform_schema;
@@ -155,6 +180,7 @@ private:
 	}
 
 	//! \brief Apply transformation for FLTK complex drawing functions.
+	//! \param type The data type to apply the transformation for.
 	void apply_transformation(zc_graph_base::data_type_t type);
 
 	//! \brief List of data sets to plot, by data type.

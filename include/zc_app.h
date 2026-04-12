@@ -25,6 +25,34 @@
 
 typedef uint32_t debug_flag;  //!< Type for debug flags - use bitwise operations to set and test individual flags
 
+//! \brief Class to provide generic application-level data and methods.
+//! These will generally be set from the CMakeLists.txt file through the use
+//! of CMake's configure_file() function on file zc_app.cpp.in.
+//! This allows a standard look-and-feel for all GM3ZZA applications.
+//! The following global variables are available to all applications by 
+//! declaring them as extern.
+
+//! \code
+//! std::string APP_NAME = "@APP_NAME@";
+//! std::string APP_VERSION = "@APP_VERSION@";
+//! std::string APP_VENDOR = "@APP_VENDOR@";
+//! std::string APP_TIMESTAMP = "@APP_TIMESTAMP@";
+//! std::string APP_SOURCE_DIR = "@APP_SOURCE_DIR@";
+//! //Program copyright - displayed in all windows.
+//! std::string COPYRIGHT = "\302\251 Philip Rose GM3ZZA";
+//! //Third-party acknowledgments.
+//! std::string PARTY3RD_COPYRIGHT = "This software includes contributions from various third-party projects. See Userguide.";
+//! //Contact address for use in FLTK widget labels.
+//! std::string CONTACT = "gm3zza@@btinternet.com";
+//! //Contact address for use in general texts.
+//! std::string CONTACT2 = "gm3zza@btinternet.com";
+//! //Copyright placed in exported data items.
+//! std::string DATA_COPYRIGHT = "\302\251 Philip Rose %s. This data may be copied for the purpose of correlation and analysis";
+//! 
+//! std::string ZZACOMMON_TIMESTAMP = "@ZZACOMMON_TIMESTAMP@";
+//! std::string ZZACOMMON_VERSION = "@ZZACOMMON_VERSION@";
+//! \endcode
+
 class zc_app {
 
 public:

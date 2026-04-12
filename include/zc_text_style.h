@@ -26,6 +26,7 @@
 //! Include FLTK headers for the types used in the text style structure and dialog.
 #include <FL/Enumerations.H>
 #include <FL/Fl_Double_Window.H>
+#include <FL/Fl_Widget.H>
 
 //! Include nlohmann/json for JSON serialization of the text style.
 #include <nlohmann/json.hpp>
@@ -116,12 +117,16 @@ private:
 	zc_button_dialog<zc_text_style_dialog, zc_text_style>* output_;
 	//! The browsers and choosers for the font, size and colour.
 	Fl_Color_Chooser* colour_chooser_;
+	//! A drop-down browser is used for font selection as this allows the user to see the available options.
 	Fl_Hold_Browser* font_browser_;
+	//! A drop-down browser is used for size selection.
 	Fl_Hold_Browser* size_browser_;
 
 	//! OK button clicked flag.
 	bool ok_clicked_ = false;
 };
 
+//! JSON serialization from zc_text_style.
 void to_json(json& j, const zc_text_style& s);
+//! JSON deserialization to zc_text_style.
 void from_json(const json& j, zc_text_style& s);

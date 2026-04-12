@@ -20,12 +20,13 @@
 
 #include "zc_utils.h"
 
-#include <string>
-#include <cstdint>
-#include <thread>
+#include <atomic>
+#include <istream>
 #include <mutex>
 #include <queue>
-#include <atomic>
+#include <sstream>
+#include <string>
+#include <thread>
 #ifdef _WIN32
 #include <WinSock2.h>
 #else
