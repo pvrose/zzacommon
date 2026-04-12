@@ -97,7 +97,6 @@ void zc_graph_axis::set_range(range new_range) {
 	current_range_ = outer_range_.get_intersection(new_range);
 	scale_ = (current_range_.max - current_range_.min) / (orientation_ == X_AXIS ? w() : -h());
 	inv_scale_ = 1.0F / scale_;
-	pre_zoom_scroll_range_ = current_range_;
 	zoom_limit_range_.set_union(new_range);
 	origin_ = (orientation_ == X_AXIS ? x() : y() + h()) - current_range_.min * inv_scale_;
 	set_ticks();

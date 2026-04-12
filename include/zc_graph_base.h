@@ -112,6 +112,15 @@ public:
 	virtual void generate_grid() = 0;
 
 	//! \brief override of Fl_Group handle to allow for zooming and scrolling on axes.
+	//! Mouse actions:-
+	//! - Mouse wheel scroll on an axis to zoom in/out on that axis.
+	//! - Mouse wheel scroll on the plot to zoom in/out on all axes.
+	//! - Ctrl + mouse wheel scroll on an axis to scroll on that axis.
+	//! - Drag on an axis to scroll on that axis.
+	//! - Drag on the plot with left mouse button to scroll on X and YL axes.
+	//! - Drag on the plot with right mouse button to scroll on X and YR axes.
+	//! - Double click on an axis to reset the zoom on that axis to the default range.
+	//! - Double click on the plot to reset the zoom on all axes to the default range.
 	int handle(int event) override;
 
 	//! \brief override of Fl_Group resize to reset scaling factors on resize.
@@ -147,6 +156,17 @@ protected:
 		return data_type_to_axis_.find(type) != data_type_to_axis_.end();
 	}
 
+	//! \brief Return pointer to the child at the specified position.
+	Fl_Widget* get_child_at_position(int x, int y) const {
+		for (int i = children() - 1; i >= 0; i--) {
+			Fl_Widget* w = child(i);
+			if (w->visible() && x >= w->x() && x < w->x() + w->w() && y >= w->y() && y < w->y() + w->h()) {
+				return w;
+			}
+		}
+		return nullptr;
+	}
+
 	std::vector<data_set_t*> data_sets_;  //!< Data sets to plot
 
 	// Components of the graph - to be created by derived classes in create_components()
@@ -161,4 +181,8 @@ protected:
 	//! Valid combinations of data types for a single data set - 
 	//! to be defined by derived classes in define_data_types()
 	std::vector<std::pair<data_type_t, data_type_t>> data_type_combos_;
+
+	//! Previous mouse positions
+	int prev_mouse_x_;
+	int prev_mouse_y_;
 };

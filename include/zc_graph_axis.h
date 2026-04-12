@@ -190,8 +190,8 @@ public:
 	void draw() override;
 
 	//! Reset the zoom and scroll to the default range and position.
-	void reset_zoom_and_scroll() {
-		set_range(pre_zoom_scroll_range_);
+	void reset_range() {
+		set_range(default_range_);
 	}
 
 	//! \brief Return the list of grid lines to draw on the plot.
@@ -219,8 +219,6 @@ private:
 
 	// Current state
 	range current_range_;         //!< Current range for display (may be zoomed or scrolled)
-	// Range before zooming or scrolling - used to restore when unzooming or ending scroll.
-	range pre_zoom_scroll_range_;
 	// Upper zoom limit - set by the data range, used to prevent zooming out beyound the data range.
 	range zoom_limit_range_;
 

@@ -98,77 +98,129 @@ int zc_graph_base::handle(int event) {
 
 		bool handled = false;
 
-		for (auto& it : axes_) {
-			// Continue if the axis is not set up (e.g. for a graph type that doesn't have a Y2 axis).
-			if (!it.second) continue;
-
-			// Check if the mouse is over the axis area.
-			bool is_x_axis = Fl::belowmouse() == it.second && it.first == zc_graph_axis::X_AXIS;
-			bool is_y_axis = Fl::belowmouse() == it.second && 
-				(it.first == zc_graph_axis::YL_AXIS || it.first == zc_graph_axis::YR_AXIS);
-			if (is_x_axis && is_y_axis) {
-				if (shift_pressed) {
-					// Scroll by 10 pixels per click if shift is pressed, otherwise zoom.
-					it.second->scroll(dy * 10);
-				} else {
-					int mouse_pos = (it.second->w() > it.second->h()) ? (mouse_x - it.second->x()) : (mouse_y - it.second->y());
-					it.second->zoom(mouse_pos, -dy);
+		Fl_Widget* below_mouse = get_child_at_position(mouse_x, mouse_y);
+		zc_graph_axis* axis_under_mouse = dynamic_cast<zc_graph_axis*>(below_mouse);
+		zc_graph_plot* plot_under_mouse = dynamic_cast<zc_graph_plot*>(below_mouse);
+		if (axis_under_mouse) {
+			if (shift_pressed) {
+				// Scroll by 10 pixels per click if shift is pressed, otherwise zoom.
+				axis_under_mouse->scroll(dy * 10);
+			}
+			else {
+				if (axis_under_mouse->get_orientation() == zc_graph_axis::X_AXIS) {
+					axis_under_mouse->zoom(mouse_x, -dy);
 				}
-				handled = true;
-
-				if (handled) {
-					redraw();
-					break;
+				else {
+					axis_under_mouse->zoom(mouse_y, -dy);
 				}
 			}
+			handled = true;
 		}
-		if (!handled && ctrl_pressed) {
-			// If the mouse wheel event was not handled by an axis and Ctrl is pressed, 
-			// zoom on all axes.
-			for (auto& it : axes_) {
-				if (!it.second) continue;
-				int mouse_pos = (it.second->w() > it.second->h()) ? (mouse_x - it.second->x()) : (mouse_y - it.second->y());
-				it.second->zoom(mouse_pos, -dy);
-				handled = true;
-			}
-			if (handled) {
-				redraw();
+		else if (plot_under_mouse) {
+			if (!shift_pressed) {
+				// If the mouse wheel event was on the plot and Shift is not pressed, 
+				// zoom on all axes.
+				for (auto& it : axes_) {
+					if (!it.second) continue;
+					if (it.second->get_orientation() == zc_graph_axis::X_AXIS) {
+						it.second->zoom(mouse_x, -dy);
+					}
+					else {
+						it.second->zoom(mouse_y, -dy);
+					}
+					handled = true;
+				}
 			}
 		}
 
 		if (handled) {
+			redraw();
 			return 1;
 		}
 	}
 
-	// Handle double-click on axis to reset zoom.
-	else if (event == FL_PUSH && Fl::event_clicks() > 1) {
-		for (auto& it : axes_) {
-			if (!it.second) continue;
-			bool is_x_axis = Fl::belowmouse() == it.second && it.first == zc_graph_axis::X_AXIS;
-			bool is_y_axis = Fl::belowmouse() == it.second && 
-				(it.first == zc_graph_axis::YL_AXIS || it.first == zc_graph_axis::YR_AXIS);
-			if (is_x_axis || is_y_axis) {
-				it.second->reset_zoom_and_scroll();
+	// Handle push to enable drag
+	else if (event == FL_PUSH) {
+		// Save the position of the mouse when the button is pressed to calculate the drag distance in FL_DRAG.
+		prev_mouse_x_ = Fl::event_x();
+		prev_mouse_y_ = Fl::event_y();
+		if (Fl::event_clicks()) {
+			// If this is a double-click, reset the axis under the mouse to
+			// the default range.
+			Fl_Widget* below_mouse = get_child_at_position(Fl::event_x(), Fl::event_y());
+			zc_graph_axis* axis_under_mouse = dynamic_cast<zc_graph_axis*>(below_mouse);
+			zc_graph_plot* plot_under_mouse = dynamic_cast<zc_graph_plot*>(below_mouse);
+			if (axis_under_mouse) {
+				axis_under_mouse->reset_range();
 				redraw();
 				return 1;
 			}
-		} 
-		// If the double-click was not on an axis, but Ctrl is pressed, reset zoom on all axes.
-		if (Fl::event_state() & FL_CTRL) {
-			bool handled = false;
-			for (auto& it : axes_) {
-				if (!it.second) continue;
-				it.second->reset_zoom_and_scroll();
-				handled = true;
-			}
-			if (handled) {
+			else if (plot_under_mouse) {
+				// If the double-click was on the plot, reset all axes to their default range.
+				for (auto& it : axes_) {
+					if (!it.second) continue;
+					it.second->reset_range();
+				}
 				redraw();
 				return 1;
 			}
-	    }
+		}
+		// If this is not a double-click, we will handle dragging in FL_DRAG.
+		return 1;
 	}
 
+	// Handle click and drag on axis to scroll.
+	else if (event == FL_DRAG) {
+		int dx = prev_mouse_x_ - Fl::event_x();
+		int dy = prev_mouse_y_ - Fl::event_y();
+		prev_mouse_x_ = Fl::event_x();
+		prev_mouse_y_ = Fl::event_y();
+		Fl_Widget* below_mouse = get_child_at_position(Fl::event_x(), Fl::event_y());
+		zc_graph_axis* axis_under_mouse = dynamic_cast<zc_graph_axis*>(below_mouse);
+		zc_graph_plot* plot_under_mouse = dynamic_cast<zc_graph_plot*>(below_mouse);
+		if (axis_under_mouse) {
+			if (axis_under_mouse->get_orientation() == zc_graph_axis::X_AXIS) {
+				axis_under_mouse->scroll(dx);
+			}
+			else {
+				axis_under_mouse->scroll(dy);
+			}
+			redraw();
+			return 1;
+		}
+		else if (plot_under_mouse) {
+			// If left mouse button is held and the mouse is dragged on the plot,
+			// Scroll on X axis and YL axis.
+			if (Fl::event_button() == FL_LEFT_MOUSE) {
+				for (auto& it : axes_) {
+					if (!it.second) continue;
+					if (it.second->get_orientation() == zc_graph_axis::X_AXIS) {
+						it.second->scroll(dx);
+					}
+					else if (it.second->get_orientation() == zc_graph_axis::YL_AXIS) {
+						it.second->scroll(dy);
+					}
+				}
+				redraw();
+				return 1;
+			}
+			else if (Fl::event_button() == FL_RIGHT_MOUSE) {
+				// If right mouse button is held and the mouse is dragged on the plot,
+				// Scroll on X and YR axis.
+				for (auto& it : axes_) {
+					if (!it.second) continue;
+					if (it.second->get_orientation() == zc_graph_axis::X_AXIS) {
+						it.second->scroll(dx);
+					}
+					else if (it.second->get_orientation() == zc_graph_axis::YR_AXIS) {
+						it.second->scroll(dy);
+					}
+				}
+				redraw();
+				return 1;
+			}
+		}
+	}
 	return Fl_Group::handle(event);
 }
 
