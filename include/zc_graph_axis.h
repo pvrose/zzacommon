@@ -52,13 +52,13 @@ public:
 				max = -FLT_MAX;
 			}
 		}
-		range& get_union(const range& other) const
+		range get_union(const range& other) const
 		{
 			range result = *this;
 			result.set_union(other);
 			return result;
 		};
-		range& get_intersection(const range& other) const
+		range get_intersection(const range& other) const
 		{
 			range result = *this;
 			result.set_intersection(other);
