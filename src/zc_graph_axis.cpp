@@ -20,6 +20,7 @@
 
 #include <FL/Enumerations.H>
 #include <FL/fl_draw.H>
+#include <FL/fl_utf8.h>
 #include <FL/Fl_Widget.H>
 
 #include <cstdint>
@@ -40,7 +41,7 @@ static std::map<int, uint32_t> SI_PREFIXES = {
 	{ -9, 'n' },
 	{ -6, 0x3Bc },  // Greek letter mu
 	{ -3, 'm' },
-	{ 0, 0x200B },   // Zero-width space
+	{ 0, 0x200B },  // Zero-width space for no prefix
 	{ 3, 'k' },
 	{ 6, 'M' },
 	{ 9, 'G'},
@@ -207,20 +208,42 @@ void zc_graph_axis::draw_label() {
 	int tw = 0, th = 0;
 	fl_measure(label_.c_str(), tw, th);
 	// Draw the label based on the orientation.
+	int lx = 0, ly = 0, lw = 0, lh = 0, ltx = 0, lty = 0, angle = 0;
 	switch (orientation_) {
 	case zc_graph_axis::X_AXIS:
 		// Draw centered below the axis line.
-		fl_draw(label_.c_str(), x() + w() / 2 - tw / 2, y() + 5 + th + 5);
+		angle = 0;
+		lx = x() + w() / 2 - tw / 2;
+		ly = y() + h() / 4;
+		lw = tw;
+		lh = th;
+		ltx = lx;
+		lty = ly + th;
 		break;
 	case zc_graph_axis::YL_AXIS:
 		// Draw centered to the left of the axis line.
-		fl_draw(90, label_.c_str(), x() + th + 5, y() + h() / 2 + tw / 2);
+		angle = 90;
+		lx = x() + w() / 4;
+		ly = y() + h() / 2 - tw / 2;
+		lw = th;
+		lh = tw;
+		ltx = lx + th;
+		lty = ly + lh;
 		break;
 	case zc_graph_axis::YR_AXIS:
 		// Draw centered to the right of the axis line.
-		fl_draw(90, label_.c_str(), x() + w() - 5, y() + h() / 2 + tw / 2);
+		angle = 90;
+		lx = x() + w() / 4;
+		ly = y() + h() / 2 - tw / 2;
+		lw = th;
+		lh = tw;
+		ltx = lx + th;
+		lty = ly + lh;
 		break;
 	}
+	fl_rectf(lx - 1, ly - 1, lw + 2, lh + 2, FL_WHITE);
+	fl_color(FL_FOREGROUND_COLOR);
+	fl_draw(angle, label_.c_str(), ltx, lty);
 }
 
 //! \brief Calculate the tick positions and labels based on the current range and modifier.
@@ -243,6 +266,7 @@ void zc_graph_axis::set_ticks() {
 		else if (tick_spacing_units >= 0.007F) format = "%0.2F";
 		else format = "%g";
 		// Fall through to the same tick spacing as POWER_OF_10 - but with different formatting.
+		[[fallthrough]];
 	case POWER_OF_10:
 		// If normalised value > 7 - set tick at 10 * power10 
 		if (tick_mantissa > 7.0F) {
@@ -347,17 +371,27 @@ void zc_graph_axis::set_ticks() {
 		grid_value += grid_spacing_units;
 	}
 	// Add the SI prefix or power of 10 to the axis label if applicable.
-	char ll[100];
+	char lu[100];
 	switch (modifier_) {
 	case NO_MODIFIER:
-		snprintf(ll, sizeof(ll), "%s (%s)", label(), unit_.c_str());
+		snprintf(lu, sizeof(lu), "(%s)", unit_.c_str());
 		break;
 	case POWER_OF_10:
-		snprintf(ll, sizeof(ll), "%s (\303\227%g %s)", label(), tick_power10, unit_.c_str());
+		snprintf(lu, sizeof(lu), "(\303\227%g %s)", tick_power10, unit_.c_str());
 		break;
-	case SI_PREFIX:
-		snprintf(ll, sizeof(ll), "%s (%c%s)", label(), si_prefix_exponent, unit_.c_str());
+	case SI_PREFIX: {
+		// Convert Unicode code point to UTF-8
+		char prefix_utf8[5] = { 0 };  // UTF-8 can be up to 4 bytes + null terminator
+		fl_utf8encode(si_prefix_exponent, prefix_utf8);
+		snprintf(lu, sizeof(lu), "(%s%s)", prefix_utf8, unit_.c_str());
 		break;
+	}
+	}
+	char ll[100];
+	if (unit_.length() > 0) {
+		snprintf(ll, sizeof(ll), "%s %s", label(), lu);
+	} else {
+		snprintf(ll, sizeof(ll), "%s", label());
 	}
 	label_ = ll;
 }

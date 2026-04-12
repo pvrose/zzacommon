@@ -60,14 +60,14 @@ void zc_graph_xy::define_data_types() {
 }
 
 void zc_graph_xy::create_components() {
+	resizable(nullptr);
 	// Calculate the "width" of each axis based on tick length and label size.
-	int axis_width = 5;
 	// Get the height of the font to use for labels and ticks.
 	fl_font(FL_HELVETICA, FL_NORMAL_SIZE);
 	int dw = 0, dh = 0;
 	fl_measure("dummy", dw, dh);
 	// Add label height and tick label height to axis width.
-	axis_width += dh;
+	int axis_width = 2 * dh;
 	// Add components.
 	int cx = x();
 	int cy = y() +GAP;
@@ -87,6 +87,7 @@ void zc_graph_xy::create_components() {
 	axes_.at(zc_graph_axis::X_AXIS) = new zc_graph_axis(cx, cy, cw, axis_width, "X");
 	add(axes_.at(zc_graph_axis::X_AXIS));
 	end();
+	resizable(plot_);
 }
 
 // Define the transformation schemata for the plot based on the axis ranges.
