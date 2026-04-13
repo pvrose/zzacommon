@@ -241,7 +241,7 @@ void zc_graph_axis::draw_label() {
 		lty = ly + lh;
 		break;
 	}
-	fl_rectf(lx - 1, ly - 1, lw + 2, lh + 2, FL_WHITE);
+	fl_rectf(lx - 1, ly - 1, lw + 2, lh + 2, color());
 	fl_color(FL_FOREGROUND_COLOR);
 	fl_draw(angle, label_.c_str(), ltx, lty);
 }
@@ -251,7 +251,7 @@ void zc_graph_axis::set_ticks() {
 	// Clear the existing ticks.
 	ticks_.clear();
 	// Calculate the tick spacing in data units based on the desired pixel spacing and current scale.
-	float tick_spacing_units = abs(tick_spacing_pixels_ * scale_);
+	float tick_spacing_units = std::abs(tick_spacing_pixels_ * scale_);
 	float tick_mantissa;
 	float tick_power10;
 	float grid_spacing_units = tick_spacing_units;
