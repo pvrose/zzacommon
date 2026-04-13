@@ -57,6 +57,7 @@ struct zc_line_style
 };
 
 //! \brief This class provides a dialog for editing a line style.
+//! 
 //! The dialog allows the user to select a colour, width and pattern for a line style.
 class zc_line_style_dialog :
 	public Fl_Double_Window

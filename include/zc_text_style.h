@@ -37,7 +37,7 @@ class Fl_Hold_Browser;
 class Fl_Color_Chooser;
 class Fl_Output;
 
-//! The text style structure.
+//! The text style structure, allowing a font, size and colour to be specified for text.
 struct zc_text_style
 {
 	//! The text colour.
@@ -63,6 +63,7 @@ struct zc_text_style
 };
 
 //! \brief This class provides a dialog for editing a text style.
+//! 
 //! The dialog allows the user to select a font, size and colour for a text style.
 class zc_text_style_dialog :
 	public Fl_Double_Window

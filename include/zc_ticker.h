@@ -25,8 +25,10 @@
 
 
 //! \brief This class provides a central timer to control all the real time activity.
-//! It is clocked every 100 milliseconds. Any object that wants a regular tick
-//! registers a callback and period.
+//! 
+//! Any object that wants a regular tick
+//! subscribes to the ticker by providing a callback and a period.
+//! The minimum period is 100 milliseconds, and the period is specified in units of 100 milliseconds.
 class zc_ticker {
 
     //! Ticker callback.

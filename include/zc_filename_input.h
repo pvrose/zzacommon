@@ -22,7 +22,9 @@
 #include <FL/Fl_Widget.H>
 
 
-//! \brief This class implements a combination of input widget and a button which opens a file browser.
+//! \brief This class implements a combination of input widget and a button 
+//! which opens a file browser.
+//! 
 //! The file browser is of type Fl_Native_File_Chooser.
 class zc_filename_input :
     public zc_button_input

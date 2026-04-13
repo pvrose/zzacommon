@@ -25,6 +25,7 @@
 const char WEEKDAY[7][2] = { "S", "M", "T", "W", "T", "F", "S" };
 
 //! \brief This class provides the Fl_Table object to be used in calendar.
+//! 
 //! The table will have
 //! 7 columns and 5 rows to allow a single month to be displayed. 
 //! The widget will be instantiated within the calendar widget. \see calendar.

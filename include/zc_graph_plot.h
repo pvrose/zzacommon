@@ -28,6 +28,7 @@
 #include <vector>
 
 //! \brief Header for the main graph plotting widget.
+//! 
 //! This is the main widget for plotting graphs. Data is supplied
 //! as a list of drawing instructions and drawn in the foreground.
 //! Grid information is supplied as a list of drawing instructions and
@@ -38,7 +39,9 @@ class zc_graph_plot : public Fl_Widget {
 
 public:
 
-	//! \brief Structure to represent a vertex (point) in the plot.
+	//! \brief Structure to represent a vertex (point) in the plot. This maps onto
+	//! the paarmeters of the FLTK function fl_vertex() when plotting
+	//! lines or points.
 	struct plot_vertex_t {
 		double x = 0;        //!< X-coordinate of point
 		double y = 0;        //!< Y-coordinate of point
@@ -48,7 +51,8 @@ public:
 		plot_vertex_t(float x_, float y_) : x(x_), y(y_) {} //!< Constructor with float parameters
 	};
 
-	//! \brief Structure to represent an arc segment in the plot.
+	//! \brief Structure to represent an arc segment in the plot. This maps onto
+	//! the parameters of the FLTK function fl_arc() when plotting lines or points.
 	struct plot_arc_t {
 		double x = 0;        //!< X-coordinate of center of arc
 		double y = 0;        //!< Y-coordinate of center of arc
@@ -108,7 +112,12 @@ public:
 	};
 
 	//! \brief Transformation schema for the plot data. 
-	//! Currently this is a simple linear transformation defined by the minimum and maximum X and Y coordinates of the plot in pixels, which map onto the corresponding coordinates of the widget. This allows for scaling and translation of the data points to fit within the widget drawing area. More complex transformations (e.g. logarithmic) could be added in future if needed. 
+	//! Currently this is a simple linear transformation defined by the cartesian
+	//! coordinates of the extremes of the data to be plotted,
+	//! mapped onto the pixel coordinates of the widget. More than one
+	//! such schema can be defined, allowing different data types to be plotted
+	//! with different transformations (eg resistive and reactive components
+	//! of an impedance plot).
 	struct plot_xform_t {
 		double x_min_ = 0;    //!< Minimum X-coordinate of the plot in pixels. Maps onto x() of the widget.
 		double y_min_ = 0;    //!< Minimum Y-coordinate of the plot in pixels. Maps onto y() + h() of the widget (i.e. Y increases upwards).
@@ -116,7 +125,8 @@ public:
 		double y_max_ = 1;     //!< Maximum Y-coordinate of the plot in pixels. Maps onto y() of the widget.
 	};
 
-	//! \brief All the data for specific data type to be plotted.
+	//! \brief All the data for specific data type to be plotted. 
+	//! Background lines are plotted before foreground lines, so will appear behind them.
 	struct plot_data_t {
 		plot_xform_t xform_schema; //!< Transformation schema to apply to the data points for this data type.
 		std::vector<plot_line_t> background_lines; //!< List of background lines to plot (e.g. grid lines)

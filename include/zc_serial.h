@@ -25,7 +25,11 @@
 #include <boost/asio.hpp>
 
 
-	//! This class provides utilities to support zc_serial port access.
+	//! \brief This class provides utilities to support serial port access.
+	//! 
+	//! It provides a lightweight wrapper around boost::asio::serial_port to
+	//! provide a simple API for reading and writing to a serial port.
+	//! It also allows the user to query the available serial ports on the system.
 	class zc_serial
 	{
 	public:

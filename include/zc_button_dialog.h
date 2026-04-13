@@ -38,7 +38,9 @@ enum zc_button_dialog_type : uint8_t
 };
 
 //! \brief This class provides a button that opens a dialog when clicked.
-//! This is a template class. The template parameters specify the dialog to be opened,
+//! This is a template class. 
+//! 
+//! The template parameters specify the dialog to be opened,
 //! and the structure of the data to be passed to the dialog and returned from it.
 
 template <class DIALOG, class DATA>

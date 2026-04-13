@@ -31,7 +31,8 @@
 // Forward declaration to avoid circular dependency
 class zc_graph_plot;
 
-//! \brief Base class for graph widgets.
+//! \brief Base class for graph widgets. 
+//! 
 //! This provides a standard API for the various types of graphs.
 //! It can only be used as a base class and must be derived to
 //! implement the specific graph types and their components.

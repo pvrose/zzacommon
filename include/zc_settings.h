@@ -24,7 +24,8 @@
 using json = nlohmann::json;
 
 //! \brief This class provides access to a JSON-based setting file.
-//! The interface is simillar to that of Fl_Preferences in fltk, but simplified
+//! 
+//! The interface is similar to that of Fl_Preferences in FLTK, but simplified
 //! for specific usages.
 class zc_settings
 {

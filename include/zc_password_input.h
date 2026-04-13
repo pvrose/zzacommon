@@ -18,7 +18,9 @@
 #pragma once
 #include "zc_button_input.h"
 
-//! \brief This class implements a combined input and button.
+//! \brief This class implements a combined input and button that allows the user
+//! to toggle the display of the input between clear text and hidden text.
+//! 
 //! The button chnages the display mode of the input between clear text and hidden text. 
 class zc_password_input :
     public zc_button_input

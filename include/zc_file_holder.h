@@ -64,7 +64,9 @@ enum file_data_t : uint8_t {
 class zc_file_holder;
 extern zc_file_holder* file_holder_;
 
-//! \brief This class provides a general interface to allow a standard use of application-specific data.
+//! \brief This class provides a general interface to allow a standard use of 
+//! application-specific data.
+//! 
 //! Data is classed as one of the following:
 //! \par FDD_REF_SOURCE: 
 //! Data that is provided with the installation of the app. Data that is only ever read

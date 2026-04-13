@@ -25,10 +25,12 @@
 
 typedef uint32_t debug_flag;  //!< Type for debug flags - use bitwise operations to set and test individual flags
 
-//! \brief Class to provide generic application-level data and methods.
-//! These will generally be set from the CMakeLists.txt file through the use
+//! \brief This class provides global data declarations that standardise the
+//! look and feel of all GM3ZZA applications. 
+//! 
+//! It also provides a standard method for setting and testing debug flags.
+//! The global data will generally be set from the CMakeLists.txt file through the use
 //! of CMake's configure_file() function on file zc_app.cpp.in.
-//! This allows a standard look-and-feel for all GM3ZZA applications.
 //! The following global variables are available to all applications by 
 //! declaring them as extern.
 

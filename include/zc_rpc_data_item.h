@@ -39,7 +39,7 @@
 		XRT_STRUCT              //!< Struct
 	};
 
-	//! This class describes an Remote Procedure Call data item 
+	//! This class describes an Remote Procedure Call (XML-RPC) data item 
 	class zc_rpc_data_item
 	{
 	public:
