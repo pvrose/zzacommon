@@ -33,6 +33,7 @@ class zc_calendar_table;
 	//! \brief This class provides a widget to be used for date selection.	
 	//! 
 	//! It displays a month at a time and can be navigated by month or year.
+	//! \image html zc_calendar.png "Example of the calendar widget"
 	class zc_calendar : public Fl_Window
 	{
 

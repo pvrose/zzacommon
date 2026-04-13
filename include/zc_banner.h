@@ -37,6 +37,8 @@ class Fl_Text_Display;
 //! This is a separate window from the main window of the app.
 //! It works better with the class status to act as an interface
 //! and control the look and feel of the banner display.
+//! \image html zc_banner.png "Example of the banner display"
+//! \image html zc_banner_2.png "Showing banner at minimum size"
 class zc_banner :
     public Fl_Double_Window
 {

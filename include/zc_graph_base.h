@@ -36,6 +36,7 @@ class zc_graph_plot;
 //! This provides a standard API for the various types of graphs.
 //! It can only be used as a base class and must be derived to
 //! implement the specific graph types and their components.
+//! \image html zc_graph_base.png "Example of a graph with axes and plot area"
 
 class zc_graph_base : public Fl_Group {
 

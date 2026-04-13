@@ -20,6 +20,8 @@
 #include "zc_graph_base.h"
 
 //! \brief Class for X-Y line graph.
+//! 
+//! \image html zc_graph_xy.png "Example of an X-Y line graph with axes and grid lines"
 class zc_graph_xy : public zc_graph_base {
 
 public:

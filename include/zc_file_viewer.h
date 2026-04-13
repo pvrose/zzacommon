@@ -27,7 +27,9 @@ class Fl_Text_Editor;
 class Fl_Text_Buffer;
 class Fl_Button;
 
-//! Rudimentary file editor
+//! \brief Rudimentary file editor.
+//! 
+//! \image html zc_file_viewer.png "Example of the file viewer/editor"
 class zc_file_viewer :
     public Fl_Window
 {

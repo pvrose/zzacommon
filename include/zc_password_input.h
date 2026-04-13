@@ -22,6 +22,7 @@
 //! to toggle the display of the input between clear text and hidden text.
 //! 
 //! The button chnages the display mode of the input between clear text and hidden text. 
+//! \image html zc_password_input.png "Example of the password input widget"
 class zc_password_input :
     public zc_button_input
 {

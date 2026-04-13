@@ -30,7 +30,7 @@
 class Fl_Button;
 
 
-//! The button can be used either normally ot just to display the current value.
+//! The button can be used either normally or just to display the current value.
 enum zc_button_dialog_type : uint8_t
 {
 	ZC_BUTTON_DIALOG_INOUT,     //!< Normal behaviour. Opens the dialog.
@@ -42,6 +42,7 @@ enum zc_button_dialog_type : uint8_t
 //! 
 //! The template parameters specify the dialog to be opened,
 //! and the structure of the data to be passed to the dialog and returned from it.
+//! image html zc_button_dialog.png "Example of the button opening a dialog"
 
 template <class DIALOG, class DATA>
 class zc_button_dialog :

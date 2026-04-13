@@ -25,6 +25,7 @@
 
 //! The button opens a calendar widget to select a date.
 //! The input allows the date to be typed in (and displays that selected by the calendar).
+//! \image html zc_calendar_input.png "Example of the calendar input widget"
 class zc_calendar_input :
     public zc_button_input
 {

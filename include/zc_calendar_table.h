@@ -29,6 +29,7 @@ const char WEEKDAY[7][2] = { "S", "M", "T", "W", "T", "F", "S" };
 //! The table will have
 //! 7 columns and 5 rows to allow a single month to be displayed. 
 //! The widget will be instantiated within the calendar widget. \see calendar.
+//! \image html zc_calendar_table.png "Showing the widget within a zc_calendar widget"
 class zc_calendar_table : public Fl_Table
 {
 public:

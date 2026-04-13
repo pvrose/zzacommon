@@ -26,6 +26,7 @@
 //! which opens a file browser.
 //! 
 //! The file browser is of type Fl_Native_File_Chooser.
+//! \image html zc_filename_input.png "Example of the filename input widget"
 class zc_filename_input :
     public zc_button_input
 {

@@ -65,6 +65,7 @@ struct zc_text_style
 //! \brief This class provides a dialog for editing a text style.
 //! 
 //! The dialog allows the user to select a font, size and colour for a text style.
+//! \image html zc_text_style_dialog.png "Example of the text style dialog"
 class zc_text_style_dialog :
 	public Fl_Double_Window
 {

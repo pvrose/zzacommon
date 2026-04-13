@@ -27,6 +27,8 @@
 #include <vector>
 
 //! \brief Class to represent an axis on a graph, including scaling and zooming options.
+//! 
+//! \image html zc_graph_axis.png "Showing three axes with different orientations and modifiers"
 class zc_graph_axis : public Fl_Widget {
 
 public:

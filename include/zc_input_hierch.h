@@ -20,6 +20,8 @@
 
 //! \brief This class inherits from Fl_Input_Choice but presents the choice button menu
 //! in hierarchic form to manage a large selection range.
+//! 
+//! \image html zc_input_hierch.png "Example of the hierarchic input choice widget"
 class zc_input_hierch :
     public Fl_Input_Choice
 {

@@ -35,6 +35,7 @@
 //! drawn in the background. Thus data will appear drawn on top of the grid. 
 //! Each instruction is either a list
 //! of data points to be plotted as a line, or a list of arcs to be plotted as curves.
+//! \image html zc_graph_plot.png "Example of a graph plot with data and grid lines"
 class zc_graph_plot : public Fl_Widget {
 
 public:
