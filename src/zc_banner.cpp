@@ -94,11 +94,11 @@ void zc_banner::create_form() {
 	int curr_y = y() + GAP;
 	
 	Fl_Group* g_top = new Fl_Group(x(), curr_y, w(), H_TOP);
-	g_top->box(FL_FLAT_BOX);
+	g_top->box(FL_BORDER_BOX);
 
 	// Group all but the display widgets in the top of the banner.
-	Fl_Group* g_topleft = new Fl_Group(curr_x, curr_y, w() - GAP - GAP, HICON);
-	g_topleft->box(FL_FLAT_BOX);
+	Fl_Group* g_topleft = new Fl_Group(curr_x, curr_y, w() - GAP - GAP, H_TOP);
+	g_topleft->box(FL_BORDER_BOX);
 	// Create a box to hild the icon and resize it thereinto
 	bx_icon_ = new Fl_Box(curr_x, curr_y, HICON, HICON);
 	std::string fn_icon = file_holder_->get_filename(FILE_ICON_ZZA);
@@ -167,18 +167,17 @@ void zc_banner::create_form() {
 	curr_y = g_topleft->y();
 
 	Fl_Group* g_topright = new Fl_Group(curr_x, curr_y, GAP, g_topleft->h());
-	g_topright->box(FL_FLAT_BOX);
+	g_topright->box(FL_BORDER_BOX);
 
 	g_topright->end();
 	g_top->resizable(g_topright);
 	g_top->end();
 
 	curr_x = x() + GAP;
-	curr_y = g_topleft->y() + g_topleft->h() + GAP;
+	curr_y = g_topleft->y() + g_topleft->h();
 
 	int h_display = h() - (curr_y + HBUTTON);
 
-	curr_y += HBUTTON;
 	h_display -= HBUTTON;
 	curr_x = x() + GAP;
 
@@ -259,7 +258,7 @@ void zc_banner::add_message(status_t type, const char* msg, const char* ts) {
 	}
 	copy_msg_display(type, msg, ts);
 	display_->redraw();
-	Fl::check();
+	if (!closing_) Fl::check();
 }
 
 // Add progress
