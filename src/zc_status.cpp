@@ -58,10 +58,6 @@ zc_status::zc_status(uint8_t features, const object_data_map& data_map) :
 	if (feature_set_ & HAS_BANNER) {
 		// Create banner
 		banner_ = new zc_banner(400, 200);
-		std::string title = APP_NAME + " " + APP_VERSION;
-		if (zc_app::debug(DEBUG_DEVELOPMENT)) title += " DEVT";
-		banner_->copy_label(title.c_str());
-
 	}
 
 }

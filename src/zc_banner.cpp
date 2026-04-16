@@ -17,10 +17,12 @@
 */
 #include "zc_banner.h"
 
-#include "zc_file_holder.h"
-#include "zc_status.h"
-
+#include "zc_app.h"
 #include "zc_drawing.h"
+#include "zc_file_holder.h"
+#include "zc_settings.h"
+#include "zc_status.h"
+#include "zc_utils.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -32,6 +34,7 @@
 // FLTK classes
 #include <FL/Fl.H>
 #include <FL/Fl_Box.H>
+#include <FL/Fl_Choice.H>
 #include <FL/Fl_Fill_Dial.H>
 #include <FL/Fl_Image.H>
 #include <FL/Fl_Input_.H>
@@ -60,6 +63,9 @@ Fl_Text_Display::Style_Table_Entry style_table_[NUMBER_STYLES] = {
 	{ STATUS_COLOURS.at(ST_FATAL).fg, FL_SCREEN, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_FATAL).bg }
 };
 
+extern std::string APP_NAME;
+extern std::string APP_VERSION;
+extern debug_flag DEBUG_DEVELOPMENT;
 extern std::string COPYRIGHT;
 extern std::string CONTACT;
 extern zc_status* status_;
@@ -69,29 +75,20 @@ std::thread::id main_thread_id_ = std::this_thread::get_id();
 zc_banner::zc_banner(int W, int H, const char* L) :
 	Fl_Double_Window(W, H, L)
 {
-	// clear_modal_states();
-	// Set the ticker for 2 seconds
 	callback(cb_close);
+	load_settings();
 	create_form();
 	enable_widgets();
 }
 
 zc_banner::~zc_banner() {
-
-}
-
-// Visualise or no the close overay
-void zc_banner::draw() {
-	if (closing_) bx_closing_->show();
-	else bx_closing_->hide();
-	Fl_Double_Window::draw();
+	save_settings();
 }
 
 void zc_banner::create_form() {
 	const int HMULT = 2 * HBUTTON;
 	const int HICON = HMULT * 2 + GAP;
-	const int WOP = w() - GAP - GAP - HICON - GAP;
-	const int H_TOP = HMULT + GAP + HMULT + GAP + HMULT + GAP;
+	const int H_TOP = HICON + GAP + HBUTTON;
 
 	int curr_x = x() + GAP;
 	int curr_y = y() + GAP;
@@ -99,7 +96,8 @@ void zc_banner::create_form() {
 	Fl_Group* g_top = new Fl_Group(x(), curr_y, w(), H_TOP);
 	g_top->box(FL_FLAT_BOX);
 
-	Fl_Group* g_topleft = new Fl_Group(curr_x, curr_y, HICON, HICON + HMULT + GAP);
+	// Group all but the display widgets in the top of the banner.
+	Fl_Group* g_topleft = new Fl_Group(curr_x, curr_y, w() - GAP - GAP, HICON);
 	g_topleft->box(FL_FLAT_BOX);
 	// Create a box to hild the icon and resize it thereinto
 	bx_icon_ = new Fl_Box(curr_x, curr_y, HICON, HICON);
@@ -109,64 +107,80 @@ void zc_banner::create_form() {
 	image->scale(HICON, HICON);
 	bx_icon_->image(image);
 
-	curr_y += HICON + GAP;
+	curr_x += HICON + GAP;
+	int avail_w = g_topleft->w() - HICON - GAP;
+
+	// App title
+	op_app_title_ = new Fl_Box(curr_x, curr_y, avail_w, HMULT);
+	op_app_title_->labelsize(FL_NORMAL_SIZE * 2);
+	op_app_title_->labelfont(FL_BOLD);
+	std::string title = APP_NAME + " " + APP_VERSION;
+	if (zc_app::debug(DEBUG_DEVELOPMENT)) title += "\n(DEVELOPMENT)";
+	op_app_title_->copy_label(title.c_str());
+	op_app_title_->align(FL_ALIGN_LEFT | FL_ALIGN_INSIDE);
+
+
 	// Progress "clock"
-	fd_progress_ = new Fl_Fill_Dial(curr_x + HICON - HMULT, curr_y, HMULT, HMULT);
+	curr_y += HMULT + GAP;
+	fd_progress_ = new Fl_Fill_Dial(curr_x, curr_y, HMULT, HMULT);
 	fd_progress_->minimum(0.0);
 	fd_progress_->maximum(1.0);
 	fd_progress_->color(FL_BACKGROUND_COLOR);
 	fd_progress_->angles(180, 540);
 	fd_progress_->box(FL_OVAL_BOX);
 
-	g_topleft->end();
+	avail_w -= HMULT + GAP;
+	curr_x += HMULT + GAP;
 
-	curr_x += HICON + GAP;
-	curr_y = y() + GAP;
-
-	Fl_Group* g_topright = new Fl_Group(curr_x, curr_y, WOP, H_TOP);
-	g_topright->box(FL_FLAT_BOX);
-
-	// Output to display low severity (< WARNING) message
-	op_msg_low_ = new Fl_Multiline_Output(curr_x, curr_y, WOP, HMULT);
-	op_msg_low_->wrap(true);
-	op_msg_low_->textsize(FL_NORMAL_SIZE);
-
-	curr_y += HMULT + GAP;
-	// Output to displaye high severity (>= WARNING) message
-	op_msg_high_ = new Fl_Multiline_Output(curr_x, curr_y, WOP, HMULT);
-	op_msg_high_->wrap(true);
-	op_msg_high_->textsize(FL_NORMAL_SIZE);
-
-	curr_y = std::max<int>(curr_y + HMULT, y() + GAP + HICON) + GAP;
-
-	// Progress message
-	op_prog_title_ = new Fl_Output(curr_x, curr_y, WOP, HBUTTON);
-	op_prog_title_->textsize(FL_NORMAL_SIZE);
-
-	curr_y += HBUTTON;
 	// Progress value
-	bx_prog_value_ = new Fl_Box(curr_x, curr_y, WOP, HBUTTON);
+	bx_prog_value_ = new Fl_Box(curr_x, curr_y, avail_w, HMULT);
 	bx_prog_value_->align(FL_ALIGN_LEFT | FL_ALIGN_INSIDE);
 
-	curr_x = x() + GAP;
+	// Verbosity choice
+	curr_x = x() + GAP + WLABEL;
+	curr_y += HMULT + GAP;
+
+	ch_verbosity_ = new Fl_Choice(curr_x, curr_y, WSMEDIT, HBUTTON, "Verbosity");
+	ch_verbosity_->align(FL_ALIGN_LEFT);
+	ch_verbosity_->callback(cb_verbosity, &verbosity_);
+	ch_verbosity_->tooltip("Set the verbosity level for messages displayed in the banner");
+	// Populate the choice with the verbosity levels
+	ch_verbosity_->add("Minimum");
+	ch_verbosity_->add("Errors");
+	ch_verbosity_->add("Warnings");
+	ch_verbosity_->add("Notes");
+	ch_verbosity_->add("Full");
+	ch_verbosity_->value(verbosity_);
+	ch_verbosity_->selection_color(FL_YELLOW);
+
+	curr_x += WSMEDIT + GAP + WLABEL;
+	ch_filter_ = new Fl_Choice(curr_x, curr_y, WSMEDIT, HBUTTON, "Topic");
+	ch_filter_->align(FL_ALIGN_LEFT);
+	ch_filter_->callback(cb_filter, this);
+	ch_filter_->tooltip("Set the topic filter for messages displayed in the banner - blank for all topics");
+	ch_filter_->value(0); // default to "All"
+	ch_filter_->selection_color(FL_YELLOW);
+
+	g_topleft->end();
+
+	curr_x = g_topleft->x() + g_topleft->w();
+	curr_y = g_topleft->y();
+
+	Fl_Group* g_topright = new Fl_Group(curr_x, curr_y, GAP, g_topleft->h());
+	g_topright->box(FL_FLAT_BOX);
 
 	g_topright->end();
 	g_top->resizable(g_topright);
 	g_top->end();
 
-
-	curr_x = op_msg_high_->x();
-
-	bx_closing_ = new Fl_Box(bx_icon_->x(), bx_icon_->y(), w(), HICON, "CLOSING!");
-	bx_closing_->labelsize(FL_NORMAL_SIZE * 5);
-	bx_closing_->labelcolor(FL_YELLOW);
-	bx_closing_->box(FL_BORDER_FRAME);
-	bx_closing_->hide();
-
 	curr_x = x() + GAP;
-	curr_y += fd_progress_->h();
+	curr_y = g_topleft->y() + g_topleft->h() + GAP;
 
 	int h_display = h() - (curr_y + HBUTTON);
+
+	curr_y += HBUTTON;
+	h_display -= HBUTTON;
+	curr_x = x() + GAP;
 
 	// Text display for all messages
 	display_ = new Fl_Text_Display(curr_x, curr_y, w() - GAP - GAP, h_display);
@@ -187,6 +201,7 @@ void zc_banner::create_form() {
 	curr_y += HBUTTON + GAP;
 
 	resizable(display_);
+
 	size_range(w(), h());
 	// Center the banner in the middle of the screen (windows manager permitting)
 	int sx, sy, sw, sh;
@@ -201,6 +216,21 @@ void zc_banner::create_form() {
 void zc_banner::enable_widgets() {
 }
 
+void zc_banner::load_settings() {
+	zc_settings settings;
+	zc_settings behav_settings(&settings, "Behaviour");
+	zc_settings banner_settings(&settings, "Banner");
+	behav_settings.get("Verbosity", verbosity_, VB_INFO);
+}
+
+// Save settings.
+void zc_banner::save_settings() {
+	zc_settings settings;
+	zc_settings behav_settings(&settings, "Behaviour");
+	zc_settings banner_settings(&settings, "Banner");
+	behav_settings.set("Verbosity", verbosity_);
+};
+
 // Add a message to the banner
 void zc_banner::add_message(status_t type, const char* msg, const char* ts) {
 	// Trap any call that is not from the main thread
@@ -209,9 +239,7 @@ void zc_banner::add_message(status_t type, const char* msg, const char* ts) {
 		throw;
 	}
 	switch (type) {
-	case ST_PROGRESS: {
-		break;
-	}
+	case ST_PROGRESS:
 	case ST_NONE:
 	case ST_LOG:
 	case ST_DEBUG:
@@ -219,18 +247,10 @@ void zc_banner::add_message(status_t type, const char* msg, const char* ts) {
 	case ST_OK: 
 	case ST_WARNING:
 	case ST_ERROR:
-	{
-		op_msg_low_->value(msg);
-		op_msg_low_->color(STATUS_COLOURS.at(type).bg);
-		op_msg_low_->textcolor(STATUS_COLOURS.at(type).fg);
 		break;
-	}
 	case ST_SEVERE:
 	case ST_FATAL:
 	{
-		op_msg_high_->value(msg);
-		op_msg_high_->color(STATUS_COLOURS.at(type).bg);
-		op_msg_high_->textcolor(STATUS_COLOURS.at(type).fg);
 		hide();
 		set_non_modal();
 		show();
@@ -238,8 +258,8 @@ void zc_banner::add_message(status_t type, const char* msg, const char* ts) {
 	}
 	}
 	copy_msg_display(type, msg, ts);
-	redraw();
-	if (visible()) Fl::check();
+	display_->redraw();
+	Fl::check();
 }
 
 // Add progress
@@ -265,15 +285,15 @@ void zc_banner::start_progress(
 	// Set display message
 	snprintf(text, sizeof(text), "%s: PROGRESS: Starting %s - %lld %s", object, msg, max_value, suffix);
 	status_->misc_status(ST_PROGRESS, text);
-	snprintf(text, sizeof(text), "%s: %s.", object, msg);
-	op_prog_title_->value(text);
 	snprintf(text, sizeof(text), "0 out of %lld %s", max_value, suffix);
 	bx_prog_value_->copy_label(text);
 	fd_progress_->selection_color(colour);
 	fd_progress_->value(0.0);
 
-	redraw();
-	if (visible()) Fl::check();
+	// Only redraw these two items.
+	fd_progress_->redraw();
+	bx_prog_value_->redraw();
+	Fl::check();
 }
 
 // Update progress dial and output
@@ -300,7 +320,7 @@ void zc_banner::add_progress(uint64_t value) {
 			// Only redraw these two items.
 			fd_progress_->redraw();
 			bx_prog_value_->redraw();
-			if (visible()) Fl::check();
+			Fl::check();
 		}
 	}
 }
@@ -316,8 +336,6 @@ void zc_banner::end_progress() {
 	// Set display message
 	snprintf(text, sizeof(text), "%s: PROGRESS: Ending %s", prg_object_, prg_msg_);
 	status_->misc_status(ST_PROGRESS, text);
-	snprintf(text, sizeof(text), "%s: %s. Done", prg_object_, prg_msg_);
-	op_prog_title_->value(text);
 	redraw();
 	if (visible()) Fl::check();
 }
@@ -333,41 +351,81 @@ void zc_banner::cancel_progress(const char* msg) {
 	// Set display message
 	snprintf(text, sizeof(text), "%s: PROGRESS: cancelling %s - %s", prg_object_, prg_msg_, msg);
 	status_->misc_status(ST_PROGRESS, text);
-	snprintf(text, sizeof(text), "%s: %s. Cancelled (%s)", prg_object_, prg_msg_, msg);
-	op_prog_title_->value(text);
 	redraw();
 	if (visible()) Fl::check();
 }
 
 // Callback - close button - close app.
 void zc_banner::cb_close(Fl_Widget* w, void* v) {
+	zc_banner* banner = zc::ancestor_view<zc_banner>(w);
+	banner->op_app_title_->copy_label("CLOSING!");
+	banner->op_app_title_->labelsize(FL_NORMAL_SIZE * 2);
+	banner->op_app_title_->labelcolor(FL_RED);
 	// Pretend to click the close button on the main window
 	status_->close_(status_->window_, nullptr);
 }
 
 // Add message to display (with colour)
 void zc_banner::copy_msg_display(status_t type, const char* msg, const char* ts) {
-	// Append the message to the text buffer
-	Fl_Text_Buffer* buffer = display_->buffer();
-	buffer->append(ts);
-	buffer->append(" ");
-	buffer->append(msg);
-	buffer->append("\n");
-	// Now set the style of the added characters
-	// Create a string of the required length and fill it with the style character
-	size_t len = strlen(msg) + strlen(ts)  + 2;
-	char* style = new char[len + 1];
-	char s_char = (char)type + 'A';
-	// Set the style of the whole message according to type
-	memset(style, s_char, len);
+	// Extract the topic from the message - the topic is the first word in the message, up to the first ":"
+	std::string topic;
+	const char* colon = strchr(msg, ':');
+	if (colon) {
+		topic = std::string(msg, colon - msg);
+	}
+	add_topic(topic);
+	// Create the message to be added to the display - timestamp + message
+	std::string text = std::string(ts) + " " + std::string(msg) + "\n";
+	// Create the style string for the message - one character per character in the message,
+	// with the character being the style to apply to that character
+	std::string style(text.size(), (char)type + 'A');
 	// Set the style of the timestamp to the default
-	memset(style, 'A', strlen(ts) + 1);
-	style[len] = '\0';
-	// Append it to the style buffer
-	Fl_Text_Buffer* s_buffer = display_->style_buffer();
-	s_buffer->append(style);
-	display_->scroll(buffer->count_lines(0, buffer->length()),0);
+	std::fill_n(&style[0], strlen(ts) + 1, 'A');
+	// Add the message to the saved messages.
+	message_history_.push_back({ type, topic, text, style });
+	// If the message is above the verbosity level, add it to the display
+	if (display_message(type) && message_for_current_topic(topic)) {
+		Fl_Text_Buffer* buffer = display_->buffer();
+		buffer->append(text.c_str());
+		Fl_Text_Buffer* s_buffer = display_->style_buffer();
+		s_buffer->append(style.c_str());
+		display_->scroll(buffer->count_lines(0, buffer->length()), 0);
+	}
+}
 
+// Callback - verbosity choice - set verbosity level
+void zc_banner::cb_verbosity(Fl_Widget* w, void* v) {
+	zc_banner* banner = zc::ancestor_view<zc_banner>(w);
+	banner->verbosity_ = (verbosity_t)((Fl_Choice*)w)->value();
+	banner->update_display();
+	banner->save_settings();
+}
+
+// Callback - topic filter choice - set topic filter
+void zc_banner::cb_filter(Fl_Widget* w, void* v) {
+	zc_banner* banner = zc::ancestor_view<zc_banner>(w);
+	int sel = ((Fl_Choice*)w)->value();
+	if (sel == 0) {
+		banner->filter_topic_ = "";
+	} else {
+		banner->filter_topic_ = ((Fl_Choice*)w)->text(sel);
+	}
+	banner->update_display();
+}
+
+// Update the display to show messages at or above the current verbosity level
+void zc_banner::update_display() {
+	Fl_Text_Buffer* buffer = display_->buffer();
+	Fl_Text_Buffer* s_buffer = display_->style_buffer();
+	buffer->text("");
+	s_buffer->text("");
+	for (const auto& msg : message_history_) {
+		if (display_message(msg.type) && message_for_current_topic(msg.topic)) {
+			buffer->append(msg.text.c_str());
+			s_buffer->append(msg.style.c_str());
+		}
+	}
+	display_->scroll(buffer->count_lines(0, buffer->length()), 0);
 }
 
 // Set closing
@@ -392,4 +450,42 @@ Fl_Font zc_banner::font() {
 // Get font size
 Fl_Fontsize zc_banner::fontsize() {
 	return style_table_[0].size;
+}
+
+// Determine whether to display a message of the given type at the current verbosity level
+bool zc_banner::display_message(status_t type) {
+	switch (verbosity_) {
+	case VB_MINIMAL:
+		return type >= ST_SEVERE;
+	case VB_ERRORS:
+		return type >= ST_ERROR;
+	case VB_WARNINGS:
+		return type >= ST_WARNING;
+	case VB_INFO:
+		return type >= ST_NOTE;
+	case VB_FULL:
+		return true;
+	default:
+		return false;
+	}
+}
+
+// Determine whether to display a message of the given topic at the current topic filter
+bool zc_banner::message_for_current_topic(const std::string& topic) {
+	return filter_topic_.empty() || topic == filter_topic_;
+}
+
+// Add a topic to the topic filter choice if it is not already there
+void zc_banner::add_topic(const std::string& topic) {
+	if (topic.empty()) return;
+	if (topics_.find(topic) == topics_.end()) {
+		topics_.insert(topic);
+		// Recreate the topic filter choice with the new topic added
+		ch_filter_->clear();
+		ch_filter_->add("All");
+		for (const auto& t : topics_) {
+			ch_filter_->add(t.c_str());
+		}
+		ch_filter_->value(0); // default to "All"
+	}
 }
