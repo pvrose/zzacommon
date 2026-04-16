@@ -75,6 +75,7 @@ std::thread::id main_thread_id_ = std::this_thread::get_id();
 zc_banner::zc_banner(int W, int H, const char* L) :
 	Fl_Double_Window(W, H, L)
 {
+	label(" ");
 	callback(cb_close);
 	load_settings();
 	create_form();
@@ -176,7 +177,7 @@ void zc_banner::create_form() {
 	curr_x = x() + GAP;
 	curr_y = g_topleft->y() + g_topleft->h();
 
-	int h_display = h() - (curr_y + HBUTTON);
+	int h_display = h() - curr_y;
 
 	h_display -= HBUTTON;
 	curr_x = x() + GAP;
