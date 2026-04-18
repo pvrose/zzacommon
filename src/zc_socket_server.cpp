@@ -17,7 +17,7 @@
 */
 #include "zc_socket_server.h"
 
-#include "zc_app.h"
+#include "zc_debug.h"
 #include "zc_status.h"
 
 #include <stdio.h>

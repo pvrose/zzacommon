@@ -17,7 +17,7 @@
 */
 #include "zc_status.h"
 
-#include "zc_app.h"
+#include "zc_debug.h"
 #include "zc_banner.h"
 #include <zc_drawing.h>
 #include "zc_file_holder.h"
@@ -36,6 +36,7 @@
 #include <FL/Fl.H>
 #include <FL/fl_ask.H>
 #include <FL/fl_utf8.h>
+#include <FL/Fl_Window.H>
 
 zc_status* status_ = nullptr;
 extern std::string APP_NAME;

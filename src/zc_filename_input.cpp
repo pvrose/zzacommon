@@ -18,6 +18,7 @@
 #include "zc_filename_input.h"
 #include "zc_button_input.h"
 
+#include "zc_fltk.h"
 #include "zc_utils.h"
 
 #include <cstdio>

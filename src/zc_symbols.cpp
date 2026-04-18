@@ -15,7 +15,6 @@
 	If not, see <https://www.gnu.org/licenses/>. 
 
 */
-#include "zc_status.h"
 #include "zc_utils.h"
 
 #include <cmath>

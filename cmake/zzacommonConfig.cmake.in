@@ -1,0 +1,362 @@
+#[=[
+    Copyright 2026, Philip Rose, GM3ZZA
+
+    This file is part of ZZACOMMON.
+
+    ZZACOMMON is free software: you can redistribute it and/or modify it under the
+    terms of the Lesser GNU General Public License as published by the Free Software
+    Foundation, either version 3 of the License, or (at your option) any later version.
+
+    ZZACOMMON is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+    PURPOSE. See the GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along with ZZACOMMON. 
+    If not, see <https://www.gnu.org/licenses/>. 
+
+#]=]
+
+# zzacommonConfig.cmake
+# CMake package configuration file for ZZACOMMON library
+#
+# Usage:
+#   find_package(zzacommon REQUIRED COMPONENTS zzaf zzab zzax zzam)
+#
+# Components:
+#   zzaf - FLTK UI components (requires FLTK, nlohmann/json)
+#   zzab - Boost components (requires Boost filesystem, asio)
+#   zzax - XML, URL handling, and FLTK (requires pugixml, libcurl, zlib, FLTK)
+#   zzam - Common utilities (requires nlohmann/json)
+#
+# Variables set by this module:
+#   zzacommon_FOUND          - True if zzacommon is found
+#   zzacommon_VERSION        - Version of zzacommon
+#   ZZACOMMON_INCLUDE_DIR    - Include directory for zzacommon
+#   ZZACOMMON_LIBRARIES      - List of component libraries found
+#   ZZACOMMON_COMPONENTS     - List of components found
+#   FLTK_INCLUDE_DIR         - FLTK include directory (if zzaf or zzax used)
+#
+# Imported targets:
+#   zzacommon::zzaf          - FLTK UI components target
+#   zzacommon::zzab          - Boost components target
+#   zzacommon::zzax          - XML, URL, and FLTK target
+#   zzacommon::zzam          - Common utilities target
+#   zzacommon::zc_app        - Application metadata target
+
+@PACKAGE_INIT@
+
+# Set version information
+set(zzacommon_VERSION "@ZZACOMMON_VERSION@")
+set(ZZACOMMON_VERSION "@ZZACOMMON_VERSION@")
+
+# Set include directory using PACKAGE_PREFIX_DIR (set by @PACKAGE_INIT@)
+set_and_check(ZZACOMMON_INCLUDE_DIR "${PACKAGE_PREFIX_DIR}/include")
+
+# CMake helper scripts (set by configure_package_config_file)
+set_and_check(ZZACOMMON_CMAKE_DIR "@PACKAGE_ZZACOMMON_CMAKE_DIR@")
+
+# Propagate vcpkg paths for finding dependencies (if VCPKG_ROOT was used during build)
+set(_ZZACOMMON_VCPKG_ROOT "@VCPKG_ROOT@")
+if(_ZZACOMMON_VCPKG_ROOT AND EXISTS "${_ZZACOMMON_VCPKG_ROOT}")
+    # Add vcpkg paths to CMAKE_PREFIX_PATH if not already present
+    list(APPEND CMAKE_PREFIX_PATH "${_ZZACOMMON_VCPKG_ROOT}/installed/x64-windows")
+    list(APPEND CMAKE_PREFIX_PATH "${_ZZACOMMON_VCPKG_ROOT}/installed/x64-windows/share")
+    message(STATUS "zzacommon: Using vcpkg from ${_ZZACOMMON_VCPKG_ROOT}")
+elseif(DEFINED ENV{VCPKG_ROOT} AND EXISTS "$ENV{VCPKG_ROOT}")
+    # Fallback to environment variable if available
+    list(APPEND CMAKE_PREFIX_PATH "$ENV{VCPKG_ROOT}/installed/x64-windows")
+    list(APPEND CMAKE_PREFIX_PATH "$ENV{VCPKG_ROOT}/installed/x64-windows/share")
+    message(STATUS "zzacommon: Using vcpkg from environment: $ENV{VCPKG_ROOT}")
+endif()
+
+# Available components
+set(ZZACOMMON_AVAILABLE_COMPONENTS zzaf zzab zzax zzam zzafb zzad)
+
+# If no components specified, use all
+if(NOT zzacommon_FIND_COMPONENTS)
+    set(zzacommon_FIND_COMPONENTS ${ZZACOMMON_AVAILABLE_COMPONENTS})
+endif()
+
+# Check that requested components are valid
+foreach(comp ${zzacommon_FIND_COMPONENTS})
+    if(NOT comp IN_LIST ZZACOMMON_AVAILABLE_COMPONENTS)
+        set(zzacommon_FOUND False)
+        set(zzacommon_NOT_FOUND_MESSAGE "Unsupported component: ${comp}")
+        return()
+    endif()
+endforeach()
+
+# Initialize component found flags
+set(ZZACOMMON_COMPONENTS "")
+set(ZZACOMMON_LIBRARIES "")
+
+# Check which components are requested
+list(FIND zzacommon_FIND_COMPONENTS "zzaf" ZZAF_REQUESTED)
+list(FIND zzacommon_FIND_COMPONENTS "zzab" ZZAB_REQUESTED)
+list(FIND zzacommon_FIND_COMPONENTS "zzax" ZZAX_REQUESTED)
+list(FIND zzacommon_FIND_COMPONENTS "zzam" ZZAM_REQUESTED)
+list(FIND zzacommon_FIND_COMPONENTS "zzafb" ZZAFB_REQUESTED)
+list(FIND zzacommon_FIND_COMPONENTS "zzad" ZZAD_REQUESTED)
+
+# Find dependencies for requested components
+
+# FLTK is required by zzaf and zzax
+if(NOT ZZAF_REQUESTED EQUAL -1 OR NOT ZZAX_REQUESTED EQUAL -1)
+    # MSVC work-round as FLTK built in user space
+    if(MSVC AND NOT FLTK_DIR)
+        message(WARNING "FLTK_DIR not set. You may need to set it for zzaf/zzax components.")
+    endif()
+
+    find_package(FLTK CONFIG QUIET)
+    if(NOT FLTK_FOUND)
+        if(zzacommon_FIND_REQUIRED)
+            message(FATAL_ERROR "FLTK is required for zzaf/zzax components but was not found")
+        else()
+            message(WARNING "FLTK not found - zzaf/zzax components will not be available")
+        endif()
+    else()
+        set(FLTK_INCLUDE_DIR ${FLTK_INCLUDE_DIR})
+    endif()
+endif()
+
+# Boost is required by zzab and zzafb
+if(NOT ZZAB_REQUESTED EQUAL -1 OR NOT ZZAFB_REQUESTED EQUAL -1)
+    # Use non-QUIET mode if component is required so user sees helpful error messages
+    if(zzacommon_FIND_REQUIRED_zzab OR zzacommon_FIND_REQUIRED_zzafb)
+        set(_BOOST_FIND_MODE REQUIRED)
+    else()
+        set(_BOOST_FIND_MODE QUIET)
+    endif()
+
+    if(MSVC)
+        find_package(Boost 1.85.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS filesystem asio)
+    else()
+        find_package(Boost 1.83.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS ALL)
+    endif()
+
+    if(NOT Boost_FOUND)
+        if(zzacommon_FIND_REQUIRED_zzab OR zzacommon_FIND_REQUIRED_zzafb)
+            message(FATAL_ERROR "Boost is required for zzab/zzafb component but was not found.\n"
+                "To resolve this:\n"
+                "  1. Install via vcpkg: vcpkg install boost-filesystem:x64-windows boost-asio:x64-windows\n"
+                "  2. Set VCPKG_ROOT environment variable or CMake variable\n"
+                "  3. Or add Boost installation to CMAKE_PREFIX_PATH\n"
+                "  4. Or set Boost_DIR to point to BoostConfig.cmake location")
+        else()
+            message(WARNING "Boost not found - zzab/zzafb component will not be available")
+        endif()
+    endif()
+endif()
+
+# pugixml, libcurl, and zlib are required by zzax
+if(NOT ZZAX_REQUESTED EQUAL -1)
+    # Find pugixml
+    if(NOT TARGET pugixml)
+        find_path(PUGIXML_INCLUDE_DIR pugixml.hpp
+            PATHS "${PACKAGE_PREFIX_DIR}/include/pugixml"
+            NO_DEFAULT_PATH)
+
+        if(PUGIXML_INCLUDE_DIR)
+            add_library(pugixml STATIC IMPORTED)
+            set_and_check(PUGIXML_LIB "${PACKAGE_PREFIX_DIR}/lib/pugixml${CMAKE_STATIC_LIBRARY_SUFFIX}")
+            set_target_properties(pugixml PROPERTIES
+                IMPORTED_LOCATION "${PUGIXML_LIB}"
+                INTERFACE_INCLUDE_DIRECTORIES "${PUGIXML_INCLUDE_DIR}"
+            )
+        else()
+            if(zzacommon_FIND_REQUIRED_zzax)
+                message(FATAL_ERROR "pugixml is required for zzax component but was not found")
+            endif()
+        endif()
+    endif()
+
+    # Find CURL
+    if(MSVC)
+        find_package(CURL CONFIG QUIET)
+    else()
+        find_package(CURL QUIET)
+    endif()
+
+    if(NOT CURL_FOUND)
+        if(zzacommon_FIND_REQUIRED_zzax)
+            message(FATAL_ERROR "CURL is required for zzax component but was not found")
+        else()
+            message(WARNING "CURL not found - zzax component will not be available")
+        endif()
+    endif()
+
+    # Find ZLIB
+    if(MSVC)
+        find_package(ZLIB CONFIG QUIET)
+        if(NOT ZLIB_FOUND)
+            find_package(ZLIB MODULE QUIET)
+        endif()
+    endif()
+
+    if(NOT ZLIB_FOUND)
+        if(zzacommon_FIND_REQUIRED_zzax)
+            message(FATAL_ERROR "ZLIB is required for zzax component but was not found")
+        else()
+            message(WARNING "ZLIB not found - zzax component will not be available")
+        endif()
+    endif()
+endif()
+
+# Create imported targets for requested components
+
+# Component: zzaf (FLTK UI components)
+if(NOT ZZAF_REQUESTED EQUAL -1 AND FLTK_FOUND)
+    if(NOT TARGET zzacommon::zzaf)
+        add_library(zzacommon::zzaf STATIC IMPORTED)
+        set_and_check(ZZAF_LIB "${PACKAGE_PREFIX_DIR}/lib/zzaf${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set_target_properties(zzacommon::zzaf PROPERTIES
+            IMPORTED_LOCATION "${ZZAF_LIB}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR};${FLTK_INCLUDE_DIR}"
+            INTERFACE_LINK_LIBRARIES "${FLTK_LIBRARIES}"
+        )
+
+        # Add nlohmann/json include if on MSVC
+        if(MSVC AND EXISTS "$ENV{USERPROFILE}/source/repos/json/include")
+            set_property(TARGET zzacommon::zzaf APPEND PROPERTY
+                INTERFACE_INCLUDE_DIRECTORIES "$ENV{USERPROFILE}/source/repos/json/include"
+            )
+        endif()
+
+        list(APPEND ZZACOMMON_COMPONENTS zzaf)
+        list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzaf)
+        set(zzacommon_zzaf_FOUND TRUE)
+    endif()
+endif()
+
+# Component: zzab (Boost components)
+if(NOT ZZAB_REQUESTED EQUAL -1 AND Boost_FOUND)
+    if(NOT TARGET zzacommon::zzab)
+        add_library(zzacommon::zzab STATIC IMPORTED)
+        set_and_check(ZZAB_LIB "${PACKAGE_PREFIX_DIR}/lib/zzab${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set_target_properties(zzacommon::zzab PROPERTIES
+            IMPORTED_LOCATION "${ZZAB_LIB}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR};${Boost_INCLUDE_DIRS}"
+            INTERFACE_LINK_LIBRARIES "${Boost_LIBRARIES}"
+            INTERFACE_COMPILE_DEFINITIONS "_WIN32_WINNT=0x0601"
+        )
+
+        list(APPEND ZZACOMMON_COMPONENTS zzab)
+        list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzab)
+        set(zzacommon_zzab_FOUND TRUE)
+    endif()
+endif()
+
+# Component: zzax (XML, URL handling, and FLTK)
+if(NOT ZZAX_REQUESTED EQUAL -1 AND FLTK_FOUND AND CURL_FOUND)
+    if(NOT TARGET zzacommon::zzax)
+        add_library(zzacommon::zzax STATIC IMPORTED)
+        set_and_check(ZZAX_LIB "${PACKAGE_PREFIX_DIR}/lib/zzax${CMAKE_STATIC_LIBRARY_SUFFIX}")
+
+        # Build link libraries list
+        set(ZZAX_LINK_LIBS "pugixml;CURL::libcurl;${FLTK_LIBRARIES}")
+        if(TARGET ZLIB::ZLIB)
+            list(APPEND ZZAX_LINK_LIBS ZLIB::ZLIB)
+        endif()
+
+        set_target_properties(zzacommon::zzax PROPERTIES
+            IMPORTED_LOCATION "${ZZAX_LIB}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR};${PUGIXML_INCLUDE_DIR};${CURL_INCLUDE_DIRS};${FLTK_INCLUDE_DIR}"
+            INTERFACE_LINK_LIBRARIES "${ZZAX_LINK_LIBS}"
+        )
+
+        list(APPEND ZZACOMMON_COMPONENTS zzax)
+        list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzax)
+        set(zzacommon_zzax_FOUND TRUE)
+    endif()
+endif()
+
+# Component: zzam (Common utilities)
+if(NOT ZZAM_REQUESTED EQUAL -1)
+    if(NOT TARGET zzacommon::zzam)
+        add_library(zzacommon::zzam STATIC IMPORTED)
+        set_and_check(ZZAM_LIB "${PACKAGE_PREFIX_DIR}/lib/zzam${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set_target_properties(zzacommon::zzam PROPERTIES
+            IMPORTED_LOCATION "${ZZAM_LIB}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR}"
+        )
+
+        # Add nlohmann/json include if on MSVC
+        if(MSVC AND EXISTS "$ENV{USERPROFILE}/source/repos/json/include")
+            set_property(TARGET zzacommon::zzam APPEND PROPERTY
+                INTERFACE_INCLUDE_DIRECTORIES "$ENV{USERPROFILE}/source/repos/json/include"
+            )
+        endif()
+
+        list(APPEND ZZACOMMON_COMPONENTS zzam)
+        list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzam)
+        set(zzacommon_zzam_FOUND TRUE)
+    endif()
+endif()
+
+# Component: zzafb (FLTK + Boost components)
+if(NOT ZZAFB_REQUESTED EQUAL -1 AND FLTK_FOUND AND Boost_FOUND)
+    if(NOT TARGET zzacommon::zzafb)
+        add_library(zzacommon::zzafb STATIC IMPORTED)
+        set_and_check(ZZAFB_LIB "${PACKAGE_PREFIX_DIR}/lib/zzafb${CMAKE_STATIC_LIBRARY_SUFFIX}")
+
+        # Build link libraries list
+        set(ZZAFB_LINK_LIBS "Boost::filesystem;Boost::asio;${FLTK_LIBRARIES}")
+
+        set_target_properties(zzacommon::zzafb PROPERTIES
+            IMPORTED_LOCATION "${ZZAFB_LIB}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR}"
+            INTERFACE_LINK_LIBRARIES "${ZZAFB_LINK_LIBS}"
+        )
+
+        list(APPEND ZZACOMMON_COMPONENTS zzafb)
+        list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzafb)
+        set(zzacommon_zzafb_FOUND TRUE)
+    endif()
+endif()
+
+# Component: zzad (Debug utilities - no external dependencies)
+if(NOT ZZAD_REQUESTED EQUAL -1)
+    if(NOT TARGET zzacommon::zzad)
+        add_library(zzacommon::zzad STATIC IMPORTED)
+        set_and_check(ZZAD_LIB "${PACKAGE_PREFIX_DIR}/lib/zzad${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set_target_properties(zzacommon::zzad PROPERTIES
+            IMPORTED_LOCATION "${ZZAD_LIB}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR}"
+        )
+
+        list(APPEND ZZACOMMON_COMPONENTS zzad)
+        list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzad)
+        set(zzacommon_zzad_FOUND TRUE)
+    endif()
+endif()
+
+# Application metadata library (always available)
+if(NOT TARGET zzacommon::zc_app)
+    add_library(zzacommon::zc_app STATIC IMPORTED)
+    set_and_check(ZC_APP_LIB "${PACKAGE_PREFIX_DIR}/lib/zc_@APP_NAME_LOWER@${CMAKE_STATIC_LIBRARY_SUFFIX}")
+    set_target_properties(zzacommon::zc_app PROPERTIES
+        IMPORTED_LOCATION "${ZC_APP_LIB}"
+        INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR}"
+    )
+endif()
+
+# Check if all required components were found
+set(zzacommon_FOUND TRUE)
+foreach(comp ${zzacommon_FIND_COMPONENTS})
+    if(NOT zzacommon_${comp}_FOUND)
+        if(zzacommon_FIND_REQUIRED_${comp})
+            set(zzacommon_FOUND FALSE)
+            set(zzacommon_NOT_FOUND_MESSAGE "Required component not found: ${comp}")
+        endif()
+    endif()
+endforeach()
+
+# Set standard find_package variables
+if(zzacommon_FOUND)
+    message(STATUS "Found zzacommon ${zzacommon_VERSION} with components: ${ZZACOMMON_COMPONENTS}")
+    set(zzacommon_INCLUDE_DIRS ${ZZACOMMON_INCLUDE_DIR})
+else()
+    if(zzacommon_FIND_REQUIRED)
+        message(FATAL_ERROR "${zzacommon_NOT_FOUND_MESSAGE}")
+    endif()
+endif()

@@ -41,8 +41,7 @@
       "cacheVariables": {
         "CMAKE_C_COMPILER": "cl.exe",
         "CMAKE_CXX_COMPILER": "cl.exe",
-        "VCPKG_ROOT": "C:/Users/pvros/source/repos/vcpkg",
-        "HAMLIB_ROOT": "C:/Program Files (x86)/hamlib-w64-4.7.1"
+        "VCPKG_ROOT": "C:/Users/pvros/source/repos/vcpkg"
       },
       "condition": {
         "type": "equals",

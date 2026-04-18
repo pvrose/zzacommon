@@ -18,7 +18,7 @@
 #include "zc_file_viewer.h"
 #include "zc_status.h"
 
-#include "zc_utils.h"
+#include "zc_fltk.h"
 #include "zc_drawing.h"
 
 #include <cstdint>

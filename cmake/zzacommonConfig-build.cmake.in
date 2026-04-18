@@ -1,0 +1,229 @@
+#[=[
+    Copyright 2026, Philip Rose, GM3ZZA
+
+    This file is part of ZZACOMMON.
+
+    ZZACOMMON is free software: you can redistribute it and/or modify it under the
+    terms of the Lesser GNU General Public License as published by the Free Software
+    Foundation, either version 3 of the License, or (at your option) any later version.
+
+    ZZACOMMON is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+    without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+    PURPOSE. See the GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along with ZZACOMMON. 
+    If not, see <https://www.gnu.org/licenses/>. 
+
+#]=]
+
+# zzacommonConfig.cmake - Build Tree Version
+# This config file is for using ZZACOMMON directly from its build tree
+
+# Set version information
+set(zzacommon_VERSION "@ZZACOMMON_VERSION@")
+set(ZZACOMMON_VERSION "@ZZACOMMON_VERSION@")
+
+# Set include directory (build tree)
+set(ZZACOMMON_INCLUDE_DIR "@ZZACOMMON_INCLUDE_DIR@")
+
+# CMake helper scripts (build tree - points to source cmake directory)
+set(ZZACOMMON_CMAKE_DIR "@CMAKE_CURRENT_SOURCE_DIR@/cmake")
+
+# Propagate VCPKG_ROOT and CMAKE_PREFIX_PATH for finding dependencies
+set(_ZZACOMMON_VCPKG_ROOT "@VCPKG_ROOT@")
+if(_ZZACOMMON_VCPKG_ROOT)
+    # Add vcpkg paths to CMAKE_PREFIX_PATH if not already present
+    list(APPEND CMAKE_PREFIX_PATH "${_ZZACOMMON_VCPKG_ROOT}/installed/x64-windows")
+    list(APPEND CMAKE_PREFIX_PATH "${_ZZACOMMON_VCPKG_ROOT}/installed/x64-windows/share")
+    message(STATUS "zzacommon: Added vcpkg paths from build tree")
+endif()
+
+# Available components
+set(ZZACOMMON_AVAILABLE_COMPONENTS zzaf zzab zzax zzam zzafb zzad)
+
+# If no components specified, use all
+if(NOT zzacommon_FIND_COMPONENTS)
+    set(zzacommon_FIND_COMPONENTS ${ZZACOMMON_AVAILABLE_COMPONENTS})
+endif()
+
+# Check that requested components are valid
+foreach(comp ${zzacommon_FIND_COMPONENTS})
+    if(NOT comp IN_LIST ZZACOMMON_AVAILABLE_COMPONENTS)
+        set(zzacommon_FOUND False)
+        set(zzacommon_NOT_FOUND_MESSAGE "Unsupported component: ${comp}")
+        return()
+    endif()
+endforeach()
+
+# Initialize component found flags
+set(ZZACOMMON_COMPONENTS "")
+set(ZZACOMMON_LIBRARIES "")
+
+# Check which components are requested
+list(FIND zzacommon_FIND_COMPONENTS "zzaf" ZZAF_REQUESTED)
+list(FIND zzacommon_FIND_COMPONENTS "zzab" ZZAB_REQUESTED)
+list(FIND zzacommon_FIND_COMPONENTS "zzax" ZZAX_REQUESTED)
+list(FIND zzacommon_FIND_COMPONENTS "zzam" ZZAM_REQUESTED)
+list(FIND zzacommon_FIND_COMPONENTS "zzafb" ZZAFB_REQUESTED)
+list(FIND zzacommon_FIND_COMPONENTS "zzad" ZZAD_REQUESTED)
+
+# Find dependencies for requested components (same as install version)
+
+# FLTK is required by zzaf, zzax, and zzafb
+if(NOT ZZAF_REQUESTED EQUAL -1 OR NOT ZZAX_REQUESTED EQUAL -1 OR NOT ZZAFB_REQUESTED EQUAL -1)
+    if(MSVC AND NOT FLTK_DIR)
+        message(WARNING "FLTK_DIR not set. You may need to set it for zzaf/zzax/zzafb components.")
+    endif()
+
+    find_package(FLTK CONFIG QUIET)
+    if(NOT FLTK_FOUND)
+        if(zzacommon_FIND_REQUIRED)
+            message(FATAL_ERROR "FLTK is required for zzaf/zzax/zzafb components but was not found")
+        else()
+            message(WARNING "FLTK not found - zzaf/zzax/zzafb components will not be available")
+        endif()
+    else()
+        set(FLTK_INCLUDE_DIR ${FLTK_INCLUDE_DIR})
+    endif()
+endif()
+
+# Boost is required by zzab and zzafb
+if(NOT ZZAB_REQUESTED EQUAL -1 OR NOT ZZAFB_REQUESTED EQUAL -1)
+    # Use non-QUIET mode if component is required so user sees helpful error messages
+    if(zzacommon_FIND_REQUIRED_zzab OR zzacommon_FIND_REQUIRED_zzafb)
+        set(_BOOST_FIND_MODE REQUIRED)
+    else()
+        set(_BOOST_FIND_MODE QUIET)
+    endif()
+
+    if(MSVC)
+        find_package(Boost 1.85.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS filesystem asio)
+    else()
+        find_package(Boost 1.83.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS ALL)
+    endif()
+
+    if(NOT Boost_FOUND)
+        if(zzacommon_FIND_REQUIRED_zzab OR zzacommon_FIND_REQUIRED_zzafb)
+            message(FATAL_ERROR "Boost is required for zzab/zzafb component but was not found.\n"
+                "To resolve this:\n"
+                "  1. Install via vcpkg: vcpkg install boost-filesystem:x64-windows boost-asio:x64-windows\n"
+                "  2. Set VCPKG_ROOT environment variable or CMake variable\n"
+                "  3. Or add Boost installation to CMAKE_PREFIX_PATH\n"
+                "  4. Or set Boost_DIR to point to BoostConfig.cmake location")
+        else()
+            message(WARNING "Boost not found - zzab/zzafb component will not be available")
+        endif()
+    endif()
+endif()
+
+# pugixml, libcurl, and zlib are required by zzax
+if(NOT ZZAX_REQUESTED EQUAL -1)
+    # Find pugixml (should be available in build tree)
+    if(NOT TARGET pugixml)
+        message(WARNING "pugixml target not found - zzax component may not be available")
+    endif()
+
+    # Find CURL
+    if(MSVC)
+        find_package(CURL CONFIG QUIET)
+    else()
+        find_package(CURL QUIET)
+    endif()
+
+    if(NOT CURL_FOUND)
+        if(zzacommon_FIND_REQUIRED_zzax)
+            message(FATAL_ERROR "CURL is required for zzax component but was not found")
+        else()
+            message(WARNING "CURL not found - zzax component will not be available")
+        endif()
+    endif()
+
+    # Find ZLIB
+    if(MSVC)
+        find_package(ZLIB CONFIG QUIET)
+        if(NOT ZLIB_FOUND)
+            find_package(ZLIB MODULE QUIET)
+        endif()
+    endif()
+
+    if(NOT ZLIB_FOUND)
+        if(zzacommon_FIND_REQUIRED_zzax)
+            message(FATAL_ERROR "ZLIB is required for zzax component but was not found")
+        else()
+            message(WARNING "ZLIB not found - zzax component will not be available")
+        endif()
+    endif()
+endif()
+
+# Include the exported targets file (created by export() command)
+include("${CMAKE_CURRENT_LIST_DIR}/zzacommonTargets.cmake")
+
+# Check which components were actually built and are available
+if(NOT ZZAF_REQUESTED EQUAL -1)
+    if(TARGET zzacommon::zzaf)
+        list(APPEND ZZACOMMON_COMPONENTS zzaf)
+        list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzaf)
+        set(zzacommon_zzaf_FOUND TRUE)
+    endif()
+endif()
+
+if(NOT ZZAB_REQUESTED EQUAL -1)
+    if(TARGET zzacommon::zzab)
+        list(APPEND ZZACOMMON_COMPONENTS zzab)
+        list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzab)
+        set(zzacommon_zzab_FOUND TRUE)
+    endif()
+endif()
+
+if(NOT ZZAX_REQUESTED EQUAL -1)
+    if(TARGET zzacommon::zzax)
+        list(APPEND ZZACOMMON_COMPONENTS zzax)
+        list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzax)
+        set(zzacommon_zzax_FOUND TRUE)
+    endif()
+endif()
+
+if(NOT ZZAM_REQUESTED EQUAL -1)
+    if(TARGET zzacommon::zzam)
+        list(APPEND ZZACOMMON_COMPONENTS zzam)
+        list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzam)
+        set(zzacommon_zzam_FOUND TRUE)
+    endif()
+endif()
+
+if(NOT ZZAFB_REQUESTED EQUAL -1)
+    if(TARGET zzacommon::zzafb)
+        list(APPEND ZZACOMMON_COMPONENTS zzafb)
+        list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzafb)
+        set(zzacommon_zzafb_FOUND TRUE)
+    endif()
+endif()
+
+if(NOT ZZAD_REQUESTED EQUAL -1)
+    if(TARGET zzacommon::zzad)
+        list(APPEND ZZACOMMON_COMPONENTS zzad)
+        list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzad)
+        set(zzacommon_zzad_FOUND TRUE)
+    endif()
+endif()
+
+# Check if all required components were found
+set(zzacommon_FOUND TRUE)
+foreach(comp ${zzacommon_FIND_COMPONENTS})
+    if(NOT zzacommon_${comp}_FOUND)
+        if(zzacommon_FIND_REQUIRED_${comp})
+            set(zzacommon_FOUND FALSE)
+            set(zzacommon_NOT_FOUND_MESSAGE "Required component not found: ${comp}")
+        endif()
+    endif()
+endforeach()
+
+# Set standard find_package variables
+if(zzacommon_FOUND)
+    message(STATUS "Found zzacommon ${zzacommon_VERSION} (build tree) with components: ${ZZACOMMON_COMPONENTS}")
+    set(zzacommon_INCLUDE_DIRS ${ZZACOMMON_INCLUDE_DIR})
+else()
+    if(zzacommon_FIND_REQUIRED)
+        message(FATAL_ERROR "${zzacommon_NOT_FOUND_MESSAGE}")
+    endif()
+endif()

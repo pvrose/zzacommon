@@ -25,8 +25,6 @@
 #include <vector>
 #include <cmath>
 
-#include <FL/Fl_Widget.H>
-
 
 //! \file zc_utils.h
 //! This file provides a number of common utility methods
@@ -81,12 +79,6 @@ namespace zc {
 	void refresh_tm(tm* date);
 	//! Returns the number of days in the month.
 	int days_in_month(tm* date);
-	//! Create a tip window - data \p tip, position(\p root_x, \p root_y).
-	Fl_Window* tip_window(const std::string& tip, int x_root, int y_root);
-	//! Returns \p data in upper case.
-	std::string to_upper(const std::string& data);
-	//! Returns \p data in lower case.
-	std::string to_lower(const std::string& data);
 	//! Returns true if the whole string is an integer.
 	bool is_integer(const std::string& data);
 	//! Returns the position of any characters in \p match in \p data (\p length): 
@@ -223,19 +215,6 @@ namespace zc {
 
 	//! Convert ISO date-time format from time_t.
 	std::string convert_iso_datetime(const std::time_t& t);
-
-	//! Returns the widget of class \p WIDGET that encloses \p w.
-	template <class WIDGET>
-	WIDGET* ancestor_view(Fl_Widget* w) {
-		Fl_Widget* p = w;
-		// Keep going up the parent until we found one that casts to WIDGET or we run out of ancestors
-		while (p != nullptr && dynamic_cast<WIDGET*>(p) == nullptr) {
-			p = (Fl_Widget*)p->parent();
-		}
-		// Return null if we don't find one, else the one we did
-		if (p == nullptr) return nullptr;
-		else return dynamic_cast<WIDGET*>(p);
-	}
 
 }
 

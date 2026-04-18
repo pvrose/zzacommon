@@ -20,7 +20,7 @@
 #include <cstdint>
 #include <string>
 
-//! \file zc_app.h
+//! \file zc_debug.h
 //! This file provides generic application-level data and methods.
 
 typedef uint32_t debug_flag;  //!< Type for debug flags - use bitwise operations to set and test individual flags

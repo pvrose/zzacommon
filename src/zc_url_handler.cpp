@@ -17,7 +17,7 @@
 */
 #include "zc_url_handler.h"
 
-#include "zc_app.h"
+#include "zc_debug.h"
 #include "zc_utils.h"
 
 #include <cstdio>

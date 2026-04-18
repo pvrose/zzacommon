@@ -18,10 +18,9 @@
 #ifndef __STATUS__
 #define __STATUS__
 
-#include "zc_drawing.h"
-#include "zc_utils.h"
-
 #include <FL/Enumerations.H>
+#include <FL/Fl.H>
+#include <FL/Fl_Window.H>
 
 #include <map>
 #include <string>

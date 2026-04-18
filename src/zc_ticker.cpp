@@ -17,7 +17,7 @@
 */
 #include "zc_ticker.h"
 
-#include "zc_app.h"
+#include "zc_debug.h"
 
 #include <algorithm> 
 
