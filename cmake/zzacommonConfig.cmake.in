@@ -45,6 +45,9 @@
 
 @PACKAGE_INIT@
 
+# Diagnostic message indicating find_package usage
+message(STATUS "zzacommon: Loaded via find_package (version @ZZACOMMON_VERSION@)")
+
 # Set version information
 set(zzacommon_VERSION "@ZZACOMMON_VERSION@")
 set(ZZACOMMON_VERSION "@ZZACOMMON_VERSION@")

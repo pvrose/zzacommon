@@ -19,6 +19,9 @@
 # zzacommonConfig.cmake - Build Tree Version
 # This config file is for using ZZACOMMON directly from its build tree
 
+# Diagnostic message indicating find_package usage from build tree
+message(STATUS "zzacommon: Loaded via find_package from build tree (version @ZZACOMMON_VERSION@)")
+
 # Set version information
 set(zzacommon_VERSION "@ZZACOMMON_VERSION@")
 set(ZZACOMMON_VERSION "@ZZACOMMON_VERSION@")
