@@ -129,7 +129,7 @@ if(NOT ZZAB_REQUESTED EQUAL -1 OR NOT ZZAFB_REQUESTED EQUAL -1)
     endif()
 
     if(MSVC)
-        find_package(Boost 1.85.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS filesystem)
+        find_package(Boost 1.85.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS filesystem asio)
     else()
         find_package(Boost 1.83.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS filesystem)
     endif()
