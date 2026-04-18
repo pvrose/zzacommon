@@ -256,8 +256,8 @@ if(NOT ZZAX_INDEX EQUAL -1)
   message(STATUS "Component zzax requested - finding pugixml, CURL, ZLIB (FLTK found above)")
 
   # pugixml
-  message(STATUS "Component zzax requested - adding pugixml target")
-  add_subdirectory(pugixml)
+  message(STATUS "Component zzax requested - adding pugixml target (EXCLUDE_FROM_ALL)")
+  add_subdirectory(pugixml EXCLUDE_FROM_ALL)
 
   # zlib (CURL dependency - needed for runtime DLL detection)
   if(MSVC)
