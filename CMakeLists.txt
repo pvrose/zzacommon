@@ -567,6 +567,62 @@ if (NOT PROJECT_IS_TOP_LEVEL)
   set(_VCPKG_INSTALLED_DIR ${_VCPKG_INSTALLED_DIR} PARENT_SCOPE)
 endif()
 
+# Helper function to copy runtime DLLs for applications using zzacommon via
+# add_subdirectory/FetchContent (without find_package).
+# Usage: zzacommon_copy_runtime_dlls(target_name)
+if(NOT COMMAND zzacommon_copy_runtime_dlls)
+  function(zzacommon_copy_runtime_dlls TARGET_NAME)
+    if(NOT TARGET ${TARGET_NAME})
+      message(FATAL_ERROR "Target ${TARGET_NAME} does not exist")
+      return()
+    endif()
+
+    if(NOT MSVC)
+      message(STATUS "zzacommon: Runtime DLL copy is only needed on Windows/MSVC")
+      return()
+    endif()
+
+    set(_ZZA_RUNTIME_DLLS "")
+
+    if(ZZACOMMON_ZLIB_DLL_RELEASE AND EXISTS "${ZZACOMMON_ZLIB_DLL_RELEASE}")
+      list(APPEND _ZZA_RUNTIME_DLLS "${ZZACOMMON_ZLIB_DLL_RELEASE}")
+    endif()
+    if(ZZACOMMON_ZLIB_DLL_DEBUG AND EXISTS "${ZZACOMMON_ZLIB_DLL_DEBUG}")
+      list(APPEND _ZZA_RUNTIME_DLLS "${ZZACOMMON_ZLIB_DLL_DEBUG}")
+    endif()
+
+    if(ZZACOMMON_BOOST_DLLS_RELEASE)
+      foreach(_BOOST_DLL ${ZZACOMMON_BOOST_DLLS_RELEASE})
+        if(EXISTS "${_BOOST_DLL}")
+          list(APPEND _ZZA_RUNTIME_DLLS "${_BOOST_DLL}")
+        endif()
+      endforeach()
+    endif()
+    if(ZZACOMMON_BOOST_DLLS_DEBUG)
+      foreach(_BOOST_DLL ${ZZACOMMON_BOOST_DLLS_DEBUG})
+        if(EXISTS "${_BOOST_DLL}")
+          list(APPEND _ZZA_RUNTIME_DLLS "${_BOOST_DLL}")
+        endif()
+      endforeach()
+    endif()
+
+    if(_ZZA_RUNTIME_DLLS)
+      list(REMOVE_DUPLICATES _ZZA_RUNTIME_DLLS)
+      foreach(_RUNTIME_DLL ${_ZZA_RUNTIME_DLLS})
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${_RUNTIME_DLL}"
+            "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+          COMMENT "Copying runtime DLL: ${_RUNTIME_DLL}"
+        )
+      endforeach()
+      message(STATUS "zzacommon: Will copy runtime DLLs to ${TARGET_NAME} output directory")
+    else()
+      message(WARNING "zzacommon: No runtime DLL paths available. Build zzax/zzab/zzafb with vcpkg on Windows.")
+    endif()
+  endfunction()
+endif()
+
 # generate API documentation
 if (ZZACOMMON_DOX)
   message(STATUS "ZZACOMMON: Adding API documentation")
