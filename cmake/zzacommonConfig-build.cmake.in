@@ -97,11 +97,10 @@ if(NOT ZZAB_REQUESTED EQUAL -1 OR NOT ZZAFB_REQUESTED EQUAL -1)
     endif()
 
     if(MSVC)
-        find_package(Boost 1.85.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS filesystem asio)
+        find_package(Boost 1.85.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS filesystem)
     else()
-        find_package(Boost 1.83.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS ALL)
+        find_package(Boost 1.83.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS filesystem)
     endif()
-
     if(NOT Boost_FOUND)
         if(zzacommon_FIND_REQUIRED_zzab OR zzacommon_FIND_REQUIRED_zzafb)
             message(FATAL_ERROR "Boost is required for zzab/zzafb component but was not found.\n"

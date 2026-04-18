@@ -129,9 +129,9 @@ if(NOT ZZAB_REQUESTED EQUAL -1 OR NOT ZZAFB_REQUESTED EQUAL -1)
     endif()
 
     if(MSVC)
-        find_package(Boost 1.85.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS filesystem asio)
+        find_package(Boost 1.85.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS filesystem)
     else()
-        find_package(Boost 1.83.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS ALL)
+        find_package(Boost 1.83.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS filesystem)
     endif()
 
     if(NOT Boost_FOUND)
@@ -233,10 +233,15 @@ if(NOT ZZAB_REQUESTED EQUAL -1 AND Boost_FOUND)
     if(NOT TARGET zzacommon::zzab)
         add_library(zzacommon::zzab STATIC IMPORTED)
         set_and_check(ZZAB_LIB "${PACKAGE_PREFIX_DIR}/lib/zzab${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        if(MSVC)
+            set(_ZZAB_BOOST_LIBS "Boost::filesystem;Boost::asio")
+        else()
+            set(_ZZAB_BOOST_LIBS "Boost::filesystem;Boost::headers")
+        endif()
         set_target_properties(zzacommon::zzab PROPERTIES
             IMPORTED_LOCATION "${ZZAB_LIB}"
-            INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR};${Boost_INCLUDE_DIRS}"
-            INTERFACE_LINK_LIBRARIES "${Boost_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR}"
+            INTERFACE_LINK_LIBRARIES "${_ZZAB_BOOST_LIBS}"
             INTERFACE_COMPILE_DEFINITIONS "_WIN32_WINNT=0x0601"
         )
 
@@ -300,7 +305,11 @@ if(NOT ZZAFB_REQUESTED EQUAL -1 AND FLTK_FOUND AND Boost_FOUND)
         set_and_check(ZZAFB_LIB "${PACKAGE_PREFIX_DIR}/lib/zzafb${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
         # Build link libraries list
-        set(ZZAFB_LINK_LIBS "Boost::filesystem;Boost::asio;${FLTK_LIBRARIES}")
+        if(MSVC)
+            set(ZZAFB_LINK_LIBS "Boost::filesystem;Boost::asio;${FLTK_LIBRARIES}")
+        else()
+            set(ZZAFB_LINK_LIBS "Boost::filesystem;Boost::headers;${FLTK_LIBRARIES}")
+        endif()
 
         set_target_properties(zzacommon::zzafb PROPERTIES
             IMPORTED_LOCATION "${ZZAFB_LIB}"

@@ -21,6 +21,7 @@
 #include "zc_utils.h"
 
 #include <cstdio>
+#include <cstring>
 #include <istream>
 #include <mutex>
 #include <ostream>
