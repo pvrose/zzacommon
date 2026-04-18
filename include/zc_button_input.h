@@ -25,6 +25,8 @@
 #include <FL/fl_types.h>
 #include <FL/Fl_Widget.H>
 
+#include <cstdint>
+
 class Fl_Button;
 
 //! \brief This class provides an input plus a button combination where the 

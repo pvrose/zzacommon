@@ -196,19 +196,19 @@ if(NOT ZZAX_REQUESTED EQUAL -1)
         endif()
     endif()
 
-    # Find ZLIB
+    # Find ZLIB on Windows only
     if(MSVC)
         find_package(ZLIB CONFIG QUIET)
         if(NOT ZLIB_FOUND)
             find_package(ZLIB MODULE QUIET)
         endif()
-    endif()
 
-    if(NOT ZLIB_FOUND)
-        if(zzacommon_FIND_REQUIRED_zzax)
-            message(FATAL_ERROR "ZLIB is required for zzax component but was not found")
-        else()
-            message(WARNING "ZLIB not found - zzax component will not be available")
+        if(NOT ZLIB_FOUND)
+            if(zzacommon_FIND_REQUIRED_zzax)
+                message(FATAL_ERROR "ZLIB is required for zzax component on Windows but was not found")
+            else()
+                message(WARNING "ZLIB not found on Windows - zzax component may not be fully available")
+            endif()
         endif()
     endif()
 endif()
@@ -299,7 +299,7 @@ if(NOT ZZAX_REQUESTED EQUAL -1 AND FLTK_FOUND AND CURL_FOUND)
 
         # Build link libraries list
         set(ZZAX_LINK_LIBS "pugixml;CURL::libcurl;${FLTK_LIBRARIES}")
-        if(TARGET ZLIB::ZLIB)
+        if(MSVC AND TARGET ZLIB::ZLIB)
             list(APPEND ZZAX_LINK_LIBS ZLIB::ZLIB)
         endif()
 
