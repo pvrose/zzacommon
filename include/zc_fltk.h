@@ -32,6 +32,9 @@ namespace zc {
 	//! Returns \p data in lower case.
 	std::string to_lower(const std::string& data);
 
+	//! Customise the look and feel of GM3ZZA's FLTK applications.
+	void customise_fltk();
+
 	//! Returns the widget of class \p WIDGET that encloses \p w.
 	template <class WIDGET>
 	WIDGET* ancestor_view(Fl_Widget* w) {

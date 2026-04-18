@@ -18,11 +18,16 @@
 #include "zc_fltk.h"
 
 #include <FL/Enumerations.H>
+#include <FL/fl_ask.H>
 #include <FL/fl_draw.H>
 #include <FL/Fl_Multiline_Output.H>
 #include <FL/Fl_Tooltip.H>
 #include <FL/fl_utf8.h>
 #include <FL/Fl_Window.H>
+
+#include <string>
+
+extern std::string APP_NAME;
 
 //! \file zc_fltk.cpp
 //! This file provides a number of common utility methods for use with the FLTK GUI library.
@@ -85,3 +90,38 @@ std::string zc::to_lower(const std::string& data) {
 	return ret_value;
 }
 
+// Customise FLTK feature
+void zc::customise_fltk() {
+	// Set default font size for all widgets
+	FL_NORMAL_SIZE = 10;
+	// FLTK 1.4 default contrast algorithm
+	fl_contrast_mode(FL_CONTRAST_CIELAB);
+#ifndef _WIN32
+	// Set courier font - ensure it's Courier New
+	Fl::set_font(FL_COURIER, "Courier New");
+	Fl::set_font(FL_COURIER_BOLD, "Courier New Bold");
+	Fl::set_font(FL_COURIER_ITALIC, "Courier New Italic");
+	Fl::set_font(FL_COURIER_BOLD_ITALIC, "Courier New Bold Italic");
+	// Use liberation fonts as closest to Windows fonts
+	Fl::set_font(FL_TIMES, "Liberation Serif");
+	Fl::set_font(FL_TIMES_BOLD, "Liberation Serif Bold");
+	Fl::set_font(FL_TIMES_ITALIC, "Liberation Serif Italic");
+	Fl::set_font(FL_TIMES_BOLD_ITALIC, "Liberation Serif Bold Italic");
+	// Fl::set_font(FL_HELVETICA,            "Liberation Sans");
+	// Fl::set_font(FL_HELVETICA_BOLD,       "Liberation Sans Bold");
+	// Fl::set_font(FL_HELVETICA_ITALIC,     "Liberation Sans Italic");
+	// Fl::set_font(FL_HELVETICA_BOLD_ITALIC,"Liberation Sans Bold Italic");	
+#else 
+	// Set courier font - ensure it's Courier New
+	Fl::set_font(FL_COURIER, " Courier New");
+	Fl::set_font(FL_COURIER_BOLD, "BCourier New");
+	Fl::set_font(FL_COURIER_ITALIC, "ICourier New");
+	Fl::set_font(FL_COURIER_BOLD_ITALIC, "PCourier New");
+#endif
+	// Default message properties
+	fl_message_size_ = FL_NORMAL_SIZE;
+	fl_message_font_ = 0;
+	fl_message_title_default(APP_NAME.c_str());
+	// Default scrollbar
+	Fl::scrollbar_size(10);
+}
