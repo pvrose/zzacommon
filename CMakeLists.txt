@@ -623,6 +623,90 @@ if(NOT COMMAND zzacommon_copy_runtime_dlls)
   endfunction()
 endif()
 
+# Function to install runtime DLLs alongside the application install tree.
+# Usage: zzacommon_install_runtime_dlls(DESTINATION destination_dir [COMPONENT component_name])
+if(NOT COMMAND zzacommon_install_runtime_dlls)
+  function(zzacommon_install_runtime_dlls)
+    set(options "")
+    set(oneValueArgs DESTINATION COMPONENT)
+    set(multiValueArgs "")
+    cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    if(NOT ARG_DESTINATION)
+      set(ARG_DESTINATION "bin")
+    endif()
+
+    if(NOT ARG_COMPONENT)
+      set(ARG_COMPONENT "runtime")
+    endif()
+
+    if(NOT MSVC)
+      message(STATUS "zzacommon: Runtime DLL install is only needed on Windows/MSVC")
+      return()
+    endif()
+
+    set(_ZZA_DLLS_TO_INSTALL "")
+
+    if(ZZACOMMON_ZLIB_DLL_RELEASE AND EXISTS "${ZZACOMMON_ZLIB_DLL_RELEASE}")
+      list(APPEND _ZZA_DLLS_TO_INSTALL "${ZZACOMMON_ZLIB_DLL_RELEASE}")
+    endif()
+    if(ZZACOMMON_ZLIB_DLL_DEBUG AND EXISTS "${ZZACOMMON_ZLIB_DLL_DEBUG}")
+      list(APPEND _ZZA_DLLS_TO_INSTALL "${ZZACOMMON_ZLIB_DLL_DEBUG}")
+    endif()
+
+    if(ZZACOMMON_BOOST_DLLS_RELEASE)
+      foreach(_BOOST_DLL ${ZZACOMMON_BOOST_DLLS_RELEASE})
+        if(EXISTS "${_BOOST_DLL}")
+          list(APPEND _ZZA_DLLS_TO_INSTALL "${_BOOST_DLL}")
+        endif()
+      endforeach()
+    endif()
+    if(ZZACOMMON_BOOST_DLLS_DEBUG)
+      foreach(_BOOST_DLL ${ZZACOMMON_BOOST_DLLS_DEBUG})
+        if(EXISTS "${_BOOST_DLL}")
+          list(APPEND _ZZA_DLLS_TO_INSTALL "${_BOOST_DLL}")
+        endif()
+      endforeach()
+    endif()
+
+    if(_ZZA_DLLS_TO_INSTALL)
+      list(REMOVE_DUPLICATES _ZZA_DLLS_TO_INSTALL)
+      install(FILES ${_ZZA_DLLS_TO_INSTALL}
+        DESTINATION ${ARG_DESTINATION}
+        COMPONENT ${ARG_COMPONENT}
+      )
+      list(LENGTH _ZZA_DLLS_TO_INSTALL _ZZA_DLL_COUNT)
+      message(STATUS "zzacommon: Will install ${_ZZA_DLL_COUNT} runtime DLL(s) to ${ARG_DESTINATION}")
+    else()
+      message(WARNING "zzacommon: No runtime DLLs available for installation.")
+    endif()
+  endfunction()
+endif()
+
+# Helper function to copy API documentation to user documentation directory.
+# Usage: zzacommon_copy_api_docs(destination_directory)
+if(NOT COMMAND zzacommon_copy_api_docs)
+  function(zzacommon_copy_api_docs DESTINATION_DIR)
+    if(NOT ZZACOMMON_API_HTML_DIR)
+      message(WARNING "zzacommon: API documentation directory not available. Build zzacommon with ZZACOMMON_DOX=ON to generate documentation.")
+      return()
+    endif()
+
+    if(NOT EXISTS "${ZZACOMMON_API_HTML_DIR}")
+      message(WARNING "zzacommon: API documentation directory does not exist: ${ZZACOMMON_API_HTML_DIR}")
+      return()
+    endif()
+
+    file(MAKE_DIRECTORY "${DESTINATION_DIR}")
+    file(COPY "${ZZACOMMON_API_HTML_DIR}/"
+      DESTINATION "${DESTINATION_DIR}"
+      PATTERN "*"
+    )
+
+    message(STATUS "zzacommon: Copied API documentation from ${ZZACOMMON_API_HTML_DIR} to ${DESTINATION_DIR}")
+  endfunction()
+endif()
+
 # generate API documentation
 if (ZZACOMMON_DOX)
   message(STATUS "ZZACOMMON: Adding API documentation")
@@ -630,6 +714,9 @@ if (ZZACOMMON_DOX)
 
   # Set the API documentation output directory
   set(ZZACOMMON_API_HTML_DIR "${CMAKE_CURRENT_BINARY_DIR}/api/html")
+  if (NOT PROJECT_IS_TOP_LEVEL)
+    set(ZZACOMMON_API_HTML_DIR ${ZZACOMMON_API_HTML_DIR} PARENT_SCOPE)
+  endif()
 
   # Add dependency for all built component targets
   if(NOT ZZAF_INDEX EQUAL -1)
