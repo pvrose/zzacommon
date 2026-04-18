@@ -166,6 +166,14 @@ endif()
 
 message(STATUS "Building ZZACOMMON components: ${ZZACOMMON_COMPONENTS}")
 
+# When used as a subproject (e.g. via FetchContent), avoid building all
+# component libraries by default. Targets remain available and will be built
+# when linked by the parent project.
+set(ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL)
+if(NOT PROJECT_IS_TOP_LEVEL)
+  set(ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL EXCLUDE_FROM_ALL)
+endif()
+
 # Local helper scripts
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # Set CMake prefix path to pick up vcpkg-installed packages
@@ -300,7 +308,7 @@ endif()
 
 # Create component library targets
 if(NOT ZZAF_INDEX EQUAL -1)
-  add_library(zzaf STATIC)
+  add_library(zzaf STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
   target_sources(zzaf PRIVATE ${ZZAF_CPPFILES})
   target_include_directories(zzaf 
     PUBLIC ${ZZACOMMON_INCLUDE_DIR}
@@ -314,7 +322,7 @@ if(NOT ZZAF_INDEX EQUAL -1)
 endif()
 
 if(NOT ZZAB_INDEX EQUAL -1)
-  add_library(zzab STATIC)
+  add_library(zzab STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
   target_sources(zzab PRIVATE ${ZZAB_CPPFILES})
   target_include_directories(zzab PUBLIC ${ZZACOMMON_INCLUDE_DIR})
   # Use modern Boost imported targets
@@ -328,7 +336,7 @@ if(NOT ZZAB_INDEX EQUAL -1)
 endif()
 
 if(NOT ZZAX_INDEX EQUAL -1)
-  add_library(zzax STATIC)
+  add_library(zzax STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
   target_sources(zzax PRIVATE ${ZZAX_CPPFILES} ${ZZAU_CPPFILES})
   target_include_directories(zzax 
     PUBLIC ${ZZACOMMON_INCLUDE_DIR}
@@ -342,7 +350,7 @@ if(NOT ZZAX_INDEX EQUAL -1)
 endif()
 
 if(NOT ZZAM_INDEX EQUAL -1)
-  add_library(zzam STATIC)
+  add_library(zzam STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
   target_sources(zzam PRIVATE ${ZZAM_CPPFILES})
   target_include_directories(zzam PUBLIC ${ZZACOMMON_INCLUDE_DIR})
   if(MSVC)
@@ -352,7 +360,7 @@ if(NOT ZZAM_INDEX EQUAL -1)
 endif()
 
 if (NOT ZZAFB_INDEX EQUAL -1)
-  add_library(zzafb STATIC)
+  add_library(zzafb STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
   target_sources(zzafb PRIVATE ${ZZAFB_CPPFILES})
   target_include_directories(zzafb 
     PUBLIC ${ZZACOMMON_INCLUDE_DIR}
@@ -368,7 +376,7 @@ if (NOT ZZAFB_INDEX EQUAL -1)
 endif()
 
 if(NOT ZZAD_INDEX EQUAL -1)
-  add_library(zzad STATIC)
+  add_library(zzad STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
   target_sources(zzad PRIVATE ${ZZAD_CPPFILES})
   target_include_directories(zzad PUBLIC ${ZZACOMMON_INCLUDE_DIR})
   message(STATUS "Created target: zzad")
