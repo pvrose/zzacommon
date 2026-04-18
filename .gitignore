@@ -9,3 +9,4 @@
 /include/zzacommon.h
 src/zc_app.cpp
 /src/zc_app.cpp
+/src/zc_debug.cpp
