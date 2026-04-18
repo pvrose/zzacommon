@@ -159,15 +159,15 @@ set(ZZACOMMON_HPPFILES
 )
 
 # Component-based build system
-# Define which components to build.
-# - Top-level build default: all components.
-# - Subproject build default (e.g. FetchContent): minimal core components.
+# Define which components to build (default: all components for top-level and subproject usage)
 if(NOT DEFINED ZZACOMMON_COMPONENTS)
-  if(PROJECT_IS_TOP_LEVEL)
-    set(ZZACOMMON_COMPONENTS "zzaf;zzab;zzax;zzam;zzafb;zzad" CACHE STRING "Semicolon-separated list of components to build")
-  else()
-    set(ZZACOMMON_COMPONENTS "zzam;zzad" CACHE STRING "Semicolon-separated list of components to build")
-  endif()
+  set(ZZACOMMON_COMPONENTS "zzaf;zzab;zzax;zzam;zzafb;zzad" CACHE STRING "Semicolon-separated list of components to build")
+endif()
+
+if(PROJECT_IS_TOP_LEVEL)
+  message(STATUS "ZZACOMMON build mode: top-level project")
+else()
+  message(STATUS "ZZACOMMON build mode: subproject")
 endif()
 
 message(STATUS "Building ZZACOMMON components: ${ZZACOMMON_COMPONENTS}")
@@ -256,6 +256,7 @@ if(NOT ZZAX_INDEX EQUAL -1)
   message(STATUS "Component zzax requested - finding pugixml, CURL, ZLIB (FLTK found above)")
 
   # pugixml
+  message(STATUS "Component zzax requested - adding pugixml target")
   add_subdirectory(pugixml)
 
   # zlib (CURL dependency - needed for runtime DLL detection)
@@ -310,6 +311,10 @@ if(NOT ZZAX_INDEX EQUAL -1)
   else()
     message(STATUS "CURL not found")
   endif()
+endif()
+
+if(ZZAX_INDEX EQUAL -1)
+  message(STATUS "Component zzax not requested - pugixml target will not be created")
 endif()
 
 # Create component library targets
