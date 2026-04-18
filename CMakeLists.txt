@@ -159,9 +159,15 @@ set(ZZACOMMON_HPPFILES
 )
 
 # Component-based build system
-# Define which components to build (default: all components)
+# Define which components to build.
+# - Top-level build default: all components.
+# - Subproject build default (e.g. FetchContent): minimal core components.
 if(NOT DEFINED ZZACOMMON_COMPONENTS)
-  set(ZZACOMMON_COMPONENTS "zzaf;zzab;zzax;zzam;zzafb;zzad" CACHE STRING "Semicolon-separated list of components to build")
+  if(PROJECT_IS_TOP_LEVEL)
+    set(ZZACOMMON_COMPONENTS "zzaf;zzab;zzax;zzam;zzafb;zzad" CACHE STRING "Semicolon-separated list of components to build")
+  else()
+    set(ZZACOMMON_COMPONENTS "zzam;zzad" CACHE STRING "Semicolon-separated list of components to build")
+  endif()
 endif()
 
 message(STATUS "Building ZZACOMMON components: ${ZZACOMMON_COMPONENTS}")
