@@ -87,14 +87,10 @@ set(ZZAF_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_ticker.cpp
 )
 
-# XML components - require pugixml
+# XML and URL components - require pugixml, libcurl, and zlib
 set(ZZAX_CPPFILES 
   ${ZZACOMMON_SOURCE_DIR}/src/zc_rpc_data_item.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_rpc_handler.cpp
-)
-
-# URL handler - requires libcurl and zlib
-set(ZZAU_CPPFILES 
   ${ZZACOMMON_SOURCE_DIR}/src/zc_url_handler.cpp
 )
 
@@ -242,6 +238,37 @@ if(NOT ZZAB_INDEX EQUAL -1 OR NOT ZZAFB_INDEX EQUAL -1)
     message(STATUS "Boost found: ${Boost_VERSION}")
     message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
     message(STATUS "Boost includes: ${Boost_INCLUDE_DIRS}")
+
+    # Find and export Boost DLL locations for user applications
+    if(MSVC AND VCPKG_ROOT)
+      set(ZZACOMMON_BOOST_DLLS_RELEASE "")
+      set(ZZACOMMON_BOOST_DLLS_DEBUG "")
+
+      set(VCPKG_BIN_DIR "${VCPKG_ROOT}/installed/x64-windows/bin")
+      set(VCPKG_DEBUG_BIN_DIR "${VCPKG_ROOT}/installed/x64-windows/debug/bin")
+
+      # Find release Boost DLLs
+      if(EXISTS "${VCPKG_BIN_DIR}")
+        file(GLOB BOOST_FILESYSTEM_RELEASE_DLLS "${VCPKG_BIN_DIR}/boost_filesystem*.dll")
+        file(GLOB BOOST_ASIO_RELEASE_DLLS "${VCPKG_BIN_DIR}/boost_system*.dll")
+        list(APPEND ZZACOMMON_BOOST_DLLS_RELEASE ${BOOST_FILESYSTEM_RELEASE_DLLS} ${BOOST_ASIO_RELEASE_DLLS})
+        if(ZZACOMMON_BOOST_DLLS_RELEASE)
+          list(REMOVE_DUPLICATES ZZACOMMON_BOOST_DLLS_RELEASE)
+          message(STATUS "Found Boost release DLLs: ${ZZACOMMON_BOOST_DLLS_RELEASE}")
+        endif()
+      endif()
+
+      # Find debug Boost DLLs
+      if(EXISTS "${VCPKG_DEBUG_BIN_DIR}")
+        file(GLOB BOOST_FILESYSTEM_DEBUG_DLLS "${VCPKG_DEBUG_BIN_DIR}/boost_filesystem*.dll")
+        file(GLOB BOOST_ASIO_DEBUG_DLLS "${VCPKG_DEBUG_BIN_DIR}/boost_system*.dll")
+        list(APPEND ZZACOMMON_BOOST_DLLS_DEBUG ${BOOST_FILESYSTEM_DEBUG_DLLS} ${BOOST_ASIO_DEBUG_DLLS})
+        if(ZZACOMMON_BOOST_DLLS_DEBUG)
+          list(REMOVE_DUPLICATES ZZACOMMON_BOOST_DLLS_DEBUG)
+          message(STATUS "Found Boost debug DLLs: ${ZZACOMMON_BOOST_DLLS_DEBUG}")
+        endif()
+      endif()
+    endif()
   else()
     message(FATAL_ERROR "Boost not found. To resolve this:\n"
       "  1. Install Boost via vcpkg: vcpkg install boost-filesystem:x64-windows boost-asio:x64-windows\n"
@@ -293,6 +320,34 @@ if(NOT ZZAX_INDEX EQUAL -1)
             )
           endif()
           message(STATUS "Created ZLIB::ZLIB imported target manually")
+        endif()
+      endif()
+
+      # Find and export zlib DLL location for user applications
+      set(ZZACOMMON_ZLIB_DLL_RELEASE "")
+      set(ZZACOMMON_ZLIB_DLL_DEBUG "")
+
+      # Determine vcpkg bin directories
+      if(VCPKG_ROOT)
+        set(VCPKG_BIN_DIR "${VCPKG_ROOT}/installed/x64-windows/bin")
+        set(VCPKG_DEBUG_BIN_DIR "${VCPKG_ROOT}/installed/x64-windows/debug/bin")
+
+        # Find release DLL
+        if(EXISTS "${VCPKG_BIN_DIR}")
+          file(GLOB ZLIB_RELEASE_DLLS "${VCPKG_BIN_DIR}/zlib*.dll")
+          if(ZLIB_RELEASE_DLLS)
+            list(GET ZLIB_RELEASE_DLLS 0 ZZACOMMON_ZLIB_DLL_RELEASE)
+            message(STATUS "Found ZLIB release DLL: ${ZZACOMMON_ZLIB_DLL_RELEASE}")
+          endif()
+        endif()
+
+        # Find debug DLL
+        if(EXISTS "${VCPKG_DEBUG_BIN_DIR}")
+          file(GLOB ZLIB_DEBUG_DLLS "${VCPKG_DEBUG_BIN_DIR}/zlib*.dll")
+          if(ZLIB_DEBUG_DLLS)
+            list(GET ZLIB_DEBUG_DLLS 0 ZZACOMMON_ZLIB_DLL_DEBUG)
+            message(STATUS "Found ZLIB debug DLL: ${ZZACOMMON_ZLIB_DLL_DEBUG}")
+          endif()
         endif()
       endif()
     endif()
@@ -348,7 +403,7 @@ endif()
 
 if(NOT ZZAX_INDEX EQUAL -1)
   add_library(zzax STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
-  target_sources(zzax PRIVATE ${ZZAX_CPPFILES} ${ZZAU_CPPFILES})
+  target_sources(zzax PRIVATE ${ZZAX_CPPFILES})
   target_include_directories(zzax 
     PUBLIC ${ZZACOMMON_INCLUDE_DIR}
     PRIVATE ${pugixml_INCLUDE_DIR} ${CURL_INCLUDE_DIRS} ${FLTK_INCLUDE_DIR}
@@ -479,6 +534,23 @@ if (NOT PROJECT_IS_TOP_LEVEL)
   endif()
   set(ZZACOMMON_LIBRARIES ${ZZACOMMON_LIBRARIES} PARENT_SCOPE)
 
+  # Export zlib DLL paths for user applications (if zzax component is used)
+  if(NOT ZZAX_INDEX EQUAL -1)
+    set(ZZACOMMON_ZLIB_DLL_RELEASE ${ZZACOMMON_ZLIB_DLL_RELEASE} PARENT_SCOPE)
+    set(ZZACOMMON_ZLIB_DLL_DEBUG ${ZZACOMMON_ZLIB_DLL_DEBUG} PARENT_SCOPE)
+  endif()
+
+  # Export Boost DLL paths for user applications (if zzab or zzafb component is used)
+  if(NOT ZZAB_INDEX EQUAL -1 OR NOT ZZAFB_INDEX EQUAL -1)
+    set(ZZACOMMON_BOOST_DLLS_RELEASE ${ZZACOMMON_BOOST_DLLS_RELEASE} PARENT_SCOPE)
+    set(ZZACOMMON_BOOST_DLLS_DEBUG ${ZZACOMMON_BOOST_DLLS_DEBUG} PARENT_SCOPE)
+  endif()
+
+  # Export API documentation directory
+  if(ZZACOMMON_DOX AND ZZACOMMON_API_HTML_DIR)
+    set(ZZACOMMON_API_HTML_DIR ${ZZACOMMON_API_HTML_DIR} PARENT_SCOPE)
+  endif()
+
   set(VCPKG_TARGET_TRIPLET ${VCPKG_TARGET_TRIPLET} PARENT_SCOPE)
   set(_VCPKG_INSTALLED_DIR ${_VCPKG_INSTALLED_DIR} PARENT_SCOPE)
 endif()
@@ -487,6 +559,10 @@ endif()
 if (ZZACOMMON_DOX)
   message(STATUS "ZZACOMMON: Adding API documentation")
   add_subdirectory(api)
+
+  # Set the API documentation output directory
+  set(ZZACOMMON_API_HTML_DIR "${CMAKE_CURRENT_BINARY_DIR}/api/html")
+
   # Add dependency for all built component targets
   if(NOT ZZAF_INDEX EQUAL -1)
     add_dependencies(zzaf zzacommon_api_html)
@@ -614,4 +690,13 @@ install(FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/zlib_vcpkg_helper.cmake"
   DESTINATION lib/cmake/zzacommon
 )
+
+# Install API documentation (if generated)
+if(ZZACOMMON_DOX AND EXISTS "${ZZACOMMON_API_HTML_DIR}")
+  install(DIRECTORY "${ZZACOMMON_API_HTML_DIR}"
+    DESTINATION share/doc/zzacommon
+    COMPONENT documentation
+  )
+  message(STATUS "zzacommon: Will install API documentation to share/doc/zzacommon/html")
+endif()
 

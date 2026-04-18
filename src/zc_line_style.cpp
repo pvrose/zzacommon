@@ -196,7 +196,7 @@ void zc_line_style_dialog::update_browsers() {
 	// Update the width browser.
 	width_browser_->value(ls_.width);
 	// Update the colour chooser.
-	uchar r, g, b;
+	uint8_t r, g, b;
 	// Fl_Color_Chooser uses RGB values 0->1.0
 	Fl::get_color(ls_.colour, r, g, b);
 	colour_chooser_->rgb((double)r / 255.0, (double)g / 255.0, (double)b / 255.0);

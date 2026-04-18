@@ -136,7 +136,7 @@ void zc_text_style_dialog::update_sample() {
 void zc_text_style_dialog::update_browsers() {
 	populate_font(font_browser_, ts_);
 	populate_size(size_browser_, ts_);
-	uchar r, g, b;
+	uint8_t r, g, b;
 	// Fl_Color_Chooser uses RGB values 0->1.0
 	Fl::get_color(ts_.colour, r, g, b);
 	colour_chooser_->rgb((double)r / 255.0, (double)g / 255.0, (double)b / 255.0);

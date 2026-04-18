@@ -32,6 +32,14 @@ set(ZZACOMMON_INCLUDE_DIR "@ZZACOMMON_INCLUDE_DIR@")
 # CMake helper scripts (build tree - points to source cmake directory)
 set(ZZACOMMON_CMAKE_DIR "@CMAKE_CURRENT_SOURCE_DIR@/cmake")
 
+# API documentation directory (from build tree)
+set(ZZACOMMON_API_HTML_DIR "@ZZACOMMON_API_HTML_DIR@")
+if(ZZACOMMON_API_HTML_DIR AND EXISTS "${ZZACOMMON_API_HTML_DIR}")
+    message(STATUS "zzacommon: API documentation available at ${ZZACOMMON_API_HTML_DIR}")
+else()
+    set(ZZACOMMON_API_HTML_DIR "")
+endif()
+
 # Propagate VCPKG_ROOT and CMAKE_PREFIX_PATH for finding dependencies
 set(_ZZACOMMON_VCPKG_ROOT "@VCPKG_ROOT@")
 if(_ZZACOMMON_VCPKG_ROOT)
@@ -174,6 +182,16 @@ if(NOT ZZAB_REQUESTED EQUAL -1)
         list(APPEND ZZACOMMON_COMPONENTS zzab)
         list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzab)
         set(zzacommon_zzab_FOUND TRUE)
+
+        # Export Boost DLL paths from build tree
+        set(ZZACOMMON_BOOST_DLLS_RELEASE "@ZZACOMMON_BOOST_DLLS_RELEASE@")
+        set(ZZACOMMON_BOOST_DLLS_DEBUG "@ZZACOMMON_BOOST_DLLS_DEBUG@")
+        if(ZZACOMMON_BOOST_DLLS_RELEASE)
+            message(STATUS "zzacommon: Boost release DLLs available: ${ZZACOMMON_BOOST_DLLS_RELEASE}")
+        endif()
+        if(ZZACOMMON_BOOST_DLLS_DEBUG)
+            message(STATUS "zzacommon: Boost debug DLLs available: ${ZZACOMMON_BOOST_DLLS_DEBUG}")
+        endif()
     endif()
 endif()
 
@@ -182,6 +200,16 @@ if(NOT ZZAX_REQUESTED EQUAL -1)
         list(APPEND ZZACOMMON_COMPONENTS zzax)
         list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzax)
         set(zzacommon_zzax_FOUND TRUE)
+
+        # Export zlib DLL paths from build tree
+        set(ZZACOMMON_ZLIB_DLL_RELEASE "@ZZACOMMON_ZLIB_DLL_RELEASE@")
+        set(ZZACOMMON_ZLIB_DLL_DEBUG "@ZZACOMMON_ZLIB_DLL_DEBUG@")
+        if(ZZACOMMON_ZLIB_DLL_RELEASE)
+            message(STATUS "zzacommon: ZLIB release DLL available: ${ZZACOMMON_ZLIB_DLL_RELEASE}")
+        endif()
+        if(ZZACOMMON_ZLIB_DLL_DEBUG)
+            message(STATUS "zzacommon: ZLIB debug DLL available: ${ZZACOMMON_ZLIB_DLL_DEBUG}")
+        endif()
     endif()
 endif()
 
@@ -198,6 +226,18 @@ if(NOT ZZAFB_REQUESTED EQUAL -1)
         list(APPEND ZZACOMMON_COMPONENTS zzafb)
         list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzafb)
         set(zzacommon_zzafb_FOUND TRUE)
+
+        # Export Boost DLL paths from build tree (if not already set by zzab)
+        if(NOT ZZACOMMON_BOOST_DLLS_RELEASE)
+            set(ZZACOMMON_BOOST_DLLS_RELEASE "@ZZACOMMON_BOOST_DLLS_RELEASE@")
+            set(ZZACOMMON_BOOST_DLLS_DEBUG "@ZZACOMMON_BOOST_DLLS_DEBUG@")
+            if(ZZACOMMON_BOOST_DLLS_RELEASE)
+                message(STATUS "zzacommon: Boost release DLLs available: ${ZZACOMMON_BOOST_DLLS_RELEASE}")
+            endif()
+            if(ZZACOMMON_BOOST_DLLS_DEBUG)
+                message(STATUS "zzacommon: Boost debug DLLs available: ${ZZACOMMON_BOOST_DLLS_DEBUG}")
+            endif()
+        endif()
     endif()
 endif()
 
@@ -229,3 +269,180 @@ else()
         message(FATAL_ERROR "${zzacommon_NOT_FOUND_MESSAGE}")
     endif()
 endif()
+
+# Helper function to copy zlib DLL to target output directory
+# Usage: zzacommon_copy_zlib_dll(target_name)
+function(zzacommon_copy_zlib_dll TARGET_NAME)
+    if(NOT TARGET ${TARGET_NAME})
+        message(FATAL_ERROR "Target ${TARGET_NAME} does not exist")
+        return()
+    endif()
+
+    if(ZZACOMMON_ZLIB_DLL_RELEASE OR ZZACOMMON_ZLIB_DLL_DEBUG)
+        # Use generator expressions to copy the appropriate DLL based on build configuration
+        if(ZZACOMMON_ZLIB_DLL_RELEASE AND EXISTS "${ZZACOMMON_ZLIB_DLL_RELEASE}")
+            add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${ZZACOMMON_ZLIB_DLL_RELEASE}"
+                    "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+                COMMENT "Copying zlib DLL (Release) to $<TARGET_FILE_DIR:${TARGET_NAME}>"
+            )
+            message(STATUS "zzacommon: Will copy zlib1.dll (Release) to ${TARGET_NAME} output directory")
+        endif()
+
+        if(ZZACOMMON_ZLIB_DLL_DEBUG AND EXISTS "${ZZACOMMON_ZLIB_DLL_DEBUG}")
+            add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${ZZACOMMON_ZLIB_DLL_DEBUG}"
+                    "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+                COMMENT "Copying zlib DLL (Debug) to $<TARGET_FILE_DIR:${TARGET_NAME}>"
+            )
+            message(STATUS "zzacommon: Will copy zlib1d.dll (Debug) to ${TARGET_NAME} output directory")
+        endif()
+    else()
+        message(WARNING "zzacommon: No zlib DLL paths available. Make sure zzax component was built with vcpkg.")
+    endif()
+endfunction()
+
+# Helper function to copy Boost DLLs to target output directory
+# Usage: zzacommon_copy_boost_dlls(target_name)
+function(zzacommon_copy_boost_dlls TARGET_NAME)
+    if(NOT TARGET ${TARGET_NAME})
+        message(FATAL_ERROR "Target ${TARGET_NAME} does not exist")
+        return()
+    endif()
+
+    if(ZZACOMMON_BOOST_DLLS_RELEASE OR ZZACOMMON_BOOST_DLLS_DEBUG)
+        # Copy release Boost DLLs
+        if(ZZACOMMON_BOOST_DLLS_RELEASE)
+            foreach(BOOST_DLL ${ZZACOMMON_BOOST_DLLS_RELEASE})
+                if(EXISTS "${BOOST_DLL}")
+                    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                            "${BOOST_DLL}"
+                            "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+                        COMMENT "Copying Boost DLL (Release): ${BOOST_DLL}"
+                    )
+                endif()
+            endforeach()
+            message(STATUS "zzacommon: Will copy Boost release DLLs to ${TARGET_NAME} output directory")
+        endif()
+
+        # Copy debug Boost DLLs
+        if(ZZACOMMON_BOOST_DLLS_DEBUG)
+            foreach(BOOST_DLL ${ZZACOMMON_BOOST_DLLS_DEBUG})
+                if(EXISTS "${BOOST_DLL}")
+                    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                            "${BOOST_DLL}"
+                            "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+                        COMMENT "Copying Boost DLL (Debug): ${BOOST_DLL}"
+                    )
+                endif()
+            endforeach()
+            message(STATUS "zzacommon: Will copy Boost debug DLLs to ${TARGET_NAME} output directory")
+        endif()
+    else()
+        message(WARNING "zzacommon: No Boost DLL paths available. Make sure zzab or zzafb component was built with vcpkg.")
+    endif()
+endfunction()
+
+# Convenience function to copy all required DLLs (zlib + Boost)
+# Usage: zzacommon_copy_runtime_dlls(target_name)
+function(zzacommon_copy_runtime_dlls TARGET_NAME)
+    if(NOT TARGET ${TARGET_NAME})
+        message(FATAL_ERROR "Target ${TARGET_NAME} does not exist")
+        return()
+    endif()
+
+    # Copy zlib DLL if zzax component is used
+    if(ZZACOMMON_ZLIB_DLL_RELEASE OR ZZACOMMON_ZLIB_DLL_DEBUG)
+        zzacommon_copy_zlib_dll(${TARGET_NAME})
+    endif()
+
+    # Copy Boost DLLs if zzab or zzafb component is used
+    if(ZZACOMMON_BOOST_DLLS_RELEASE OR ZZACOMMON_BOOST_DLLS_DEBUG)
+        zzacommon_copy_boost_dlls(${TARGET_NAME})
+    endif()
+endfunction()
+
+# Function to install runtime DLLs alongside the application
+# Usage: zzacommon_install_runtime_dlls(DESTINATION destination_dir [COMPONENT component_name])
+function(zzacommon_install_runtime_dlls)
+    set(options "")
+    set(oneValueArgs DESTINATION COMPONENT)
+    set(multiValueArgs "")
+    cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    if(NOT ARG_DESTINATION)
+        set(ARG_DESTINATION "bin")
+    endif()
+
+    if(NOT ARG_COMPONENT)
+        set(ARG_COMPONENT "runtime")
+    endif()
+
+    # Collect all DLLs to install
+    set(DLLS_TO_INSTALL "")
+
+    # Add zlib DLLs
+    if(ZZACOMMON_ZLIB_DLL_RELEASE AND EXISTS "${ZZACOMMON_ZLIB_DLL_RELEASE}")
+        list(APPEND DLLS_TO_INSTALL "${ZZACOMMON_ZLIB_DLL_RELEASE}")
+    endif()
+    if(ZZACOMMON_ZLIB_DLL_DEBUG AND EXISTS "${ZZACOMMON_ZLIB_DLL_DEBUG}")
+        list(APPEND DLLS_TO_INSTALL "${ZZACOMMON_ZLIB_DLL_DEBUG}")
+    endif()
+
+    # Add Boost DLLs
+    if(ZZACOMMON_BOOST_DLLS_RELEASE)
+        foreach(BOOST_DLL ${ZZACOMMON_BOOST_DLLS_RELEASE})
+            if(EXISTS "${BOOST_DLL}")
+                list(APPEND DLLS_TO_INSTALL "${BOOST_DLL}")
+            endif()
+        endforeach()
+    endif()
+    if(ZZACOMMON_BOOST_DLLS_DEBUG)
+        foreach(BOOST_DLL ${ZZACOMMON_BOOST_DLLS_DEBUG})
+            if(EXISTS "${BOOST_DLL}")
+                list(APPEND DLLS_TO_INSTALL "${BOOST_DLL}")
+            endif()
+        endforeach()
+    endif()
+
+    # Install the DLLs
+    if(DLLS_TO_INSTALL)
+        list(REMOVE_DUPLICATES DLLS_TO_INSTALL)
+        install(FILES ${DLLS_TO_INSTALL}
+            DESTINATION ${ARG_DESTINATION}
+            COMPONENT ${ARG_COMPONENT}
+        )
+        message(STATUS "zzacommon: Will install ${CMAKE_MATCH_COUNT} runtime DLL(s) to ${ARG_DESTINATION}")
+    else()
+        message(WARNING "zzacommon: No runtime DLLs available for installation.")
+    endif()
+endfunction()
+
+# Helper function to copy API documentation to user documentation directory
+# Usage: zzacommon_copy_api_docs(destination_directory)
+function(zzacommon_copy_api_docs DESTINATION_DIR)
+    if(NOT ZZACOMMON_API_HTML_DIR)
+        message(WARNING "zzacommon: API documentation directory not available. Build zzacommon with ZZACOMMON_DOX=ON to generate documentation.")
+        return()
+    endif()
+
+    if(NOT EXISTS "${ZZACOMMON_API_HTML_DIR}")
+        message(WARNING "zzacommon: API documentation directory does not exist: ${ZZACOMMON_API_HTML_DIR}")
+        return()
+    endif()
+
+    # Create destination directory if it doesn't exist
+    file(MAKE_DIRECTORY "${DESTINATION_DIR}")
+
+    # Copy the entire html directory
+    file(COPY "${ZZACOMMON_API_HTML_DIR}/"
+        DESTINATION "${DESTINATION_DIR}"
+        PATTERN "*"
+    )
+
+    message(STATUS "zzacommon: Copied API documentation from ${ZZACOMMON_API_HTML_DIR} to ${DESTINATION_DIR}")
+endfunction()
