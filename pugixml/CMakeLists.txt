@@ -43,8 +43,11 @@ endif()
 
 set(CMAKE_BUILD_RPATH ${CMAKE_CURRENT_BINARY_DIR})
 add_library(${TARGET})
-target_include_directories(${TARGET} PRIVATE 
-  ./)
+target_include_directories(${TARGET}
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include/pugixml>
+)
 
 target_sources(${TARGET} 
   PRIVATE 

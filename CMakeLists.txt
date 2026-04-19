@@ -166,8 +166,8 @@ set(ZZACOMMON_HPPFILES
 
 # Component-based build system
 # Define which components to build (default: all components for top-level and subproject usage)
-if(NOT DEFINED ZZACOMMON_COMPONENTS)
-  set(ZZACOMMON_COMPONENTS "zzaf;zzab;zzax;zzam;zzafb;zzad;zzap" CACHE STRING "Semicolon-separated list of components to build")
+if(NOT DEFINED ZZACOMMON_COMPONENTS OR "${ZZACOMMON_COMPONENTS}" STREQUAL "")
+  set(ZZACOMMON_COMPONENTS "zzaf;zzab;zzax;zzam;zzafb;zzad;zzap" CACHE STRING "Semicolon-separated list of components to build" FORCE)
 endif()
 
 if(PROJECT_IS_TOP_LEVEL)
@@ -1036,12 +1036,25 @@ if(NOT ZZAP_INDEX EQUAL -1)
 endif()
 
 if(INSTALL_LIB_TARGETS)
-  install(TARGETS ${INSTALL_LIB_TARGETS}
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
-    FILE_SET HEADERS DESTINATION include/pugixml
-  )
+  set(_ZZACOMMON_INSTALL_CORE_TARGETS ${INSTALL_LIB_TARGETS})
+  list(REMOVE_ITEM _ZZACOMMON_INSTALL_CORE_TARGETS pugixml)
+
+  if(_ZZACOMMON_INSTALL_CORE_TARGETS)
+    install(TARGETS ${_ZZACOMMON_INSTALL_CORE_TARGETS}
+      ARCHIVE DESTINATION lib
+      LIBRARY DESTINATION lib
+      RUNTIME DESTINATION bin
+    )
+  endif()
+
+  if("pugixml" IN_LIST INSTALL_LIB_TARGETS)
+    install(TARGETS pugixml
+      ARCHIVE DESTINATION lib
+      LIBRARY DESTINATION lib
+      RUNTIME DESTINATION bin
+      FILE_SET common_headers DESTINATION include/pugixml
+    )
+  endif()
 endif()
 
 # Install headers

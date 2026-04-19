@@ -66,6 +66,13 @@ set_and_check(ZZACOMMON_INCLUDE_DIR "${PACKAGE_PREFIX_DIR}/include")
 # CMake helper scripts (set by configure_package_config_file)
 set_and_check(ZZACOMMON_CMAKE_DIR "@PACKAGE_ZZACOMMON_CMAKE_DIR@")
 
+# Static library naming differs by platform (lib<name>.a on Unix-like systems)
+if(WIN32)
+    set(_ZZACOMMON_STATIC_LIB_PREFIX "")
+else()
+    set(_ZZACOMMON_STATIC_LIB_PREFIX "lib")
+endif()
+
 # API documentation directory (if installed)
 set(ZZACOMMON_API_HTML_DIR "${PACKAGE_PREFIX_DIR}/share/doc/zzacommon/html")
 if(EXISTS "${ZZACOMMON_API_HTML_DIR}")
@@ -170,33 +177,53 @@ endif()
 
 # pugixml, libcurl, and zlib are required by zzax
 if(NOT ZZAX_REQUESTED EQUAL -1)
+    set(_ZZAX_PUGIXML_READY FALSE)
+
     # Find pugixml - use find_package for vcpkg compatibility
     find_package(pugixml CONFIG QUIET)
+    if(pugixml_FOUND OR TARGET pugixml)
+        set(_ZZAX_PUGIXML_READY TRUE)
+    endif()
 
     if(NOT pugixml_FOUND AND NOT TARGET pugixml)
         # Fallback: Try to find in zzacommon install tree (if pugixml was built as part of zzacommon)
         find_path(PUGIXML_INCLUDE_DIR pugixml.hpp
-            PATHS "${PACKAGE_PREFIX_DIR}/include/pugixml"
-            NO_DEFAULT_PATH)
+            PATHS
+                "${PACKAGE_PREFIX_DIR}/include"
+                "/usr/local/include"
+                "/usr/include"
+            PATH_SUFFIXES
+                ""
+                "pugixml")
 
-        if(PUGIXML_INCLUDE_DIR AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/pugixml${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        find_library(PUGIXML_LIB
+            NAMES pugixml
+            PATHS
+                "${PACKAGE_PREFIX_DIR}/lib"
+                "/usr/local/lib"
+                "/usr/lib"
+                "/usr/lib64"
+                "/usr/lib/x86_64-linux-gnu")
+
+        message(STATUS "zzacommon: pugixml fallback include='${PUGIXML_INCLUDE_DIR}' lib='${PUGIXML_LIB}'")
+
+        if(PUGIXML_INCLUDE_DIR AND PUGIXML_LIB)
             add_library(pugixml STATIC IMPORTED)
-            set(PUGIXML_LIB "${PACKAGE_PREFIX_DIR}/lib/pugixml${CMAKE_STATIC_LIBRARY_SUFFIX}")
             set_target_properties(pugixml PROPERTIES
                 IMPORTED_LOCATION "${PUGIXML_LIB}"
                 INTERFACE_INCLUDE_DIRECTORIES "${PUGIXML_INCLUDE_DIR}"
             )
             message(STATUS "zzacommon: Using bundled pugixml from install tree")
+            set(_ZZAX_PUGIXML_READY TRUE)
+        elseif(PUGIXML_LIB)
+            add_library(pugixml STATIC IMPORTED)
+            set_target_properties(pugixml PROPERTIES
+                IMPORTED_LOCATION "${PUGIXML_LIB}"
+            )
+            message(WARNING "zzacommon: pugixml library found without headers; zzax may fail to compile if pugixml headers are required by user code")
+            set(_ZZAX_PUGIXML_READY TRUE)
         else()
-            if(zzacommon_FIND_REQUIRED_zzax)
-                message(FATAL_ERROR "pugixml is required for zzax component but was not found.\n"
-                    "To resolve this:\n"
-                    "  1. Install via vcpkg: vcpkg install pugixml:x64-windows\n"
-                    "  2. Set VCPKG_ROOT environment variable\n"
-                    "  3. Or add pugixml installation to CMAKE_PREFIX_PATH")
-            else()
-                message(WARNING "pugixml not found - zzax component will not be available")
-            endif()
+            message(WARNING "pugixml not found - zzax component will not be available")
         endif()
     endif()
 
@@ -243,10 +270,10 @@ endif()
 # Create imported targets for requested components
 
 # Component: zzaf (FLTK UI components)
-if(NOT ZZAF_REQUESTED EQUAL -1 AND FLTK_FOUND AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/zzaf${CMAKE_STATIC_LIBRARY_SUFFIX}")
+if(NOT ZZAF_REQUESTED EQUAL -1 AND FLTK_FOUND AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/${_ZZACOMMON_STATIC_LIB_PREFIX}zzaf${CMAKE_STATIC_LIBRARY_SUFFIX}")
     if(NOT TARGET zzacommon::zzaf)
         add_library(zzacommon::zzaf STATIC IMPORTED)
-        set(ZZAF_LIB "${PACKAGE_PREFIX_DIR}/lib/zzaf${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set(ZZAF_LIB "${PACKAGE_PREFIX_DIR}/lib/${_ZZACOMMON_STATIC_LIB_PREFIX}zzaf${CMAKE_STATIC_LIBRARY_SUFFIX}")
         set_target_properties(zzacommon::zzaf PROPERTIES
             IMPORTED_LOCATION "${ZZAF_LIB}"
             INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR};${FLTK_INCLUDE_DIR}"
@@ -267,10 +294,10 @@ if(NOT ZZAF_REQUESTED EQUAL -1 AND FLTK_FOUND AND EXISTS "${PACKAGE_PREFIX_DIR}/
 endif()
 
 # Component: zzab (Boost components)
-if(NOT ZZAB_REQUESTED EQUAL -1 AND Boost_FOUND AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/zzab${CMAKE_STATIC_LIBRARY_SUFFIX}")
+if(NOT ZZAB_REQUESTED EQUAL -1 AND Boost_FOUND AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/${_ZZACOMMON_STATIC_LIB_PREFIX}zzab${CMAKE_STATIC_LIBRARY_SUFFIX}")
     if(NOT TARGET zzacommon::zzab)
         add_library(zzacommon::zzab STATIC IMPORTED)
-        set(ZZAB_LIB "${PACKAGE_PREFIX_DIR}/lib/zzab${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set(ZZAB_LIB "${PACKAGE_PREFIX_DIR}/lib/${_ZZACOMMON_STATIC_LIB_PREFIX}zzab${CMAKE_STATIC_LIBRARY_SUFFIX}")
         if(MSVC)
             set(_ZZAB_BOOST_LIBS "Boost::filesystem;Boost::asio")
         else()
@@ -293,20 +320,39 @@ if(NOT ZZAB_REQUESTED EQUAL -1 AND Boost_FOUND AND EXISTS "${PACKAGE_PREFIX_DIR}
 endif()
 
 # Component: zzax (XML, URL handling, and FLTK)
-if(NOT ZZAX_REQUESTED EQUAL -1 AND FLTK_FOUND AND CURL_FOUND AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/zzax${CMAKE_STATIC_LIBRARY_SUFFIX}")
+if(NOT ZZAX_REQUESTED EQUAL -1 AND FLTK_FOUND AND CURL_FOUND AND _ZZAX_PUGIXML_READY AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/${_ZZACOMMON_STATIC_LIB_PREFIX}zzax${CMAKE_STATIC_LIBRARY_SUFFIX}")
     if(NOT TARGET zzacommon::zzax)
         add_library(zzacommon::zzax STATIC IMPORTED)
-        set(ZZAX_LIB "${PACKAGE_PREFIX_DIR}/lib/zzax${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set(ZZAX_LIB "${PACKAGE_PREFIX_DIR}/lib/${_ZZACOMMON_STATIC_LIB_PREFIX}zzax${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
         # Build link libraries list
-        set(ZZAX_LINK_LIBS "pugixml;CURL::libcurl;${FLTK_LIBRARIES}")
+        if(TARGET zzacommon::pugixml)
+            set(ZZAX_PUGIXML_TARGET "zzacommon::pugixml")
+        elseif(TARGET pugixml)
+            set(ZZAX_PUGIXML_TARGET "pugixml")
+        else()
+            set(ZZAX_PUGIXML_TARGET "")
+        endif()
+
+        set(ZZAX_LINK_LIBS "CURL::libcurl;${FLTK_LIBRARIES}")
+        if(ZZAX_PUGIXML_TARGET)
+            list(INSERT ZZAX_LINK_LIBS 0 "${ZZAX_PUGIXML_TARGET}")
+        endif()
         if(MSVC AND TARGET ZLIB::ZLIB)
             list(APPEND ZZAX_LINK_LIBS ZLIB::ZLIB)
         endif()
 
+        set(ZZAX_INCLUDE_DIRS "${ZZACOMMON_INCLUDE_DIR};${CURL_INCLUDE_DIRS};${FLTK_INCLUDE_DIR}")
+        if(EXISTS "${PACKAGE_PREFIX_DIR}/include/pugixml/pugixml.hpp")
+            list(APPEND ZZAX_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include/pugixml")
+        endif()
+        if(PUGIXML_INCLUDE_DIR AND EXISTS "${PUGIXML_INCLUDE_DIR}")
+            list(APPEND ZZAX_INCLUDE_DIRS "${PUGIXML_INCLUDE_DIR}")
+        endif()
+
         set_target_properties(zzacommon::zzax PROPERTIES
             IMPORTED_LOCATION "${ZZAX_LIB}"
-            INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR};${PUGIXML_INCLUDE_DIR};${CURL_INCLUDE_DIRS};${FLTK_INCLUDE_DIR}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZZAX_INCLUDE_DIRS}"
             INTERFACE_LINK_LIBRARIES "${ZZAX_LINK_LIBS}"
         )
 
@@ -338,9 +384,9 @@ if(NOT ZZAM_REQUESTED EQUAL -1)
         endif()
     endif()
 
-    if(NOT TARGET zzacommon::zzam AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/zzam${CMAKE_STATIC_LIBRARY_SUFFIX}")
+    if(NOT TARGET zzacommon::zzam AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/${_ZZACOMMON_STATIC_LIB_PREFIX}zzam${CMAKE_STATIC_LIBRARY_SUFFIX}")
         add_library(zzacommon::zzam STATIC IMPORTED)
-        set(ZZAM_LIB "${PACKAGE_PREFIX_DIR}/lib/zzam${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set(ZZAM_LIB "${PACKAGE_PREFIX_DIR}/lib/${_ZZACOMMON_STATIC_LIB_PREFIX}zzam${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
         # Build interface link libraries
         set(ZZAM_LINK_LIBS "")
@@ -395,9 +441,9 @@ if(NOT ZZAFB_REQUESTED EQUAL -1 AND FLTK_FOUND AND Boost_FOUND)
         endif()
     endif()
 
-    if(NOT TARGET zzacommon::zzafb AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/zzafb${CMAKE_STATIC_LIBRARY_SUFFIX}")
+    if(NOT TARGET zzacommon::zzafb AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/${_ZZACOMMON_STATIC_LIB_PREFIX}zzafb${CMAKE_STATIC_LIBRARY_SUFFIX}")
         add_library(zzacommon::zzafb STATIC IMPORTED)
-        set(ZZAFB_LIB "${PACKAGE_PREFIX_DIR}/lib/zzafb${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set(ZZAFB_LIB "${PACKAGE_PREFIX_DIR}/lib/${_ZZACOMMON_STATIC_LIB_PREFIX}zzafb${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
         # Build link libraries list
         if(MSVC)
@@ -439,10 +485,10 @@ if(NOT ZZAFB_REQUESTED EQUAL -1 AND FLTK_FOUND AND Boost_FOUND)
 endif()
 
 # Component: zzad (Debug utilities - no external dependencies)
-if(NOT ZZAD_REQUESTED EQUAL -1 AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/zzad${CMAKE_STATIC_LIBRARY_SUFFIX}")
+if(NOT ZZAD_REQUESTED EQUAL -1 AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/${_ZZACOMMON_STATIC_LIB_PREFIX}zzad${CMAKE_STATIC_LIBRARY_SUFFIX}")
     if(NOT TARGET zzacommon::zzad)
         add_library(zzacommon::zzad STATIC IMPORTED)
-        set(ZZAD_LIB "${PACKAGE_PREFIX_DIR}/lib/zzad${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set(ZZAD_LIB "${PACKAGE_PREFIX_DIR}/lib/${_ZZACOMMON_STATIC_LIB_PREFIX}zzad${CMAKE_STATIC_LIBRARY_SUFFIX}")
         set_target_properties(zzacommon::zzad PROPERTIES
             IMPORTED_LOCATION "${ZZAD_LIB}"
             INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR}"
@@ -562,9 +608,9 @@ if(NOT ZZAP_REQUESTED EQUAL -1)
         endif()
 
         if(PORTAUDIO_FOUND_LOCAL)
-            if(NOT TARGET zzacommon::zzap AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/zzap${CMAKE_STATIC_LIBRARY_SUFFIX}")
+            if(NOT TARGET zzacommon::zzap AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/${_ZZACOMMON_STATIC_LIB_PREFIX}zzap${CMAKE_STATIC_LIBRARY_SUFFIX}")
                 add_library(zzacommon::zzap STATIC IMPORTED)
-                set(ZZAP_LIB "${PACKAGE_PREFIX_DIR}/lib/zzap${CMAKE_STATIC_LIBRARY_SUFFIX}")
+                set(ZZAP_LIB "${PACKAGE_PREFIX_DIR}/lib/${_ZZACOMMON_STATIC_LIB_PREFIX}zzap${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
                 # Determine PortAudio link target and include directory
                 set(ZZAP_INCLUDE_DIRS "${ZZACOMMON_INCLUDE_DIR}")
