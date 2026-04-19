@@ -27,6 +27,9 @@
 #   zzab - Boost components (requires Boost filesystem, asio)
 #   zzax - XML, URL handling, and FLTK (requires pugixml, libcurl, zlib, FLTK)
 #   zzam - Common utilities (requires nlohmann/json)
+#   zzafb - FLTK + Boost components (requires FLTK, Boost)
+#   zzad - Debug utilities (no external dependencies)
+#   zzap - PortAudio audio output (requires PortAudio, zzam)
 #
 # Variables set by this module:
 #   zzacommon_FOUND          - True if zzacommon is found
@@ -41,9 +44,14 @@
 #   zzacommon::zzab          - Boost components target
 #   zzacommon::zzax          - XML, URL, and FLTK target
 #   zzacommon::zzam          - Common utilities target
-#   zzacommon::zc_app        - Application metadata target
+#   zzacommon::zzafb         - FLTK + Boost target
+#   zzacommon::zzad          - Debug utilities target
+#   zzacommon::zzap          - PortAudio audio output target
 
 @PACKAGE_INIT@
+
+# Include runtime helper functions
+include("${CMAKE_CURRENT_LIST_DIR}/zzacommon_runtime_helpers.cmake")
 
 # Diagnostic message indicating find_package usage
 message(STATUS "zzacommon: Loaded via find_package (version @ZZACOMMON_VERSION@)")
@@ -81,7 +89,7 @@ elseif(DEFINED ENV{VCPKG_ROOT} AND EXISTS "$ENV{VCPKG_ROOT}")
 endif()
 
 # Available components
-set(ZZACOMMON_AVAILABLE_COMPONENTS zzaf zzab zzax zzam zzafb zzad)
+set(ZZACOMMON_AVAILABLE_COMPONENTS zzaf zzab zzax zzam zzafb zzad zzap)
 
 # If no components specified, use all
 if(NOT zzacommon_FIND_COMPONENTS)
@@ -108,6 +116,7 @@ list(FIND zzacommon_FIND_COMPONENTS "zzax" ZZAX_REQUESTED)
 list(FIND zzacommon_FIND_COMPONENTS "zzam" ZZAM_REQUESTED)
 list(FIND zzacommon_FIND_COMPONENTS "zzafb" ZZAFB_REQUESTED)
 list(FIND zzacommon_FIND_COMPONENTS "zzad" ZZAD_REQUESTED)
+list(FIND zzacommon_FIND_COMPONENTS "zzap" ZZAP_REQUESTED)
 
 # Find dependencies for requested components
 
@@ -161,22 +170,32 @@ endif()
 
 # pugixml, libcurl, and zlib are required by zzax
 if(NOT ZZAX_REQUESTED EQUAL -1)
-    # Find pugixml
-    if(NOT TARGET pugixml)
+    # Find pugixml - use find_package for vcpkg compatibility
+    find_package(pugixml CONFIG QUIET)
+
+    if(NOT pugixml_FOUND AND NOT TARGET pugixml)
+        # Fallback: Try to find in zzacommon install tree (if pugixml was built as part of zzacommon)
         find_path(PUGIXML_INCLUDE_DIR pugixml.hpp
             PATHS "${PACKAGE_PREFIX_DIR}/include/pugixml"
             NO_DEFAULT_PATH)
 
-        if(PUGIXML_INCLUDE_DIR)
+        if(PUGIXML_INCLUDE_DIR AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/pugixml${CMAKE_STATIC_LIBRARY_SUFFIX}")
             add_library(pugixml STATIC IMPORTED)
-            set_and_check(PUGIXML_LIB "${PACKAGE_PREFIX_DIR}/lib/pugixml${CMAKE_STATIC_LIBRARY_SUFFIX}")
+            set(PUGIXML_LIB "${PACKAGE_PREFIX_DIR}/lib/pugixml${CMAKE_STATIC_LIBRARY_SUFFIX}")
             set_target_properties(pugixml PROPERTIES
                 IMPORTED_LOCATION "${PUGIXML_LIB}"
                 INTERFACE_INCLUDE_DIRECTORIES "${PUGIXML_INCLUDE_DIR}"
             )
+            message(STATUS "zzacommon: Using bundled pugixml from install tree")
         else()
             if(zzacommon_FIND_REQUIRED_zzax)
-                message(FATAL_ERROR "pugixml is required for zzax component but was not found")
+                message(FATAL_ERROR "pugixml is required for zzax component but was not found.\n"
+                    "To resolve this:\n"
+                    "  1. Install via vcpkg: vcpkg install pugixml:x64-windows\n"
+                    "  2. Set VCPKG_ROOT environment variable\n"
+                    "  3. Or add pugixml installation to CMAKE_PREFIX_PATH")
+            else()
+                message(WARNING "pugixml not found - zzax component will not be available")
             endif()
         endif()
     endif()
@@ -190,7 +209,11 @@ if(NOT ZZAX_REQUESTED EQUAL -1)
 
     if(NOT CURL_FOUND)
         if(zzacommon_FIND_REQUIRED_zzax)
-            message(FATAL_ERROR "CURL is required for zzax component but was not found")
+            message(FATAL_ERROR "CURL is required for zzax component but was not found.\n"
+                "To resolve this:\n"
+                "  1. Install via vcpkg: vcpkg install curl:x64-windows\n"
+                "  2. Set VCPKG_ROOT environment variable\n"
+                "  3. Or add CURL installation to CMAKE_PREFIX_PATH")
         else()
             message(WARNING "CURL not found - zzax component will not be available")
         endif()
@@ -205,7 +228,11 @@ if(NOT ZZAX_REQUESTED EQUAL -1)
 
         if(NOT ZLIB_FOUND)
             if(zzacommon_FIND_REQUIRED_zzax)
-                message(FATAL_ERROR "ZLIB is required for zzax component on Windows but was not found")
+                message(FATAL_ERROR "ZLIB is required for zzax component on Windows but was not found.\n"
+                    "To resolve this:\n"
+                    "  1. Install via vcpkg: vcpkg install zlib:x64-windows\n"
+                    "  2. Set VCPKG_ROOT environment variable\n"
+                    "  3. Or add ZLIB installation to CMAKE_PREFIX_PATH")
             else()
                 message(WARNING "ZLIB not found on Windows - zzax component may not be fully available")
             endif()
@@ -261,33 +288,7 @@ if(NOT ZZAB_REQUESTED EQUAL -1 AND Boost_FOUND)
         set(zzacommon_zzab_FOUND TRUE)
 
         # Export Boost DLL paths for user applications
-        if(MSVC AND _ZZACOMMON_VCPKG_ROOT AND EXISTS "${_ZZACOMMON_VCPKG_ROOT}")
-            set(ZZACOMMON_BOOST_DLLS_RELEASE "")
-            set(ZZACOMMON_BOOST_DLLS_DEBUG "")
-
-            set(_VCPKG_BIN_DIR "${_ZZACOMMON_VCPKG_ROOT}/installed/x64-windows/bin")
-            set(_VCPKG_DEBUG_BIN_DIR "${_ZZACOMMON_VCPKG_ROOT}/installed/x64-windows/debug/bin")
-
-            if(EXISTS "${_VCPKG_BIN_DIR}")
-                file(GLOB _BOOST_FS_RELEASE_DLLS "${_VCPKG_BIN_DIR}/boost_filesystem*.dll")
-                file(GLOB _BOOST_SYS_RELEASE_DLLS "${_VCPKG_BIN_DIR}/boost_system*.dll")
-                list(APPEND ZZACOMMON_BOOST_DLLS_RELEASE ${_BOOST_FS_RELEASE_DLLS} ${_BOOST_SYS_RELEASE_DLLS})
-                if(ZZACOMMON_BOOST_DLLS_RELEASE)
-                    list(REMOVE_DUPLICATES ZZACOMMON_BOOST_DLLS_RELEASE)
-                    message(STATUS "zzacommon: Found Boost release DLLs: ${ZZACOMMON_BOOST_DLLS_RELEASE}")
-                endif()
-            endif()
-
-            if(EXISTS "${_VCPKG_DEBUG_BIN_DIR}")
-                file(GLOB _BOOST_FS_DEBUG_DLLS "${_VCPKG_DEBUG_BIN_DIR}/boost_filesystem*.dll")
-                file(GLOB _BOOST_SYS_DEBUG_DLLS "${_VCPKG_DEBUG_BIN_DIR}/boost_system*.dll")
-                list(APPEND ZZACOMMON_BOOST_DLLS_DEBUG ${_BOOST_FS_DEBUG_DLLS} ${_BOOST_SYS_DEBUG_DLLS})
-                if(ZZACOMMON_BOOST_DLLS_DEBUG)
-                    list(REMOVE_DUPLICATES ZZACOMMON_BOOST_DLLS_DEBUG)
-                    message(STATUS "zzacommon: Found Boost debug DLLs: ${ZZACOMMON_BOOST_DLLS_DEBUG}")
-                endif()
-            endif()
-        endif()
+        zzacommon_find_boost_dlls("${_ZZACOMMON_VCPKG_ROOT}")
     endif()
 endif()
 
@@ -314,47 +315,57 @@ if(NOT ZZAX_REQUESTED EQUAL -1 AND FLTK_FOUND AND CURL_FOUND)
         set(zzacommon_zzax_FOUND TRUE)
 
         # Export zlib DLL paths for user applications
-        if(_ZZACOMMON_VCPKG_ROOT AND EXISTS "${_ZZACOMMON_VCPKG_ROOT}")
-            set(ZZACOMMON_ZLIB_DLL_RELEASE "")
-            set(ZZACOMMON_ZLIB_DLL_DEBUG "")
-
-            set(_VCPKG_BIN_DIR "${_ZZACOMMON_VCPKG_ROOT}/installed/x64-windows/bin")
-            set(_VCPKG_DEBUG_BIN_DIR "${_ZZACOMMON_VCPKG_ROOT}/installed/x64-windows/debug/bin")
-
-            if(EXISTS "${_VCPKG_BIN_DIR}")
-                file(GLOB _ZLIB_RELEASE_DLLS "${_VCPKG_BIN_DIR}/zlib*.dll")
-                if(_ZLIB_RELEASE_DLLS)
-                    list(GET _ZLIB_RELEASE_DLLS 0 ZZACOMMON_ZLIB_DLL_RELEASE)
-                    message(STATUS "zzacommon: Found ZLIB release DLL: ${ZZACOMMON_ZLIB_DLL_RELEASE}")
-                endif()
-            endif()
-
-            if(EXISTS "${_VCPKG_DEBUG_BIN_DIR}")
-                file(GLOB _ZLIB_DEBUG_DLLS "${_VCPKG_DEBUG_BIN_DIR}/zlib*.dll")
-                if(_ZLIB_DEBUG_DLLS)
-                    list(GET _ZLIB_DEBUG_DLLS 0 ZZACOMMON_ZLIB_DLL_DEBUG)
-                    message(STATUS "zzacommon: Found ZLIB debug DLL: ${ZZACOMMON_ZLIB_DLL_DEBUG}")
-                endif()
-            endif()
-        endif()
+        zzacommon_find_zlib_dlls("${_ZZACOMMON_VCPKG_ROOT}")
     endif()
 endif()
 
 # Component: zzam (Common utilities)
 if(NOT ZZAM_REQUESTED EQUAL -1)
+    # Find nlohmann_json (required for zzam)
+    find_package(nlohmann_json CONFIG QUIET)
+
+    if(NOT nlohmann_json_FOUND)
+        # Fallback to hardcoded path check
+        if(MSVC AND EXISTS "$ENV{USERPROFILE}/source/repos/json/include")
+            set(NLOHMANN_JSON_INCLUDE_DIR "$ENV{USERPROFILE}/source/repos/json/include")
+            message(STATUS "zzacommon: Using local nlohmann_json at ${NLOHMANN_JSON_INCLUDE_DIR}")
+        else()
+            # Try to find in system paths
+            find_path(NLOHMANN_JSON_INCLUDE_DIR 
+                NAMES nlohmann/json.hpp
+                PATHS /usr/include /usr/local/include
+            )
+        endif()
+    endif()
+
     if(NOT TARGET zzacommon::zzam)
         add_library(zzacommon::zzam STATIC IMPORTED)
         set_and_check(ZZAM_LIB "${PACKAGE_PREFIX_DIR}/lib/zzam${CMAKE_STATIC_LIBRARY_SUFFIX}")
+
+        # Build interface link libraries
+        set(ZZAM_LINK_LIBS "")
+        if(TARGET nlohmann_json::nlohmann_json)
+            set(ZZAM_LINK_LIBS "nlohmann_json::nlohmann_json")
+        endif()
+
         set_target_properties(zzacommon::zzam PROPERTIES
             IMPORTED_LOCATION "${ZZAM_LIB}"
             INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR}"
         )
 
-        # Add nlohmann/json include if on MSVC
-        if(MSVC AND EXISTS "$ENV{USERPROFILE}/source/repos/json/include")
+        # Add nlohmann_json include or target
+        if(TARGET nlohmann_json::nlohmann_json)
             set_property(TARGET zzacommon::zzam APPEND PROPERTY
-                INTERFACE_INCLUDE_DIRECTORIES "$ENV{USERPROFILE}/source/repos/json/include"
+                INTERFACE_LINK_LIBRARIES "nlohmann_json::nlohmann_json"
             )
+            message(STATUS "zzacommon: zzam linked with nlohmann_json::nlohmann_json target")
+        elseif(NLOHMANN_JSON_INCLUDE_DIR AND EXISTS "${NLOHMANN_JSON_INCLUDE_DIR}")
+            set_property(TARGET zzacommon::zzam APPEND PROPERTY
+                INTERFACE_INCLUDE_DIRECTORIES "${NLOHMANN_JSON_INCLUDE_DIR}"
+            )
+            message(STATUS "zzacommon: zzam using nlohmann_json include: ${NLOHMANN_JSON_INCLUDE_DIR}")
+        else()
+            message(WARNING "zzacommon: nlohmann_json not found for zzam component")
         endif()
 
         list(APPEND ZZACOMMON_COMPONENTS zzam)
@@ -387,32 +398,8 @@ if(NOT ZZAFB_REQUESTED EQUAL -1 AND FLTK_FOUND AND Boost_FOUND)
         set(zzacommon_zzafb_FOUND TRUE)
 
         # Export Boost DLL paths for user applications (if not already set by zzab)
-        if(MSVC AND _ZZACOMMON_VCPKG_ROOT AND EXISTS "${_ZZACOMMON_VCPKG_ROOT}" AND NOT ZZACOMMON_BOOST_DLLS_RELEASE)
-            set(ZZACOMMON_BOOST_DLLS_RELEASE "")
-            set(ZZACOMMON_BOOST_DLLS_DEBUG "")
-
-            set(_VCPKG_BIN_DIR "${_ZZACOMMON_VCPKG_ROOT}/installed/x64-windows/bin")
-            set(_VCPKG_DEBUG_BIN_DIR "${_ZZACOMMON_VCPKG_ROOT}/installed/x64-windows/debug/bin")
-
-            if(EXISTS "${_VCPKG_BIN_DIR}")
-                file(GLOB _BOOST_FS_RELEASE_DLLS "${_VCPKG_BIN_DIR}/boost_filesystem*.dll")
-                file(GLOB _BOOST_SYS_RELEASE_DLLS "${_VCPKG_BIN_DIR}/boost_system*.dll")
-                list(APPEND ZZACOMMON_BOOST_DLLS_RELEASE ${_BOOST_FS_RELEASE_DLLS} ${_BOOST_SYS_RELEASE_DLLS})
-                if(ZZACOMMON_BOOST_DLLS_RELEASE)
-                    list(REMOVE_DUPLICATES ZZACOMMON_BOOST_DLLS_RELEASE)
-                    message(STATUS "zzacommon: Found Boost release DLLs: ${ZZACOMMON_BOOST_DLLS_RELEASE}")
-                endif()
-            endif()
-
-            if(EXISTS "${_VCPKG_DEBUG_BIN_DIR}")
-                file(GLOB _BOOST_FS_DEBUG_DLLS "${_VCPKG_DEBUG_BIN_DIR}/boost_filesystem*.dll")
-                file(GLOB _BOOST_SYS_DEBUG_DLLS "${_VCPKG_DEBUG_BIN_DIR}/boost_system*.dll")
-                list(APPEND ZZACOMMON_BOOST_DLLS_DEBUG ${_BOOST_FS_DEBUG_DLLS} ${_BOOST_SYS_DEBUG_DLLS})
-                if(ZZACOMMON_BOOST_DLLS_DEBUG)
-                    list(REMOVE_DUPLICATES ZZACOMMON_BOOST_DLLS_DEBUG)
-                    message(STATUS "zzacommon: Found Boost debug DLLs: ${ZZACOMMON_BOOST_DLLS_DEBUG}")
-                endif()
-            endif()
+        if(NOT ZZACOMMON_BOOST_DLLS_RELEASE)
+            zzacommon_find_boost_dlls("${_ZZACOMMON_VCPKG_ROOT}")
         endif()
     endif()
 endif()
@@ -433,14 +420,122 @@ if(NOT ZZAD_REQUESTED EQUAL -1)
     endif()
 endif()
 
-# Application metadata library (always available)
-if(NOT TARGET zzacommon::zc_app)
-    add_library(zzacommon::zc_app STATIC IMPORTED)
-    set_and_check(ZC_APP_LIB "${PACKAGE_PREFIX_DIR}/lib/zc_@APP_NAME_LOWER@${CMAKE_STATIC_LIBRARY_SUFFIX}")
-    set_target_properties(zzacommon::zc_app PROPERTIES
-        IMPORTED_LOCATION "${ZC_APP_LIB}"
-        INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR}"
-    )
+# Component: zzap (PortAudio audio output)
+if(NOT ZZAP_REQUESTED EQUAL -1)
+    # zzap requires zzam component (for zc_settings)
+    if(NOT TARGET zzacommon::zzam)
+        message(WARNING "zzacommon: zzap component requires zzam component. Please request zzam along with zzap.")
+        set(zzacommon_zzap_FOUND FALSE)
+    else()
+        # Find PortAudio - try multiple methods
+        set(PORTAUDIO_FOUND_LOCAL FALSE)
+
+        # Determine PORTAUDIO_ROOT from CMake variable or environment variable
+        set(_PORTAUDIO_ROOT "")
+        if(DEFINED PORTAUDIO_ROOT AND EXISTS "${PORTAUDIO_ROOT}")
+            set(_PORTAUDIO_ROOT "${PORTAUDIO_ROOT}")
+            message(STATUS "zzacommon: Using PORTAUDIO_ROOT CMake variable: ${_PORTAUDIO_ROOT}")
+        elseif(DEFINED ENV{PORTAUDIO_ROOT} AND EXISTS "$ENV{PORTAUDIO_ROOT}")
+            set(_PORTAUDIO_ROOT "$ENV{PORTAUDIO_ROOT}")
+            message(STATUS "zzacommon: Using PORTAUDIO_ROOT environment variable: ${_PORTAUDIO_ROOT}")
+        endif()
+
+        # Method 1: Check if PORTAUDIO_ROOT is set (CMake variable or environment variable)
+        if(_PORTAUDIO_ROOT)
+            if(MSVC)
+                # Check if PortAudio target already exists (from previous configuration or vcpkg)
+                if(NOT TARGET portaudio_static AND NOT TARGET portaudio)
+                    # Add PortAudio as subdirectory if source is available
+                    # Use a unique binary directory to avoid conflicts between configurations
+                    add_subdirectory(${_PORTAUDIO_ROOT}
+                        ${CMAKE_CURRENT_BINARY_DIR}/zzacommon_portaudio
+                        EXCLUDE_FROM_ALL
+                    )
+                    message(STATUS "zzacommon: Building PortAudio from source")
+                elseif(TARGET portaudio_static)
+                    message(STATUS "zzacommon: PortAudio target 'portaudio_static' already exists")
+                elseif(TARGET portaudio)
+                    message(STATUS "zzacommon: PortAudio target 'portaudio' already exists")
+                endif()
+
+                set(PORTAUDIO_FOUND_LOCAL TRUE)
+                if(TARGET portaudio_static)
+                    set(ZZAP_PORTAUDIO_LIB "portaudio_static")
+                elseif(TARGET portaudio)
+                    set(ZZAP_PORTAUDIO_LIB "portaudio")
+                endif()
+                set(PORTAUDIO_INCLUDE_DIR "${_PORTAUDIO_ROOT}/include")
+                message(STATUS "zzacommon: Using PortAudio from PORTAUDIO_ROOT: ${_PORTAUDIO_ROOT}")
+            endif()
+        endif()
+
+        # Method 2: Try to find via vcpkg/system
+        if(NOT PORTAUDIO_FOUND_LOCAL)
+            find_package(portaudio CONFIG QUIET)
+            if(NOT portaudio_FOUND)
+                find_package(PortAudio MODULE QUIET)
+            endif()
+
+            if(portaudio_FOUND OR PORTAUDIO_FOUND OR PortAudio_FOUND)
+                set(PORTAUDIO_FOUND_LOCAL TRUE)
+            endif()
+        endif()
+
+        if(PORTAUDIO_FOUND_LOCAL)
+            if(NOT TARGET zzacommon::zzap)
+                add_library(zzacommon::zzap STATIC IMPORTED)
+                set_and_check(ZZAP_LIB "${PACKAGE_PREFIX_DIR}/lib/zzap${CMAKE_STATIC_LIBRARY_SUFFIX}")
+
+                # Determine PortAudio link target and include directory
+                set(ZZAP_INCLUDE_DIRS "${ZZACOMMON_INCLUDE_DIR}")
+                if(TARGET portaudio)
+                    set(ZZAP_PORTAUDIO_LIB "portaudio")
+                    # Get include directories from target
+                    get_target_property(PA_INCLUDES portaudio INTERFACE_INCLUDE_DIRECTORIES)
+                    if(PA_INCLUDES)
+                        list(APPEND ZZAP_INCLUDE_DIRS ${PA_INCLUDES})
+                    endif()
+                elseif(TARGET portaudio_static)
+                    set(ZZAP_PORTAUDIO_LIB "portaudio_static")
+                    # Get include directories from target
+                    get_target_property(PA_INCLUDES portaudio_static INTERFACE_INCLUDE_DIRECTORIES)
+                    if(PA_INCLUDES)
+                        list(APPEND ZZAP_INCLUDE_DIRS ${PA_INCLUDES})
+                    endif()
+                elseif(PORTAUDIO_LIBRARIES)
+                    set(ZZAP_PORTAUDIO_LIB "${PORTAUDIO_LIBRARIES}")
+                    # Try to find PortAudio include directory
+                    if(PORTAUDIO_INCLUDE_DIR AND EXISTS "${PORTAUDIO_INCLUDE_DIR}")
+                        list(APPEND ZZAP_INCLUDE_DIRS "${PORTAUDIO_INCLUDE_DIR}")
+                    elseif(PORTAUDIO_INCLUDE_DIRS AND EXISTS "${PORTAUDIO_INCLUDE_DIRS}")
+                        list(APPEND ZZAP_INCLUDE_DIRS "${PORTAUDIO_INCLUDE_DIRS}")
+                    endif()
+                endif()
+
+                # Build link libraries (PortAudio + zzam, optionally zzaf)
+                set(ZZAP_LINK_LIBS "${ZZAP_PORTAUDIO_LIB};zzacommon::zzam")
+                if(TARGET zzacommon::zzaf)
+                    list(APPEND ZZAP_LINK_LIBS "zzacommon::zzaf")
+                endif()
+
+                set_target_properties(zzacommon::zzap PROPERTIES
+                    IMPORTED_LOCATION "${ZZAP_LIB}"
+                    INTERFACE_INCLUDE_DIRECTORIES "${ZZAP_INCLUDE_DIRS}"
+                    INTERFACE_LINK_LIBRARIES "${ZZAP_LINK_LIBS}"
+                )
+
+                message(STATUS "zzacommon: zzap will use PortAudio includes: ${ZZAP_INCLUDE_DIRS}")
+                list(APPEND ZZACOMMON_COMPONENTS zzap)
+                list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzap)
+                set(zzacommon_zzap_FOUND TRUE)
+            endif()
+        else()
+            message(WARNING "zzacommon: PortAudio not found for zzap component. Please either:\n"
+                "  1. Set PORTAUDIO_ROOT environment variable to PortAudio source directory, OR\n"
+                "  2. Install PortAudio via vcpkg: vcpkg install portaudio:x64-windows")
+            set(zzacommon_zzap_FOUND FALSE)
+        endif()
+    endif()
 endif()
 
 # Check if all required components were found
@@ -463,180 +558,3 @@ else()
         message(FATAL_ERROR "${zzacommon_NOT_FOUND_MESSAGE}")
     endif()
 endif()
-
-# Helper function to copy zlib DLL to target output directory
-# Usage: zzacommon_copy_zlib_dll(target_name)
-function(zzacommon_copy_zlib_dll TARGET_NAME)
-    if(NOT TARGET ${TARGET_NAME})
-        message(FATAL_ERROR "Target ${TARGET_NAME} does not exist")
-        return()
-    endif()
-
-    if(ZZACOMMON_ZLIB_DLL_RELEASE OR ZZACOMMON_ZLIB_DLL_DEBUG)
-        # Use generator expressions to copy the appropriate DLL based on build configuration
-        if(ZZACOMMON_ZLIB_DLL_RELEASE AND EXISTS "${ZZACOMMON_ZLIB_DLL_RELEASE}")
-            add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "${ZZACOMMON_ZLIB_DLL_RELEASE}"
-                    "$<TARGET_FILE_DIR:${TARGET_NAME}>"
-                COMMENT "Copying zlib DLL (Release) to $<TARGET_FILE_DIR:${TARGET_NAME}>"
-            )
-            message(STATUS "zzacommon: Will copy zlib1.dll (Release) to ${TARGET_NAME} output directory")
-        endif()
-
-        if(ZZACOMMON_ZLIB_DLL_DEBUG AND EXISTS "${ZZACOMMON_ZLIB_DLL_DEBUG}")
-            add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "${ZZACOMMON_ZLIB_DLL_DEBUG}"
-                    "$<TARGET_FILE_DIR:${TARGET_NAME}>"
-                COMMENT "Copying zlib DLL (Debug) to $<TARGET_FILE_DIR:${TARGET_NAME}>"
-            )
-            message(STATUS "zzacommon: Will copy zlib1d.dll (Debug) to ${TARGET_NAME} output directory")
-        endif()
-    else()
-        message(WARNING "zzacommon: No zlib DLL paths available. Make sure zzax component was built with vcpkg.")
-    endif()
-endfunction()
-
-# Helper function to copy Boost DLLs to target output directory
-# Usage: zzacommon_copy_boost_dlls(target_name)
-function(zzacommon_copy_boost_dlls TARGET_NAME)
-    if(NOT TARGET ${TARGET_NAME})
-        message(FATAL_ERROR "Target ${TARGET_NAME} does not exist")
-        return()
-    endif()
-
-    if(ZZACOMMON_BOOST_DLLS_RELEASE OR ZZACOMMON_BOOST_DLLS_DEBUG)
-        # Copy release Boost DLLs
-        if(ZZACOMMON_BOOST_DLLS_RELEASE)
-            foreach(BOOST_DLL ${ZZACOMMON_BOOST_DLLS_RELEASE})
-                if(EXISTS "${BOOST_DLL}")
-                    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                            "${BOOST_DLL}"
-                            "$<TARGET_FILE_DIR:${TARGET_NAME}>"
-                        COMMENT "Copying Boost DLL (Release): ${BOOST_DLL}"
-                    )
-                endif()
-            endforeach()
-            message(STATUS "zzacommon: Will copy Boost release DLLs to ${TARGET_NAME} output directory")
-        endif()
-
-        # Copy debug Boost DLLs
-        if(ZZACOMMON_BOOST_DLLS_DEBUG)
-            foreach(BOOST_DLL ${ZZACOMMON_BOOST_DLLS_DEBUG})
-                if(EXISTS "${BOOST_DLL}")
-                    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                            "${BOOST_DLL}"
-                            "$<TARGET_FILE_DIR:${TARGET_NAME}>"
-                        COMMENT "Copying Boost DLL (Debug): ${BOOST_DLL}"
-                    )
-                endif()
-            endforeach()
-            message(STATUS "zzacommon: Will copy Boost debug DLLs to ${TARGET_NAME} output directory")
-        endif()
-    else()
-        message(WARNING "zzacommon: No Boost DLL paths available. Make sure zzab or zzafb component was built with vcpkg.")
-    endif()
-endfunction()
-
-# Convenience function to copy all required DLLs (zlib + Boost)
-# Usage: zzacommon_copy_runtime_dlls(target_name)
-function(zzacommon_copy_runtime_dlls TARGET_NAME)
-    if(NOT TARGET ${TARGET_NAME})
-        message(FATAL_ERROR "Target ${TARGET_NAME} does not exist")
-        return()
-    endif()
-
-    # Copy zlib DLL if zzax component is used
-    if(ZZACOMMON_ZLIB_DLL_RELEASE OR ZZACOMMON_ZLIB_DLL_DEBUG)
-        zzacommon_copy_zlib_dll(${TARGET_NAME})
-    endif()
-
-    # Copy Boost DLLs if zzab or zzafb component is used
-    if(ZZACOMMON_BOOST_DLLS_RELEASE OR ZZACOMMON_BOOST_DLLS_DEBUG)
-        zzacommon_copy_boost_dlls(${TARGET_NAME})
-    endif()
-endfunction()
-
-# Function to install runtime DLLs alongside the application
-# Usage: zzacommon_install_runtime_dlls(DESTINATION destination_dir [COMPONENT component_name])
-function(zzacommon_install_runtime_dlls)
-    set(options "")
-    set(oneValueArgs DESTINATION COMPONENT)
-    set(multiValueArgs "")
-    cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-
-    if(NOT ARG_DESTINATION)
-        set(ARG_DESTINATION "bin")
-    endif()
-
-    if(NOT ARG_COMPONENT)
-        set(ARG_COMPONENT "runtime")
-    endif()
-
-    # Collect all DLLs to install
-    set(DLLS_TO_INSTALL "")
-
-    # Add zlib DLLs
-    if(ZZACOMMON_ZLIB_DLL_RELEASE AND EXISTS "${ZZACOMMON_ZLIB_DLL_RELEASE}")
-        list(APPEND DLLS_TO_INSTALL "${ZZACOMMON_ZLIB_DLL_RELEASE}")
-    endif()
-    if(ZZACOMMON_ZLIB_DLL_DEBUG AND EXISTS "${ZZACOMMON_ZLIB_DLL_DEBUG}")
-        list(APPEND DLLS_TO_INSTALL "${ZZACOMMON_ZLIB_DLL_DEBUG}")
-    endif()
-
-    # Add Boost DLLs
-    if(ZZACOMMON_BOOST_DLLS_RELEASE)
-        foreach(BOOST_DLL ${ZZACOMMON_BOOST_DLLS_RELEASE})
-            if(EXISTS "${BOOST_DLL}")
-                list(APPEND DLLS_TO_INSTALL "${BOOST_DLL}")
-            endif()
-        endforeach()
-    endif()
-    if(ZZACOMMON_BOOST_DLLS_DEBUG)
-        foreach(BOOST_DLL ${ZZACOMMON_BOOST_DLLS_DEBUG})
-            if(EXISTS "${BOOST_DLL}")
-                list(APPEND DLLS_TO_INSTALL "${BOOST_DLL}")
-            endif()
-        endforeach()
-    endif()
-
-    # Install the DLLs
-    if(DLLS_TO_INSTALL)
-        list(REMOVE_DUPLICATES DLLS_TO_INSTALL)
-        install(FILES ${DLLS_TO_INSTALL}
-            DESTINATION ${ARG_DESTINATION}
-            COMPONENT ${ARG_COMPONENT}
-        )
-        message(STATUS "zzacommon: Will install ${CMAKE_MATCH_COUNT} runtime DLL(s) to ${ARG_DESTINATION}")
-    else()
-        message(WARNING "zzacommon: No runtime DLLs available for installation.")
-    endif()
-endfunction()
-
-# Helper function to copy API documentation to user documentation directory
-# Usage: zzacommon_copy_api_docs(destination_directory)
-function(zzacommon_copy_api_docs DESTINATION_DIR)
-    if(NOT ZZACOMMON_API_HTML_DIR)
-        message(WARNING "zzacommon: API documentation directory not available. Build zzacommon with ZZACOMMON_DOX=ON to generate documentation.")
-        return()
-    endif()
-
-    if(NOT EXISTS "${ZZACOMMON_API_HTML_DIR}")
-        message(WARNING "zzacommon: API documentation directory does not exist: ${ZZACOMMON_API_HTML_DIR}")
-        return()
-    endif()
-
-    # Create destination directory if it doesn't exist
-    file(MAKE_DIRECTORY "${DESTINATION_DIR}")
-
-    # Copy the entire html directory
-    file(COPY "${ZZACOMMON_API_HTML_DIR}/"
-        DESTINATION "${DESTINATION_DIR}"
-        PATTERN "*"
-    )
-
-    message(STATUS "zzacommon: Copied API documentation from ${ZZACOMMON_API_HTML_DIR} to ${DESTINATION_DIR}")
-endfunction()

@@ -118,9 +118,15 @@ set(ZZAD_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_debug.cpp
 )
 
+# PortAudio component - requires PortAudio
+set(ZZAP_CPPFILES
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_speaker.cpp
+)
+
 # Header files - used as dependencies for API documentation
 set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_debug.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_audio_data.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_banner.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_button_dialog.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_button_input.h
@@ -147,6 +153,7 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_serial.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_settings.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_socket_server.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_speaker.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_status.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_symbols.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_tabs_nonav.h
@@ -160,7 +167,7 @@ set(ZZACOMMON_HPPFILES
 # Component-based build system
 # Define which components to build (default: all components for top-level and subproject usage)
 if(NOT DEFINED ZZACOMMON_COMPONENTS)
-  set(ZZACOMMON_COMPONENTS "zzaf;zzab;zzax;zzam;zzafb;zzad" CACHE STRING "Semicolon-separated list of components to build")
+  set(ZZACOMMON_COMPONENTS "zzaf;zzab;zzax;zzam;zzafb;zzad;zzap" CACHE STRING "Semicolon-separated list of components to build")
 endif()
 
 if(PROJECT_IS_TOP_LEVEL)
@@ -177,6 +184,9 @@ message(STATUS "Building ZZACOMMON components: ${ZZACOMMON_COMPONENTS}")
 set(ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL)
 if(NOT PROJECT_IS_TOP_LEVEL)
   set(ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL EXCLUDE_FROM_ALL)
+  message(STATUS "zzacommon: Components marked EXCLUDE_FROM_ALL (subproject mode)")
+else()
+  message(STATUS "zzacommon: All components will be built by default (top-level mode)")
 endif()
 
 # Local helper scripts
@@ -184,6 +194,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # Set CMake prefix path to pick up vcpkg-installed packages
 list(APPEND CMAKE_PREFIX_PATH "${VCPKG_ROOT}/installed/x64-windows/share")
 include(vcpkg_helper)
+include(zzacommon_runtime_helpers)
 
 # Check if a component is requested
 list(FIND ZZACOMMON_COMPONENTS "zzaf" ZZAF_INDEX)
@@ -192,6 +203,7 @@ list(FIND ZZACOMMON_COMPONENTS "zzax" ZZAX_INDEX)
 list(FIND ZZACOMMON_COMPONENTS "zzam" ZZAM_INDEX)
 list(FIND ZZACOMMON_COMPONENTS "zzafb" ZZAFB_INDEX)
 list(FIND ZZACOMMON_COMPONENTS "zzad" ZZAD_INDEX)
+list(FIND ZZACOMMON_COMPONENTS "zzap" ZZAP_INDEX)
 
 # Find dependencies only for requested components
 
@@ -243,35 +255,7 @@ if(NOT ZZAB_INDEX EQUAL -1 OR NOT ZZAFB_INDEX EQUAL -1)
     message(STATUS "Boost includes: ${Boost_INCLUDE_DIRS}")
 
     # Find and export Boost DLL locations for user applications
-    if(MSVC AND VCPKG_ROOT)
-      set(ZZACOMMON_BOOST_DLLS_RELEASE "")
-      set(ZZACOMMON_BOOST_DLLS_DEBUG "")
-
-      set(VCPKG_BIN_DIR "${VCPKG_ROOT}/installed/x64-windows/bin")
-      set(VCPKG_DEBUG_BIN_DIR "${VCPKG_ROOT}/installed/x64-windows/debug/bin")
-
-      # Find release Boost DLLs
-      if(EXISTS "${VCPKG_BIN_DIR}")
-        file(GLOB BOOST_FILESYSTEM_RELEASE_DLLS "${VCPKG_BIN_DIR}/boost_filesystem*.dll")
-        file(GLOB BOOST_ASIO_RELEASE_DLLS "${VCPKG_BIN_DIR}/boost_system*.dll")
-        list(APPEND ZZACOMMON_BOOST_DLLS_RELEASE ${BOOST_FILESYSTEM_RELEASE_DLLS} ${BOOST_ASIO_RELEASE_DLLS})
-        if(ZZACOMMON_BOOST_DLLS_RELEASE)
-          list(REMOVE_DUPLICATES ZZACOMMON_BOOST_DLLS_RELEASE)
-          message(STATUS "Found Boost release DLLs: ${ZZACOMMON_BOOST_DLLS_RELEASE}")
-        endif()
-      endif()
-
-      # Find debug Boost DLLs
-      if(EXISTS "${VCPKG_DEBUG_BIN_DIR}")
-        file(GLOB BOOST_FILESYSTEM_DEBUG_DLLS "${VCPKG_DEBUG_BIN_DIR}/boost_filesystem*.dll")
-        file(GLOB BOOST_ASIO_DEBUG_DLLS "${VCPKG_DEBUG_BIN_DIR}/boost_system*.dll")
-        list(APPEND ZZACOMMON_BOOST_DLLS_DEBUG ${BOOST_FILESYSTEM_DEBUG_DLLS} ${BOOST_ASIO_DEBUG_DLLS})
-        if(ZZACOMMON_BOOST_DLLS_DEBUG)
-          list(REMOVE_DUPLICATES ZZACOMMON_BOOST_DLLS_DEBUG)
-          message(STATUS "Found Boost debug DLLs: ${ZZACOMMON_BOOST_DLLS_DEBUG}")
-        endif()
-      endif()
-    endif()
+    zzacommon_find_boost_dlls("${VCPKG_ROOT}")
   else()
     message(FATAL_ERROR "Boost not found. To resolve this:\n"
       "  1. Install Boost via vcpkg: vcpkg install boost-filesystem:x64-windows boost-asio:x64-windows\n"
@@ -327,32 +311,7 @@ if(NOT ZZAX_INDEX EQUAL -1)
       endif()
 
       # Find and export zlib DLL location for user applications
-      set(ZZACOMMON_ZLIB_DLL_RELEASE "")
-      set(ZZACOMMON_ZLIB_DLL_DEBUG "")
-
-      # Determine vcpkg bin directories
-      if(VCPKG_ROOT)
-        set(VCPKG_BIN_DIR "${VCPKG_ROOT}/installed/x64-windows/bin")
-        set(VCPKG_DEBUG_BIN_DIR "${VCPKG_ROOT}/installed/x64-windows/debug/bin")
-
-        # Find release DLL
-        if(EXISTS "${VCPKG_BIN_DIR}")
-          file(GLOB ZLIB_RELEASE_DLLS "${VCPKG_BIN_DIR}/zlib*.dll")
-          if(ZLIB_RELEASE_DLLS)
-            list(GET ZLIB_RELEASE_DLLS 0 ZZACOMMON_ZLIB_DLL_RELEASE)
-            message(STATUS "Found ZLIB release DLL: ${ZZACOMMON_ZLIB_DLL_RELEASE}")
-          endif()
-        endif()
-
-        # Find debug DLL
-        if(EXISTS "${VCPKG_DEBUG_BIN_DIR}")
-          file(GLOB ZLIB_DEBUG_DLLS "${VCPKG_DEBUG_BIN_DIR}/zlib*.dll")
-          if(ZLIB_DEBUG_DLLS)
-            list(GET ZLIB_DEBUG_DLLS 0 ZZACOMMON_ZLIB_DLL_DEBUG)
-            message(STATUS "Found ZLIB debug DLL: ${ZZACOMMON_ZLIB_DLL_DEBUG}")
-          endif()
-        endif()
-      endif()
+      zzacommon_find_zlib_dlls("${VCPKG_ROOT}")
     endif()
   endif()
 
@@ -373,6 +332,62 @@ endif()
 
 if(ZZAX_INDEX EQUAL -1)
   message(STATUS "Component zzax not requested - pugixml target will not be created")
+endif()
+
+# zzap requires PortAudio
+if(NOT ZZAP_INDEX EQUAL -1)
+  message(STATUS "Component zzap requested - finding PortAudio")
+
+  if(PORTAUDIO_ROOT)
+    if(MSVC)
+      # Add PortAudio source as subdirectory (as done in zzatts)
+      add_subdirectory(${PORTAUDIO_ROOT}
+        ${CMAKE_BINARY_DIR}/portaudio 
+        EXCLUDE_FROM_ALL
+      )
+      set(PORTAUDIO_INCLUDE_DIR ${PORTAUDIO_ROOT}/include)
+      set(PORTAUDIO_LIBRARIES portaudio_static)
+      message(STATUS "PortAudio: Building from source at ${PORTAUDIO_ROOT}")
+      message(STATUS "PortAudio: Using target 'portaudio_static'")
+    else()
+      find_library(PORTAUDIO_LIBRARIES portaudio PATHS "/usr/local/lib")
+      set(PORTAUDIO_INCLUDE_DIR "/usr/local/include")
+    endif()
+  else()
+    # Fallback to find_package for vcpkg or system installations
+    if(MSVC)
+      # Try to find PortAudio via vcpkg
+      find_package(portaudio CONFIG QUIET)
+      if(NOT portaudio_FOUND)
+        find_package(PortAudio MODULE QUIET)
+      endif()
+
+      if(portaudio_FOUND OR PORTAUDIO_FOUND OR PortAudio_FOUND)
+        if(TARGET portaudio)
+          set(PORTAUDIO_LIBRARIES portaudio)
+          message(STATUS "PortAudio: Using vcpkg target 'portaudio'")
+        elseif(TARGET portaudio_static)
+          set(PORTAUDIO_LIBRARIES portaudio_static)
+          message(STATUS "PortAudio: Using vcpkg target 'portaudio_static'")
+        elseif(PORTAUDIO_LIBRARIES)
+          message(STATUS "PortAudio libraries: ${PORTAUDIO_LIBRARIES}")
+        endif()
+      else()
+        message(FATAL_ERROR "PortAudio not found. To resolve this:\n"
+          "  1. Set PORTAUDIO_ROOT environment variable to PortAudio source directory, OR\n"
+          "  2. Install PortAudio via vcpkg: vcpkg install portaudio:x64-windows\n"
+          "  3. Set VCPKG_ROOT environment variable to your vcpkg installation directory")
+      endif()
+    else()
+      find_package(PortAudio REQUIRED)
+    endif()
+  endif()
+
+  if(PORTAUDIO_LIBRARIES OR TARGET portaudio OR TARGET portaudio_static)
+    message(STATUS "PortAudio found and ready for zzap component")
+  else()
+    message(FATAL_ERROR "PortAudio configuration failed")
+  endif()
 endif()
 
 # Create component library targets
@@ -425,12 +440,56 @@ if(NOT ZZAX_INDEX EQUAL -1)
 endif()
 
 if(NOT ZZAM_INDEX EQUAL -1)
+  message(STATUS "Component zzam requested - finding nlohmann_json")
+
+  # Find nlohmann_json (header-only library)
+  if(MSVC)
+    # Try to find via vcpkg CONFIG mode first
+    find_package(nlohmann_json CONFIG QUIET)
+
+    if(NOT nlohmann_json_FOUND)
+      # Fallback to hardcoded path if it exists
+      if(EXISTS "${USER_HOME_DIR}\\source\\repos\\json\\include")
+        message(STATUS "nlohmann_json: Using local installation at ${USER_HOME_DIR}\\source\\repos\\json\\include")
+        set(NLOHMANN_JSON_INCLUDE_DIR "${USER_HOME_DIR}\\source\\repos\\json\\include")
+      else()
+        message(FATAL_ERROR "nlohmann_json not found. To resolve this:\n"
+          "  1. Install nlohmann_json via vcpkg: vcpkg install nlohmann-json:x64-windows\n"
+          "  2. Set VCPKG_ROOT environment variable, OR\n"
+          "  3. Install nlohmann_json to ${USER_HOME_DIR}\\source\\repos\\json\\include")
+      endif()
+    else()
+      message(STATUS "nlohmann_json found via vcpkg CONFIG mode")
+    endif()
+  else()
+    # Unix-like systems
+    find_package(nlohmann_json CONFIG QUIET)
+    if(NOT nlohmann_json_FOUND)
+      # Try system include paths
+      find_path(NLOHMANN_JSON_INCLUDE_DIR 
+        NAMES nlohmann/json.hpp
+        PATHS /usr/include /usr/local/include
+      )
+      if(NOT NLOHMANN_JSON_INCLUDE_DIR)
+        message(FATAL_ERROR "nlohmann_json not found. Install via package manager or vcpkg.")
+      endif()
+    endif()
+  endif()
+
   add_library(zzam STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
   target_sources(zzam PRIVATE ${ZZAM_CPPFILES})
   target_include_directories(zzam PUBLIC ${ZZACOMMON_INCLUDE_DIR})
-  if(MSVC)
-    target_include_directories(zzam PRIVATE ${USER_HOME_DIR}\\source\\repos\\json\\include)
+
+  # Link nlohmann_json
+  if(TARGET nlohmann_json::nlohmann_json)
+    target_link_libraries(zzam PUBLIC nlohmann_json::nlohmann_json)
+    message(STATUS "zzam: Linked with nlohmann_json::nlohmann_json target")
+  elseif(NLOHMANN_JSON_INCLUDE_DIR)
+    # Use PUBLIC so that dependents (like zzap) can also use zc_settings.h
+    target_include_directories(zzam PUBLIC ${NLOHMANN_JSON_INCLUDE_DIR})
+    message(STATUS "zzam: Using nlohmann_json include directory: ${NLOHMANN_JSON_INCLUDE_DIR}")
   endif()
+
   message(STATUS "Created target: zzam")
 endif()
 
@@ -460,6 +519,31 @@ if(NOT ZZAD_INDEX EQUAL -1)
   message(STATUS "Created target: zzad")
 endif()
 
+if(NOT ZZAP_INDEX EQUAL -1)
+  add_library(zzap STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
+  target_sources(zzap PRIVATE ${ZZAP_CPPFILES})
+  target_include_directories(zzap 
+    PUBLIC 
+      ${ZZACOMMON_INCLUDE_DIR}
+      ${PORTAUDIO_INCLUDE_DIR}
+  )
+  target_link_libraries(zzap PUBLIC ${PORTAUDIO_LIBRARIES})
+
+  # zzap depends on zzam for zc_settings
+  if(NOT ZZAM_INDEX EQUAL -1)
+    target_link_libraries(zzap PUBLIC zzam)
+  else()
+    message(FATAL_ERROR "zzap component requires zzam component (for zc_settings). Please add zzam to ZZACOMMON_COMPONENTS.")
+  endif()
+
+  # zzap optionally depends on zzaf for status_ global pointer
+  if(NOT ZZAF_INDEX EQUAL -1)
+    target_link_libraries(zzap PUBLIC zzaf)
+  endif()
+
+  message(STATUS "Created target: zzap (PortAudio audio output)")
+endif()
+
 set(CMAKE_MODULE_PATH ../)
 
 # Create namespace aliases for targets (allows using zzacommon::target syntax in build tree)
@@ -480,6 +564,9 @@ if(NOT ZZAFB_INDEX EQUAL -1)
 endif()
 if (NOT ZZAD_INDEX EQUAL -1)
   add_library(zzacommon::zzad ALIAS zzad)
+endif()
+if(NOT ZZAP_INDEX EQUAL -1)
+  add_library(zzacommon::zzap ALIAS zzap)
 endif()
 
 # Export targets for build tree (creates zzacommonTargets.cmake in build directory)
@@ -505,6 +592,9 @@ if(NOT ZZAFB_INDEX EQUAL -1)
 endif()
 if(NOT ZZAD_INDEX EQUAL -1)
   list(APPEND ZZACOMMON_EXPORT_TARGETS zzad)
+endif()
+if(NOT ZZAP_INDEX EQUAL -1)
+  list(APPEND ZZACOMMON_EXPORT_TARGETS zzap)
 endif()
 
 if(ZZACOMMON_EXPORT_TARGETS)
@@ -544,6 +634,9 @@ if (NOT PROJECT_IS_TOP_LEVEL)
   if(NOT ZZAD_INDEX EQUAL -1)
     list(APPEND ZZACOMMON_LIBRARIES zzad)
   endif()
+  if(NOT ZZAP_INDEX EQUAL -1)
+    list(APPEND ZZACOMMON_LIBRARIES zzap)
+  endif()
   set(ZZACOMMON_LIBRARIES ${ZZACOMMON_LIBRARIES} PARENT_SCOPE)
 
   # Export zlib DLL paths for user applications (if zzax component is used)
@@ -561,6 +654,11 @@ if (NOT PROJECT_IS_TOP_LEVEL)
   # Export API documentation directory
   if(ZZACOMMON_DOX AND ZZACOMMON_API_HTML_DIR)
     set(ZZACOMMON_API_HTML_DIR ${ZZACOMMON_API_HTML_DIR} PARENT_SCOPE)
+  endif()
+
+  # Export PortAudio include directory for user applications (if zzap component is used)
+  if(NOT ZZAP_INDEX EQUAL -1)
+    set(ZZACOMMON_PORTAUDIO_INCLUDE_DIR ${PORTAUDIO_INCLUDE_DIR} PARENT_SCOPE)
   endif()
 
   set(VCPKG_TARGET_TRIPLET ${VCPKG_TARGET_TRIPLET} PARENT_SCOPE)
@@ -737,6 +835,9 @@ if (ZZACOMMON_DOX)
   if(NOT ZZAD_INDEX EQUAL -1)
     add_dependencies(zzad zzacommon_api_html)
   endif()
+  if(NOT ZZAP_INDEX EQUAL -1)
+    add_dependencies(zzap zzacommon_api_html)
+  endif()
 endif()
 
 # Installation rules for component targets
@@ -759,6 +860,9 @@ if (BUILD_SHARED_LIBS)
   endif()
   if(NOT ZZAD_INDEX EQUAL -1)
     list(APPEND INSTALL_TARGETS zzad)
+  endif()
+  if(NOT ZZAP_INDEX EQUAL -1)
+    list(APPEND INSTALL_TARGETS zzap)
   endif()
 
   if(INSTALL_TARGETS)
@@ -804,6 +908,10 @@ if(NOT ZZAB_INDEX EQUAL -1)
 endif()
 if(NOT ZZAX_INDEX EQUAL -1)
   list(APPEND INSTALL_LIB_TARGETS zzax)
+  # Also install pugixml if zzax is being installed (since it's a bundled dependency)
+  if(TARGET pugixml)
+    list(APPEND INSTALL_LIB_TARGETS pugixml)
+  endif()
 endif()
 if(NOT ZZAM_INDEX EQUAL -1)
   list(APPEND INSTALL_LIB_TARGETS zzam)
@@ -814,12 +922,16 @@ endif()
 if(NOT ZZAD_INDEX EQUAL -1)
   list(APPEND INSTALL_LIB_TARGETS zzad)
 endif()
+if(NOT ZZAP_INDEX EQUAL -1)
+  list(APPEND INSTALL_LIB_TARGETS zzap)
+endif()
 
 if(INSTALL_LIB_TARGETS)
-  install(TARGETS ${INSTALL_LIB_TARGETS} ${ZC_APP_LIBRARY}
+  install(TARGETS ${INSTALL_LIB_TARGETS}
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
+    FILE_SET HEADERS DESTINATION include/pugixml
   )
 endif()
 
@@ -843,6 +955,7 @@ install(FILES
 install(FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/vcpkg_helper.cmake"
   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/zlib_vcpkg_helper.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/zzacommon_runtime_helpers.cmake"
   DESTINATION lib/cmake/zzacommon
 )
 
