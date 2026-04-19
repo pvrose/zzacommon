@@ -355,8 +355,14 @@ if(NOT ZZAP_INDEX EQUAL -1)
       message(STATUS "PortAudio: Building from source at ${PORTAUDIO_ROOT}")
       message(STATUS "PortAudio: Using target 'portaudio_static'")
     else()
-      find_library(PORTAUDIO_LIBRARIES portaudio PATHS "/usr/local/lib")
-      set(PORTAUDIO_INCLUDE_DIR "/usr/local/include")
+      find_library(PORTAUDIO_LIBRARIES
+        NAMES portaudio
+        HINTS "${PORTAUDIO_ROOT}/lib" "${PORTAUDIO_ROOT}/lib64" "/usr/local/lib" "/usr/lib" "/usr/lib64"
+      )
+      find_path(PORTAUDIO_INCLUDE_DIR
+        NAMES portaudio.h
+        HINTS "${PORTAUDIO_ROOT}/include" "/usr/local/include" "/usr/include"
+      )
     endif()
   else()
     # Fallback to find_package for vcpkg or system installations
@@ -384,7 +390,37 @@ if(NOT ZZAP_INDEX EQUAL -1)
           "  3. Set VCPKG_ROOT environment variable to your vcpkg installation directory")
       endif()
     else()
-      find_package(PortAudio REQUIRED)
+      find_package(PkgConfig QUIET)
+      if(PkgConfig_FOUND)
+        pkg_check_modules(PORTAUDIO QUIET portaudio-2.0)
+      endif()
+
+      if(PORTAUDIO_FOUND)
+        if(PORTAUDIO_INCLUDE_DIRS)
+          set(PORTAUDIO_INCLUDE_DIR ${PORTAUDIO_INCLUDE_DIRS})
+        endif()
+        if(PORTAUDIO_LINK_LIBRARIES)
+          set(PORTAUDIO_LIBRARIES ${PORTAUDIO_LINK_LIBRARIES})
+        elseif(PORTAUDIO_LIBRARIES)
+          set(PORTAUDIO_LIBRARIES ${PORTAUDIO_LIBRARIES})
+        endif()
+        message(STATUS "PortAudio: Found via pkg-config (portaudio-2.0)")
+      else()
+        find_library(PORTAUDIO_LIBRARIES
+          NAMES portaudio
+          PATHS /usr/local/lib /usr/lib /usr/lib64
+        )
+        find_path(PORTAUDIO_INCLUDE_DIR
+          NAMES portaudio.h
+          PATHS /usr/local/include /usr/include
+        )
+      endif()
+
+      if(NOT PORTAUDIO_LIBRARIES AND NOT TARGET portaudio AND NOT TARGET portaudio_static)
+        message(FATAL_ERROR "PortAudio not found on Linux. To resolve this:\n"
+          "  1. Install development package (e.g. portaudio19-dev on Debian/Ubuntu), OR\n"
+          "  2. Set PORTAUDIO_ROOT to a custom PortAudio installation path")
+      endif()
     endif()
   endif()
 

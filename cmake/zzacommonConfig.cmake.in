@@ -243,10 +243,10 @@ endif()
 # Create imported targets for requested components
 
 # Component: zzaf (FLTK UI components)
-if(NOT ZZAF_REQUESTED EQUAL -1 AND FLTK_FOUND)
+if(NOT ZZAF_REQUESTED EQUAL -1 AND FLTK_FOUND AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/zzaf${CMAKE_STATIC_LIBRARY_SUFFIX}")
     if(NOT TARGET zzacommon::zzaf)
         add_library(zzacommon::zzaf STATIC IMPORTED)
-        set_and_check(ZZAF_LIB "${PACKAGE_PREFIX_DIR}/lib/zzaf${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set(ZZAF_LIB "${PACKAGE_PREFIX_DIR}/lib/zzaf${CMAKE_STATIC_LIBRARY_SUFFIX}")
         set_target_properties(zzacommon::zzaf PROPERTIES
             IMPORTED_LOCATION "${ZZAF_LIB}"
             INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR};${FLTK_INCLUDE_DIR}"
@@ -267,10 +267,10 @@ if(NOT ZZAF_REQUESTED EQUAL -1 AND FLTK_FOUND)
 endif()
 
 # Component: zzab (Boost components)
-if(NOT ZZAB_REQUESTED EQUAL -1 AND Boost_FOUND)
+if(NOT ZZAB_REQUESTED EQUAL -1 AND Boost_FOUND AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/zzab${CMAKE_STATIC_LIBRARY_SUFFIX}")
     if(NOT TARGET zzacommon::zzab)
         add_library(zzacommon::zzab STATIC IMPORTED)
-        set_and_check(ZZAB_LIB "${PACKAGE_PREFIX_DIR}/lib/zzab${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set(ZZAB_LIB "${PACKAGE_PREFIX_DIR}/lib/zzab${CMAKE_STATIC_LIBRARY_SUFFIX}")
         if(MSVC)
             set(_ZZAB_BOOST_LIBS "Boost::filesystem;Boost::asio")
         else()
@@ -293,10 +293,10 @@ if(NOT ZZAB_REQUESTED EQUAL -1 AND Boost_FOUND)
 endif()
 
 # Component: zzax (XML, URL handling, and FLTK)
-if(NOT ZZAX_REQUESTED EQUAL -1 AND FLTK_FOUND AND CURL_FOUND)
+if(NOT ZZAX_REQUESTED EQUAL -1 AND FLTK_FOUND AND CURL_FOUND AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/zzax${CMAKE_STATIC_LIBRARY_SUFFIX}")
     if(NOT TARGET zzacommon::zzax)
         add_library(zzacommon::zzax STATIC IMPORTED)
-        set_and_check(ZZAX_LIB "${PACKAGE_PREFIX_DIR}/lib/zzax${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set(ZZAX_LIB "${PACKAGE_PREFIX_DIR}/lib/zzax${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
         # Build link libraries list
         set(ZZAX_LINK_LIBS "pugixml;CURL::libcurl;${FLTK_LIBRARIES}")
@@ -338,9 +338,9 @@ if(NOT ZZAM_REQUESTED EQUAL -1)
         endif()
     endif()
 
-    if(NOT TARGET zzacommon::zzam)
+    if(NOT TARGET zzacommon::zzam AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/zzam${CMAKE_STATIC_LIBRARY_SUFFIX}")
         add_library(zzacommon::zzam STATIC IMPORTED)
-        set_and_check(ZZAM_LIB "${PACKAGE_PREFIX_DIR}/lib/zzam${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set(ZZAM_LIB "${PACKAGE_PREFIX_DIR}/lib/zzam${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
         # Build interface link libraries
         set(ZZAM_LINK_LIBS "")
@@ -395,9 +395,9 @@ if(NOT ZZAFB_REQUESTED EQUAL -1 AND FLTK_FOUND AND Boost_FOUND)
         endif()
     endif()
 
-    if(NOT TARGET zzacommon::zzafb)
+    if(NOT TARGET zzacommon::zzafb AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/zzafb${CMAKE_STATIC_LIBRARY_SUFFIX}")
         add_library(zzacommon::zzafb STATIC IMPORTED)
-        set_and_check(ZZAFB_LIB "${PACKAGE_PREFIX_DIR}/lib/zzafb${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set(ZZAFB_LIB "${PACKAGE_PREFIX_DIR}/lib/zzafb${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
         # Build link libraries list
         if(MSVC)
@@ -439,10 +439,10 @@ if(NOT ZZAFB_REQUESTED EQUAL -1 AND FLTK_FOUND AND Boost_FOUND)
 endif()
 
 # Component: zzad (Debug utilities - no external dependencies)
-if(NOT ZZAD_REQUESTED EQUAL -1)
+if(NOT ZZAD_REQUESTED EQUAL -1 AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/zzad${CMAKE_STATIC_LIBRARY_SUFFIX}")
     if(NOT TARGET zzacommon::zzad)
         add_library(zzacommon::zzad STATIC IMPORTED)
-        set_and_check(ZZAD_LIB "${PACKAGE_PREFIX_DIR}/lib/zzad${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        set(ZZAD_LIB "${PACKAGE_PREFIX_DIR}/lib/zzad${CMAKE_STATIC_LIBRARY_SUFFIX}")
         set_target_properties(zzacommon::zzad PROPERTIES
             IMPORTED_LOCATION "${ZZAD_LIB}"
             INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR}"
@@ -500,25 +500,71 @@ if(NOT ZZAP_REQUESTED EQUAL -1)
                 endif()
                 set(PORTAUDIO_INCLUDE_DIR "${_PORTAUDIO_ROOT}/include")
                 message(STATUS "zzacommon: Using PortAudio from PORTAUDIO_ROOT: ${_PORTAUDIO_ROOT}")
+            else()
+                find_library(PORTAUDIO_LIBRARIES
+                    NAMES portaudio
+                    HINTS "${_PORTAUDIO_ROOT}/lib" "${_PORTAUDIO_ROOT}/lib64" "/usr/local/lib" "/usr/lib" "/usr/lib64"
+                )
+                find_path(PORTAUDIO_INCLUDE_DIR
+                    NAMES portaudio.h
+                    HINTS "${_PORTAUDIO_ROOT}/include" "/usr/local/include" "/usr/include"
+                )
+                if(PORTAUDIO_LIBRARIES)
+                    set(PORTAUDIO_FOUND_LOCAL TRUE)
+                    message(STATUS "zzacommon: Using PortAudio library from PORTAUDIO_ROOT: ${_PORTAUDIO_ROOT}")
+                endif()
             endif()
         endif()
 
         # Method 2: Try to find via vcpkg/system
         if(NOT PORTAUDIO_FOUND_LOCAL)
-            find_package(portaudio CONFIG QUIET)
-            if(NOT portaudio_FOUND)
-                find_package(PortAudio MODULE QUIET)
-            endif()
+            if(MSVC)
+                find_package(portaudio CONFIG QUIET)
+                if(NOT portaudio_FOUND)
+                    find_package(PortAudio MODULE QUIET)
+                endif()
 
-            if(portaudio_FOUND OR PORTAUDIO_FOUND OR PortAudio_FOUND)
-                set(PORTAUDIO_FOUND_LOCAL TRUE)
+                if(portaudio_FOUND OR PORTAUDIO_FOUND OR PortAudio_FOUND)
+                    set(PORTAUDIO_FOUND_LOCAL TRUE)
+                endif()
+            else()
+                find_package(PkgConfig QUIET)
+                if(PkgConfig_FOUND)
+                    pkg_check_modules(PORTAUDIO QUIET portaudio-2.0)
+                endif()
+
+                if(PORTAUDIO_FOUND)
+                    if(PORTAUDIO_INCLUDE_DIRS)
+                        set(PORTAUDIO_INCLUDE_DIR ${PORTAUDIO_INCLUDE_DIRS})
+                    endif()
+                    if(PORTAUDIO_LINK_LIBRARIES)
+                        set(PORTAUDIO_LIBRARIES ${PORTAUDIO_LINK_LIBRARIES})
+                    elseif(PORTAUDIO_LIBRARIES)
+                        set(PORTAUDIO_LIBRARIES ${PORTAUDIO_LIBRARIES})
+                    endif()
+                    set(PORTAUDIO_FOUND_LOCAL TRUE)
+                    message(STATUS "zzacommon: PortAudio found via pkg-config (portaudio-2.0)")
+                else()
+                    find_library(PORTAUDIO_LIBRARIES
+                        NAMES portaudio
+                        PATHS /usr/local/lib /usr/lib /usr/lib64
+                    )
+                    find_path(PORTAUDIO_INCLUDE_DIR
+                        NAMES portaudio.h
+                        PATHS /usr/local/include /usr/include
+                    )
+                    if(PORTAUDIO_LIBRARIES)
+                        set(PORTAUDIO_FOUND_LOCAL TRUE)
+                        message(STATUS "zzacommon: PortAudio found via library search")
+                    endif()
+                endif()
             endif()
         endif()
 
         if(PORTAUDIO_FOUND_LOCAL)
-            if(NOT TARGET zzacommon::zzap)
+            if(NOT TARGET zzacommon::zzap AND EXISTS "${PACKAGE_PREFIX_DIR}/lib/zzap${CMAKE_STATIC_LIBRARY_SUFFIX}")
                 add_library(zzacommon::zzap STATIC IMPORTED)
-                set_and_check(ZZAP_LIB "${PACKAGE_PREFIX_DIR}/lib/zzap${CMAKE_STATIC_LIBRARY_SUFFIX}")
+                set(ZZAP_LIB "${PACKAGE_PREFIX_DIR}/lib/zzap${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
                 # Determine PortAudio link target and include directory
                 set(ZZAP_INCLUDE_DIRS "${ZZACOMMON_INCLUDE_DIR}")
@@ -564,9 +610,15 @@ if(NOT ZZAP_REQUESTED EQUAL -1)
                 set(zzacommon_zzap_FOUND TRUE)
             endif()
         else()
-            message(WARNING "zzacommon: PortAudio not found for zzap component. Please either:\n"
-                "  1. Set PORTAUDIO_ROOT environment variable to PortAudio source directory, OR\n"
-                "  2. Install PortAudio via vcpkg: vcpkg install portaudio:x64-windows")
+            if(MSVC)
+                message(WARNING "zzacommon: PortAudio not found for zzap component. Please either:\n"
+                    "  1. Set PORTAUDIO_ROOT environment variable to PortAudio source directory, OR\n"
+                    "  2. Install PortAudio via vcpkg: vcpkg install portaudio:x64-windows")
+            else()
+                message(WARNING "zzacommon: PortAudio not found for zzap component on Linux. Please either:\n"
+                    "  1. Install PortAudio development package (e.g. portaudio19-dev), OR\n"
+                    "  2. Set PORTAUDIO_ROOT to your PortAudio installation prefix")
+            endif()
             set(zzacommon_zzap_FOUND FALSE)
         endif()
     endif()
