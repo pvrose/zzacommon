@@ -23,11 +23,11 @@
 #   find_package(zzacommon REQUIRED COMPONENTS zzaf zzab zzax zzam)
 #
 # Components:
-#   zzaf - FLTK UI components (requires FLTK, nlohmann/json)
+#   zzaf - FLTK UI components (requires FLTK)
 #   zzab - Boost components (requires Boost filesystem, asio)
 #   zzax - XML, URL handling, and FLTK (requires pugixml, libcurl, zlib, FLTK)
 #   zzam - Common utilities (requires nlohmann/json)
-#   zzafb - FLTK + Boost components (requires FLTK, Boost)
+#   zzafb - FLTK + Boost components (requires FLTK, Boost, nlohmann/json)
 #   zzad - Debug utilities (no external dependencies)
 #   zzap - PortAudio audio output (requires PortAudio, zzam)
 #
@@ -120,19 +120,19 @@ list(FIND zzacommon_FIND_COMPONENTS "zzap" ZZAP_REQUESTED)
 
 # Find dependencies for requested components
 
-# FLTK is required by zzaf and zzax
-if(NOT ZZAF_REQUESTED EQUAL -1 OR NOT ZZAX_REQUESTED EQUAL -1)
+# FLTK is required by zzaf, zzax, and zzafb
+if(NOT ZZAF_REQUESTED EQUAL -1 OR NOT ZZAX_REQUESTED EQUAL -1 OR NOT ZZAFB_REQUESTED EQUAL -1)
     # MSVC work-round as FLTK built in user space
     if(MSVC AND NOT FLTK_DIR)
-        message(WARNING "FLTK_DIR not set. You may need to set it for zzaf/zzax components.")
+        message(WARNING "FLTK_DIR not set. You may need to set it for zzaf/zzax/zzafb components.")
     endif()
 
     find_package(FLTK CONFIG QUIET)
     if(NOT FLTK_FOUND)
         if(zzacommon_FIND_REQUIRED)
-            message(FATAL_ERROR "FLTK is required for zzaf/zzax components but was not found")
+            message(FATAL_ERROR "FLTK is required for zzaf/zzax/zzafb components but was not found")
         else()
-            message(WARNING "FLTK not found - zzaf/zzax components will not be available")
+            message(WARNING "FLTK not found - zzaf/zzax/zzafb components will not be available")
         endif()
     else()
         set(FLTK_INCLUDE_DIR ${FLTK_INCLUDE_DIR})
@@ -376,6 +376,25 @@ endif()
 
 # Component: zzafb (FLTK + Boost components)
 if(NOT ZZAFB_REQUESTED EQUAL -1 AND FLTK_FOUND AND Boost_FOUND)
+    # Find nlohmann_json (required for zzafb since it includes zc_banner/zc_status which use zc_settings.h)
+    if(NOT TARGET nlohmann_json::nlohmann_json AND NOT NLOHMANN_JSON_INCLUDE_DIR)
+        find_package(nlohmann_json CONFIG QUIET)
+
+        if(NOT nlohmann_json_FOUND)
+            # Fallback to hardcoded path check
+            if(MSVC AND EXISTS "$ENV{USERPROFILE}/source/repos/json/include")
+                set(NLOHMANN_JSON_INCLUDE_DIR "$ENV{USERPROFILE}/source/repos/json/include")
+                message(STATUS "zzacommon: Using local nlohmann_json at ${NLOHMANN_JSON_INCLUDE_DIR}")
+            else()
+                # Try to find in system paths
+                find_path(NLOHMANN_JSON_INCLUDE_DIR 
+                    NAMES nlohmann/json.hpp
+                    PATHS /usr/include /usr/local/include
+                )
+            endif()
+        endif()
+    endif()
+
     if(NOT TARGET zzacommon::zzafb)
         add_library(zzacommon::zzafb STATIC IMPORTED)
         set_and_check(ZZAFB_LIB "${PACKAGE_PREFIX_DIR}/lib/zzafb${CMAKE_STATIC_LIBRARY_SUFFIX}")
@@ -392,6 +411,21 @@ if(NOT ZZAFB_REQUESTED EQUAL -1 AND FLTK_FOUND AND Boost_FOUND)
             INTERFACE_INCLUDE_DIRECTORIES "${ZZACOMMON_INCLUDE_DIR}"
             INTERFACE_LINK_LIBRARIES "${ZZAFB_LINK_LIBS}"
         )
+
+        # Add nlohmann_json include or target
+        if(TARGET nlohmann_json::nlohmann_json)
+            set_property(TARGET zzacommon::zzafb APPEND PROPERTY
+                INTERFACE_LINK_LIBRARIES "nlohmann_json::nlohmann_json"
+            )
+            message(STATUS "zzacommon: zzafb linked with nlohmann_json::nlohmann_json target")
+        elseif(NLOHMANN_JSON_INCLUDE_DIR AND EXISTS "${NLOHMANN_JSON_INCLUDE_DIR}")
+            set_property(TARGET zzacommon::zzafb APPEND PROPERTY
+                INTERFACE_INCLUDE_DIRECTORIES "${NLOHMANN_JSON_INCLUDE_DIR}"
+            )
+            message(STATUS "zzacommon: zzafb using nlohmann_json include: ${NLOHMANN_JSON_INCLUDE_DIR}")
+        else()
+            message(WARNING "zzacommon: nlohmann_json not found for zzafb component")
+        endif()
 
         list(APPEND ZZACOMMON_COMPONENTS zzafb)
         list(APPEND ZZACOMMON_LIBRARIES zzacommon::zzafb)

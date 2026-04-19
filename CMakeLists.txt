@@ -54,19 +54,18 @@ elseif(NOT DEFINED VCPKG_ROOT)
 endif()
 
 
-# Set timestamp and version into files (requires to be rebuilt to take effect)
+# Set timestamp and version into files (build directory to avoid unnecessary rebuilds)
 string(TIMESTAMP ZZACOMMON_TIMESTAMP UTC)
 configure_file(
   ${ZZACOMMON_SOURCE_DIR}/src/zc_debug.cpp.in
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_debug.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/zc_debug.cpp
   @ONLY
 )
 
 # Source files - keep separate for the separate targets.
 
-# FLTK-based components
+# FLTK-based components (without Boost dependency)
 set(ZZAF_CPPFILES 
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_banner.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar_input.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar_table.cpp
@@ -83,7 +82,6 @@ set(ZZAF_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_line_style.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_password_input.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_socket_server.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_status.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_symbols.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_tabs_nonav.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_text_style.cpp
@@ -104,8 +102,10 @@ set(ZZAB_CPPFILES
 
 # Components requiring both FLTK and Boost 
 set(ZZAFB_CPPFILES
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_banner.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_file_holder.cpp
-)  
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_status.cpp
+)
 
 # Common utility components
 set(ZZAM_CPPFILES 
@@ -115,7 +115,7 @@ set(ZZAM_CPPFILES
 
 # App metadata component (no external dependencies)
 set(ZZAD_CPPFILES 
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_debug.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/zc_debug.cpp
 )
 
 # PortAudio component - requires PortAudio
@@ -273,6 +273,11 @@ if(NOT ZZAX_INDEX EQUAL -1)
   message(STATUS "Component zzax requested - adding pugixml target (EXCLUDE_FROM_ALL)")
   add_subdirectory(pugixml EXCLUDE_FROM_ALL)
 
+  # Create namespace alias for pugixml for consistency
+  if(TARGET pugixml AND NOT TARGET zzacommon::pugixml)
+    add_library(zzacommon::pugixml ALIAS pugixml)
+  endif()
+
   # zlib (CURL dependency - needed for runtime DLL detection)
   if(MSVC)
     # Try CONFIG mode first (vcpkg modern packages)
@@ -400,8 +405,42 @@ if(NOT ZZAD_INDEX EQUAL -1)
   message(STATUS "Created target: zzad")
 endif()
 
-# zzafb depends on zzad, Boost, and FLTK (must be before zzaf and zzam since they use file_holder)
+# zzafb depends on zzad, Boost, FLTK, and nlohmann_json (must be before zzaf since they use file_holder)
 if(NOT ZZAFB_INDEX EQUAL -1)
+  # Find nlohmann_json first (required by zc_banner which uses zc_settings.h)
+  if(MSVC)
+    # Try to find via vcpkg CONFIG mode first
+    find_package(nlohmann_json CONFIG QUIET)
+
+    if(NOT nlohmann_json_FOUND)
+      # Fallback to hardcoded path if it exists
+      if(EXISTS "${USER_HOME_DIR}\\source\\repos\\json\\include")
+        message(STATUS "nlohmann_json: Using local installation at ${USER_HOME_DIR}\\source\\repos\\json\\include")
+        set(NLOHMANN_JSON_INCLUDE_DIR "${USER_HOME_DIR}\\source\\repos\\json\\include")
+      else()
+        message(FATAL_ERROR "nlohmann_json not found. To resolve this:\n"
+          "  1. Install nlohmann_json via vcpkg: vcpkg install nlohmann-json:x64-windows\n"
+          "  2. Set VCPKG_ROOT environment variable, OR\n"
+          "  3. Install nlohmann_json to ${USER_HOME_DIR}\\source\\repos\\json\\include")
+      endif()
+    else()
+      message(STATUS "nlohmann_json found via vcpkg CONFIG mode")
+    endif()
+  else()
+    # Unix-like systems
+    find_package(nlohmann_json CONFIG QUIET)
+    if(NOT nlohmann_json_FOUND)
+      # Try system include paths
+      find_path(NLOHMANN_JSON_INCLUDE_DIR 
+        NAMES nlohmann/json.hpp
+        PATHS /usr/include /usr/local/include
+      )
+      if(NOT NLOHMANN_JSON_INCLUDE_DIR)
+        message(FATAL_ERROR "nlohmann_json not found. Install via package manager or vcpkg.")
+      endif()
+    endif()
+  endif()
+
   add_library(zzafb STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
   target_sources(zzafb PRIVATE ${ZZAFB_CPPFILES})
   target_include_directories(zzafb 
@@ -416,6 +455,14 @@ if(NOT ZZAFB_INDEX EQUAL -1)
   endif()
   if(NOT ZZAD_INDEX EQUAL -1)
     target_link_libraries(zzafb PUBLIC zzad)
+  endif()
+  # Link nlohmann_json (required by zc_settings.h included in zc_banner.cpp)
+  if(TARGET nlohmann_json::nlohmann_json)
+    target_link_libraries(zzafb PUBLIC nlohmann_json::nlohmann_json)
+    message(STATUS "zzafb: Linked with nlohmann_json::nlohmann_json target")
+  elseif(NLOHMANN_JSON_INCLUDE_DIR)
+    target_include_directories(zzafb PUBLIC ${NLOHMANN_JSON_INCLUDE_DIR})
+    message(STATUS "zzafb: Using nlohmann_json include directory: ${NLOHMANN_JSON_INCLUDE_DIR}")
   endif()
   message(STATUS "Created target: zzafb")
 endif()
@@ -617,6 +664,17 @@ if(ZZACOMMON_EXPORT_TARGETS)
     NAMESPACE zzacommon::
     FILE "${CMAKE_CURRENT_BINARY_DIR}/zzacommonTargets.cmake"
   )
+endif()
+
+# Create a custom target to build all components when building as top-level project
+# This ensures all components are rebuilt when switching between Debug/Release
+if(PROJECT_IS_TOP_LEVEL AND ZZACOMMON_EXPORT_TARGETS)
+  add_custom_target(zzacommon_all ALL
+    DEPENDS ${ZZACOMMON_EXPORT_TARGETS}
+    COMMENT "Building all zzacommon components"
+    VERBATIM
+  )
+  message(STATUS "Created target: zzacommon_all (depends on all component libraries)")
 endif()
 
 ## Export include directories and component targets

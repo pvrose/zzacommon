@@ -136,13 +136,17 @@ if(NOT ZZAB_REQUESTED EQUAL -1 OR NOT ZZAFB_REQUESTED EQUAL -1)
     endif()
 endif()
 
+# Include the exported targets file (created by export() command)
+# This must be included BEFORE checking for component dependencies
+include("${CMAKE_CURRENT_LIST_DIR}/zzacommonTargets.cmake")
+
 # pugixml, libcurl, and zlib are required by zzax
 if(NOT ZZAX_REQUESTED EQUAL -1)
-    # Find pugixml - should be available as a target in build tree
-    # Also try vcpkg as fallback
-    if(NOT TARGET pugixml)
+    # pugixml should be available from the exported targets file above
+    if(NOT TARGET zzacommon::pugixml)
+        # Try vcpkg as fallback
         find_package(pugixml CONFIG QUIET)
-        if(NOT pugixml_FOUND AND NOT TARGET pugixml)
+        if(NOT pugixml_FOUND AND NOT TARGET pugixml AND NOT TARGET zzacommon::pugixml)
             if(zzacommon_FIND_REQUIRED_zzax)
                 message(FATAL_ERROR "pugixml target not found - zzax component requires it.\n"
                     "To resolve this:\n"
@@ -194,8 +198,7 @@ if(NOT ZZAX_REQUESTED EQUAL -1)
     endif()
 endif()
 
-# Include the exported targets file (created by export() command)
-include("${CMAKE_CURRENT_LIST_DIR}/zzacommonTargets.cmake")
+# Exported targets file already included above (after Boost/FLTK but before component checks)
 
 # Check which components were actually built and are available
 if(NOT ZZAF_REQUESTED EQUAL -1)
