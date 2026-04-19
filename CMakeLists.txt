@@ -400,7 +400,27 @@ if(NOT ZZAD_INDEX EQUAL -1)
   message(STATUS "Created target: zzad")
 endif()
 
-# zzaf depends on zzad (optional)
+# zzafb depends on zzad, Boost, and FLTK (must be before zzaf and zzam since they use file_holder)
+if(NOT ZZAFB_INDEX EQUAL -1)
+  add_library(zzafb STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
+  target_sources(zzafb PRIVATE ${ZZAFB_CPPFILES})
+  target_include_directories(zzafb 
+    PUBLIC ${ZZACOMMON_INCLUDE_DIR}
+    PRIVATE ${FLTK_INCLUDE_DIR}
+  )
+  # Use modern Boost and FLTK targets
+  if(MSVC)
+    target_link_libraries(zzafb PUBLIC Boost::filesystem Boost::asio ${FLTK_LIBRARIES})
+  else()
+    target_link_libraries(zzafb PUBLIC Boost::filesystem Boost::headers ${FLTK_LIBRARIES})
+  endif()
+  if(NOT ZZAD_INDEX EQUAL -1)
+    target_link_libraries(zzafb PUBLIC zzad)
+  endif()
+  message(STATUS "Created target: zzafb")
+endif()
+
+# zzaf depends on zzad (optional) and zzafb (for file_holder)
 if(NOT ZZAF_INDEX EQUAL -1)
   add_library(zzaf STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
   target_sources(zzaf PRIVATE ${ZZAF_CPPFILES})
@@ -414,6 +434,10 @@ if(NOT ZZAF_INDEX EQUAL -1)
   target_link_libraries(zzaf PUBLIC ${FLTK_LIBRARIES})
   if(NOT ZZAD_INDEX EQUAL -1)
     target_link_libraries(zzaf PUBLIC zzad)
+  endif()
+  # zzaf uses file_holder_ which is defined in zzafb
+  if(NOT ZZAFB_INDEX EQUAL -1)
+    target_link_libraries(zzaf PUBLIC zzafb)
   endif()
   message(STATUS "Created target: zzaf")
 endif()
@@ -496,31 +520,19 @@ if(NOT ZZAM_INDEX EQUAL -1)
     message(STATUS "zzam: Linked with nlohmann_json::nlohmann_json target")
   elseif(NLOHMANN_JSON_INCLUDE_DIR)
     # Use PUBLIC so that dependents (like zzap) can also use zc_settings.h
-    target_include_directories(zzam PUBLIC ${NLOHMANN_JSON_INCLUDE_DIR})
-    message(STATUS "zzam: Using nlohmann_json include directory: ${NLOHMANN_JSON_INCLUDE_DIR}")
-  endif()
+      target_include_directories(zzam PUBLIC ${NLOHMANN_JSON_INCLUDE_DIR})
+      message(STATUS "zzam: Using nlohmann_json include directory: ${NLOHMANN_JSON_INCLUDE_DIR}")
+    endif()
 
-  message(STATUS "Created target: zzam")
+    # zzam uses file_holder_ which is defined in zzafb
+    if(NOT ZZAFB_INDEX EQUAL -1)
+      target_link_libraries(zzam PUBLIC zzafb)
+    endif()
+
+    message(STATUS "Created target: zzam")
 endif()
 
-if (NOT ZZAFB_INDEX EQUAL -1)
-  add_library(zzafb STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
-  target_sources(zzafb PRIVATE ${ZZAFB_CPPFILES})
-  target_include_directories(zzafb 
-    PUBLIC ${ZZACOMMON_INCLUDE_DIR}
-    PRIVATE ${FLTK_INCLUDE_DIR}
-  )
-  # Use modern Boost and FLTK targets
-  if (MSVC)
-    target_link_libraries(zzafb PUBLIC Boost::filesystem Boost::asio ${FLTK_LIBRARIES})
-  else()
-    target_link_libraries(zzafb PUBLIC Boost::filesystem Boost::headers ${FLTK_LIBRARIES})
-  endif()
-  if(NOT ZZAD_INDEX EQUAL -1)
-    target_link_libraries(zzafb PUBLIC zzad zzaf)
-  endif()
-  message(STATUS "Created target: zzafb")
-endif()
+# zzafb already defined above before zzaf/zzam
 
 if(NOT ZZAP_INDEX EQUAL -1)
   add_library(zzap STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
