@@ -391,6 +391,16 @@ if(NOT ZZAP_INDEX EQUAL -1)
 endif()
 
 # Create component library targets
+
+# zzad has no dependencies, so create it first
+if(NOT ZZAD_INDEX EQUAL -1)
+  add_library(zzad STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
+  target_sources(zzad PRIVATE ${ZZAD_CPPFILES})
+  target_include_directories(zzad PUBLIC ${ZZACOMMON_INCLUDE_DIR})
+  message(STATUS "Created target: zzad")
+endif()
+
+# zzaf depends on zzad (optional)
 if(NOT ZZAF_INDEX EQUAL -1)
   add_library(zzaf STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
   target_sources(zzaf PRIVATE ${ZZAF_CPPFILES})
@@ -510,13 +520,6 @@ if (NOT ZZAFB_INDEX EQUAL -1)
     target_link_libraries(zzafb PUBLIC zzad zzaf)
   endif()
   message(STATUS "Created target: zzafb")
-endif()
-
-if(NOT ZZAD_INDEX EQUAL -1)
-  add_library(zzad STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
-  target_sources(zzad PRIVATE ${ZZAD_CPPFILES})
-  target_include_directories(zzad PUBLIC ${ZZACOMMON_INCLUDE_DIR})
-  message(STATUS "Created target: zzad")
 endif()
 
 if(NOT ZZAP_INDEX EQUAL -1)
