@@ -18,6 +18,9 @@
 
 #include "zc_graph_axis.h"
 
+#include "zc_fltk.h"
+#include "zc_graph_base.h"
+
 #include <FL/Enumerations.H>
 #include <FL/fl_draw.H>
 #include <FL/fl_utf8.h>
@@ -241,7 +244,7 @@ void zc_graph_axis::draw_label() {
 		lty = ly + lh;
 		break;
 	}
-	fl_rectf(lx - 1, ly - 1, lw + 2, lh + 2, color());
+	fl_rectf(lx - 1, ly - 1, lw + 2, lh + 2, (zc::ancestor_view<zc_graph_base>(this))->color());
 	fl_color(FL_FOREGROUND_COLOR);
 	fl_draw(angle, label_.c_str(), ltx, lty);
 }
