@@ -91,8 +91,8 @@ void zc_graph_xy0::create_components() {
 	end();
 }
 
-// We need to override the base class draw() method to dynamically position the axes at the zero positions.
-void zc_graph_xy0::draw() {
+// reposition the axes (and if necessary the plot area ) based on the data origins.
+void zc_graph_xy0::position_axes() {
 	// Check whether the axes need to be repositioned based on the data origins.
 	int x_origin = axes_.at(zc_graph_axis::X0_AXIS)->get_origin();
 	int y_origin = axes_.at(zc_graph_axis::Y0_AXIS)->get_origin();
@@ -163,6 +163,14 @@ void zc_graph_xy0::draw() {
 	axes_.at(zc_graph_axis::X0_AXIS)->resize(xx, xy, xw, xh);
 	axes_.at(zc_graph_axis::Y0_AXIS)->resize(yx, yy, yw, yh);
 	plot_->resize(px, py, pw, ph);
-	// Redraw the axes and plot area at their new positions.
-	zc_graph_xy::draw();
+}
+
+//! \brief Override the data to points conversion to add the axis modifications for the X0 and Y0 axes.
+void zc_graph_xy0::convert_data_to_points(data_set_t* ds) {
+	// Convert the data to points using the base class method.
+	zc_graph_xy::convert_data_to_points(ds);
+	// Reposition the axes based on the data origins.
+	position_axes();
+	// Request a redraw to update the display with the new axis positions.
+	redraw();
 }

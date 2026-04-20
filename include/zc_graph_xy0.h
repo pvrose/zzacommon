@@ -42,10 +42,14 @@ public:
 	//!\brief Create the graph components - axes and plot area.
 	void create_components() override;
 
-	//!\brief Redraw must reposition the axes at X=0 and Y=0.
-	void draw() override;
+	//! \brief Override to add the axis modifications for the X0 and Y0 axes.
+	void convert_data_to_points(data_set_t* ds) override;
 
 private:
+
+	//! \brief Internal method to implement the dynamic positioning of the axes based on the data.
+	void position_axes();
+
 	//! \brief Width of the axes lines in pixels.
 	int axis_width_ = 1;
 

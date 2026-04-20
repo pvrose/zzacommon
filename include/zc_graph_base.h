@@ -134,7 +134,8 @@ public:
 	//! This must be implemented by derived classes to convert the data.
 	//! 
 	//! Typically this will involve checking the data and chaining the data points
-	//! into a line per data set for the plot widget to render
+	//! into a line per data set for the plot widget to render.
+	//! Add any modification to plot and axis dimensions here.
 	virtual void convert_data_to_points(data_set_t* ds) = 0;
 
 	//! \brief Generate background grid lines.
