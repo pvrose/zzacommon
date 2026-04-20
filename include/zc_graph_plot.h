@@ -116,6 +116,7 @@ public:
 	};
 
 	//! \brief Type of data to plot for one object.
+	//! \todo Add text labels as a type of plot object, with parameters for text string, font, size, and position.
 	struct plot_object_t {
 		shape_t shape = LINE_STRIP;           //!< The shape of the object
 		zc_line_style style;                  //!< Line style to use for plotting
@@ -167,19 +168,19 @@ public:
 		(data_sets_[type])->xform_schema = schema;
 	}
 
-	//! \brief Add a line to the plot for a specific data type.
-	//! \param type The data type to add the line for.
-	//! \param fg Whether the line is a foreground line (true) or a background line (false).
-	//! \param line The line to add to the plot.
-	void add_line(zc_graph_base::data_type_t type, bool fg, const plot_object_t& line) {
+	//! \brief Add a drawing object to the plot for a specific data type.
+	//! \param type The data type to add the object for.
+	//! \param fg Whether the object is in the foreground (true) or in the background (false).
+	//! \param object The object to add to the plot.
+	void add_object(zc_graph_base::data_type_t type, bool fg, const plot_object_t& object) {
 		// Check that the data type exists in the data sets map, and if not, create a new plot_data_t for it.
 		if (data_sets_.find(type) == data_sets_.end()) {
 			data_sets_[type] = new plot_data_t();
 		}
 		if (fg) {
-			data_sets_[type]->foreground_objects.push_back(line);
+			data_sets_[type]->foreground_objects.push_back(object);
 		} else {
-			data_sets_[type]->background_objects.push_back(line);
+			data_sets_[type]->background_objects.push_back(object);
 		}
 	}
 

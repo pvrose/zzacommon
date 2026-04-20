@@ -132,7 +132,6 @@ void zc_graph_plot::plot_object(const plot_object_t& object) {
 		break;
 	case POLYGON:
 		fl_color(object.style.colour);
-		fl_line_style(object.style.style, object.style.width);
 		fl_begin_polygon();
 		for (auto& seg : object.segments) {
 			if (seg.type == plot_segment_t::VERTEX) {

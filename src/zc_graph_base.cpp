@@ -250,6 +250,8 @@ void zc_graph_base::draw() {
 	}
 	// Update the grid for the new scaling factors.
 	generate_grid();
+	// Update the markers for the new scaling factors.
+	add_markers();
 	// And redraw the components with the new scaling factors.
 	Fl_Group::draw();
 }

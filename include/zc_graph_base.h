@@ -25,6 +25,8 @@
 
 #include <cstdint>
 #include <map>
+#include <set>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -66,8 +68,8 @@ public:
 		Y2_VALUE,                     //!< Y2-axis data (for X2Y_LINE graph)
 		RADIUS,                     //!< Radius data (for POLAR graph)
 		THETA,                      //!< Angle data (for POLAR graph)
-		REAL,                       //!< Real part data (for COMPLEX and SMITH graph)
-		IMAGINARY,                  //!< Imaginary part data (for COMPLEX and SMITH graph)
+		REAL,                       //!< Real part data (for SMITH graph)
+		IMAGINARY,                  //!< Imaginary part data (for SMITH graph)
 	};
 
 	//! \brief Structure to describe a set of data points. This includes the data types,
@@ -84,6 +86,18 @@ public:
 		}
 	
 	};
+
+	//! \brief Overlay markers for the plot, such as vertical lines to indicate specific X values.
+	//! Markers can be added to any data type, and comprose either a single value
+	//! or a range of values (e.g. for a shaded area on the plot). 
+	//! Each marker includes a line style for rendering and a label for the legend, 
+	//! plus a range of values. (For a single value, the range will be from that value to itself.)
+	struct marker_t {
+		data_type_t type;      //!< Type of data this marker is associated with (e.g. X_VALUE for vertical line markers)
+		zc_line_style style;  //!< Line style to use to draw this marker
+		float value_a;        //!< First value for this marker (e.g. X value for a vertical line, or start of range for a shaded area)
+		float value_b;        //!< Second value for this marker (e.g. same as value_a for a single line, or end of range for a shaded area)
+		};
 
 	//! \brief Constructor
 	//! \param X The X coordinate of the top-left corner of the graph drawing area
@@ -141,6 +155,10 @@ public:
 	//! This must be implemented by derived classes to generate the grid lines for the graph.
 	virtual void generate_grid() = 0;
 
+	//! \brief Add the markers to the plot.
+	//! This must be implemented by derived classes to add the markers to the plot widget.
+	virtual void add_markers() = 0;
+
 	//! \brief override of Fl_Group handle to allow for zooming and scrolling on axes.
 	//! Mouse actions:-
 	//! - Mouse wheel scroll on an axis to zoom in/out on that axis.
@@ -183,6 +201,21 @@ public:
 		return data_type_to_axis_.at(type);
 	};
 
+	//! \brief Add a marker to the plot.
+	void add_marker(data_type_t type, zc_line_style style, float value_a) {
+		add_marker(type, style, value_a, value_a);
+	}
+
+	//! \brief Add a marker to the plot with a range of values.
+	void add_marker(data_type_t type, zc_line_style style, float value_a, float value_b) {
+		marker_t marker;
+		marker.type = type;
+		marker.style = style;
+		marker.value_a = value_a;
+		marker.value_b = value_b;
+		markers_.push_back(marker);
+	}
+
 
 protected:
 
@@ -223,6 +256,11 @@ protected:
 	std::vector<std::pair<data_type_t, data_type_t>> data_type_combos_;
 
 	//! Previous mouse positions
-	int prev_mouse_x_;
-	int prev_mouse_y_;
+	int prev_mouse_x_ = 0;
+	int prev_mouse_y_ = 0;
+
+	//! \brief The vector of markers to add to the plot.
+	std::vector<marker_t> markers_;
+
+
 };

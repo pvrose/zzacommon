@@ -55,6 +55,9 @@ public:
 	//! \brief Generate the grid lines for the graph.
 	void generate_grid() override;
 
+	//! \brief Plot the markers for the graph.
+	void add_markers() override;
+
 protected:
 	//! \brief Default X-axis orientation
 	zc_graph_axis::orientation_t default_x_axis = zc_graph_axis::orientation_t::X_AXIS;
