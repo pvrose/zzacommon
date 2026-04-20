@@ -89,11 +89,15 @@ public:
 
 	//!\brief Axis orientation type.
 	enum orientation_t : uint8_t {
-		X_AXIS,                 //!< X-axis (horizontal).
+		XB_AXIS,                 //!< X-axis (horizontal at the bottom of the graph).
+		X_AXIS = XB_AXIS,       //!< Legacy name for X-axis (horizontal at the bottom of the graph).
 		YL_AXIS,                //!< Y-axis (vertical to left of graph).
 		YR_AXIS,                //!< Y-axis (vertical to right of graph).
 		R_AXIS,                 //!< Radius axis for polar graph. Will be
 		//!< drawn horizontally at the 3 o'clock position and the labels will be rotated.
+		X0_AXIS,                //!< X-axis (horizontal overlays the plot area at the Y=0 position).
+		Y0_AXIS,                //!< Y-axis (vertical overlays the plot area at the X=0 position).
+		XT_AXIS,                //!< X-axis (horizontal at the top of the graph).
 	};
 
 	//! \brief Parameter structure for axis configuration.
@@ -203,6 +207,13 @@ public:
 		return orientation_;
 	}
 
+	//! \brief Set the orientation of the axis.
+	void set_orientation(orientation_t orientation) {
+		orientation_ = orientation;
+		set_range(current_range_);
+		redraw();
+	}
+
 	//! Override draw to draw the axis, ticks and labels.
 	void draw() override;
 
@@ -216,6 +227,10 @@ public:
 		return grid_lines_;
 	}
 
+	//! \brief Return true if the axis is horizontal (X-axis) or false if the axis is vertical (Y-axis).
+	bool is_horizontal() const {
+		return orientation_ == XB_AXIS || orientation_ == XT_AXIS || orientation_ == X0_AXIS;
+	};
 private:
 
 	// Specified parameters
@@ -272,6 +287,7 @@ private:
 	void draw_ticks();
 	//! \brief Draw the label for the axis.
 	void draw_label();
+
 
 };
 

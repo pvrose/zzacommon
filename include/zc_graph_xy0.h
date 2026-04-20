@@ -18,12 +18,12 @@
 #pragma once
 
 #include "zc_graph_base.h"
-#include "zc_graph_axis.h"
+#include "zc_graph_xy.h"
 
-//! \brief Class for X-Y line graph.
+//! \brief Class for X-Y line graph with axes drawn at X=0 and Y=0.
 //! 
-//! \image html zc_graph_xy.png "Example of an X-Y line graph with axes and grid lines"
-class zc_graph_xy : public zc_graph_base {
+//! \image html zc_graph_xy0.png "Example of an X-Y line graph with axes at X=0 and Y=0"
+class zc_graph_xy0 : public zc_graph_xy {
 
 public:
 	//! \brief Constructor
@@ -32,33 +32,21 @@ public:
 	//! \param W The width of the plot drawing area
 	//! \param H The height of the plot drawing area
 	//! \param L The label of the plot
-	zc_graph_xy(int X, int Y, int W, int H, const char* L = nullptr);
+	zc_graph_xy0(int X, int Y, int W, int H, const char* L = nullptr);
 	//! \brief Destructor
-	~zc_graph_xy();
-
-	//! \brief Create the graph components and define the data types.
-	void create() override;
+	~zc_graph_xy0();
 
 	//! \brief Define and map the data types for the graph.
 	void define_data_types() override;
 
-	//! \brief Create the graph components - axes and plot area.
+	//!\brief Create the graph components - axes and plot area.
 	void create_components() override;
 
-	//!\brief Define the data type to axis mappings for the graph.
-	void define_plot_xforms() override;
+	//!\brief Redraw must reposition the axes at X=0 and Y=0.
+	void draw() override;
 
-	//! \brief Convert the data sets to points for plotting.
-	//! \param ds The data set to convert.
-	void convert_data_to_points(data_set_t* ds) override;
-
-	//! \brief Generate the grid lines for the graph.
-	void generate_grid() override;
-
-protected:
-	//! \brief Default X-axis orientation
-	zc_graph_axis::orientation_t default_x_axis = zc_graph_axis::orientation_t::X_AXIS;
-	//! \brief Default Y-axis orientation
-	zc_graph_axis::orientation_t default_y_axis = zc_graph_axis::orientation_t::YL_AXIS;
+private:
+	//! \brief Width of the axes lines in pixels.
+	int axis_width_ = 1;
 
 };

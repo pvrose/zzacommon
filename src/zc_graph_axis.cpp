@@ -58,7 +58,7 @@ static std::map<int, uint32_t> SI_PREFIXES = {
 //! \brief Constructor
 zc_graph_axis::zc_graph_axis(int X, int Y, int W, int H, const char* L) :
 	Fl_Widget(X, Y, W, H, L),
-	orientation_(X_AXIS),
+	orientation_(XB_AXIS),
 	modifier_(NO_MODIFIER),
 	unit_(""),
 	tick_spacing_pixels_(20),
@@ -99,10 +99,10 @@ void zc_graph_axis::set_range(range new_range) {
 	}
 	// Check if the new range is within the zoom limits.
 	current_range_ = outer_range_.get_intersection(new_range);
-	scale_ = (current_range_.max - current_range_.min) / (orientation_ == X_AXIS ? w() : -h());
+	scale_ = (current_range_.max - current_range_.min) / (is_horizontal() ? w() : -h());
 	inv_scale_ = 1.0F / scale_;
 	zoom_limit_range_.set_union(new_range);
-	origin_ = (orientation_ == X_AXIS ? x() : y() + h()) - current_range_.min * inv_scale_;
+	origin_ = (is_horizontal() ? x() : y() + h()) - current_range_.min * inv_scale_;
 	set_ticks();
 }
 
@@ -148,11 +148,17 @@ void zc_graph_axis::draw_axis_line() {
 	fl_line_style(FL_SOLID, 1);
 	// Draw the axis line based on the orientation.
 	switch (orientation_) {
-	case zc_graph_axis::X_AXIS:
+	case zc_graph_axis::XB_AXIS:
+	case zc_graph_axis::X0_AXIS:
 		// Draw along the top of the widget area.
 		fl_line(x(), y(), x() + w(), y());
 		break;
+	case zc_graph_axis::XT_AXIS:
+		// Draw along the bottom of the widget area.
+		fl_line(x(), y() + h(), x() + w(), y() + h());
+		break;
 	case zc_graph_axis::YL_AXIS:
+	case zc_graph_axis::Y0_AXIS:
 		// Draw along the right side of the widget area.
 		fl_line(x() + w(), y(), x() + w(), y() + h());
 		break;
@@ -179,13 +185,21 @@ void zc_graph_axis::draw_ticks() {
 		fl_measure(tick.label.c_str(), tw, th);
 		// Draw the tick and label based on the orientation.
 		switch (orientation_) {
-		case zc_graph_axis::X_AXIS:
+		case zc_graph_axis::XB_AXIS:
+		case zc_graph_axis::X0_AXIS:
 			// Draw the tick extending down from the axis line.
 			fl_line(tick.position, y(), tick.position, y() + 5);
 			// Draw the tick label centered below the tick.
 			fl_draw(tick.label.c_str(), tick.position - tw / 2, y() + 5 + th);
 			break;
+		case zc_graph_axis::XT_AXIS:
+			// Draw the tick extending up from the axis line.
+			fl_line(tick.position, y() + h(), tick.position, y() + h() - 5);
+			// Draw the tick label centered above the tick.
+			fl_draw(tick.label.c_str(), tick.position - tw / 2, y() + h() - 5);
+			break;
 		case zc_graph_axis::YL_AXIS:
+		case zc_graph_axis::Y0_AXIS:
 			// Draw the tick extending left from the axis line.
 			fl_line(x() + w(), tick.position, x() + w() - 5, tick.position);
 			// Draw the tick label centered to the right of the tick.
@@ -213,7 +227,8 @@ void zc_graph_axis::draw_label() {
 	// Draw the label based on the orientation.
 	int lx = 0, ly = 0, lw = 0, lh = 0, ltx = 0, lty = 0, angle = 0;
 	switch (orientation_) {
-	case zc_graph_axis::X_AXIS:
+	case zc_graph_axis::XB_AXIS:
+	case zc_graph_axis::X0_AXIS:
 		// Draw centered below the axis line.
 		angle = 0;
 		lx = x() + w() / 2 - tw / 2;
@@ -223,7 +238,18 @@ void zc_graph_axis::draw_label() {
 		ltx = lx;
 		lty = ly + th;
 		break;
+	case zc_graph_axis::XT_AXIS:
+		// Draw centered above the axis line.
+		angle = 0;
+		lx = x() + w() / 2 - tw / 2;
+		ly = y() + h() / 4;
+		lw = tw;
+		lh = th;
+		ltx = lx;
+		lty = ly + th;
+		break;
 	case zc_graph_axis::YL_AXIS:
+	case zc_graph_axis::Y0_AXIS:
 		// Draw centered to the left of the axis line.
 		angle = 90;
 		lx = x() + w() / 4;
@@ -244,6 +270,11 @@ void zc_graph_axis::draw_label() {
 		lty = ly + lh;
 		break;
 	}
+	// TODO - this ought to be done between drawing the grid lines and drawing the plot data
+	// to avoid the label being overwritten by the grid lines but also to avoid
+	// overwriting the plot data with the label background. 
+	// Applies to X0_AXIS and Y0_AXIS orientations where the label is drawn over the plot area.
+	// However, the grid lines and data are both drawn by zc_graph_plot.
 	fl_rectf(lx - 1, ly - 1, lw + 2, lh + 2, (zc::ancestor_view<zc_graph_base>(this))->color());
 	fl_color(FL_FOREGROUND_COLOR);
 	fl_draw(angle, label_.c_str(), ltx, lty);

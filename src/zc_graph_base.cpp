@@ -21,7 +21,7 @@
 #include "zc_graph_plot.h"
 
 #include <FL/Enumerations.H>
-#include <FL/fl_draw.H>
+#include <FL/Fl.H>
 #include <FL/Fl_Group.H>
 
 //! \brief Constructor
@@ -42,6 +42,10 @@ bool zc_graph_base::add_data_set(data_set_t* ds) {
 
 	data_sets_.push_back(ds);
 	convert_data_to_points(data_sets_.back());
+	redraw();
+	// TODO At some point after adding data the graph must be forced to redraw.
+	// Is this the best place?
+	Fl::check();
 	return true;
 }
 

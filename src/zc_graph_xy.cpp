@@ -158,17 +158,18 @@ void zc_graph_xy::generate_grid() {
 		auto grid_values = axis.second->get_grid_lines();
 		for (const auto& value : grid_values) {
 			zc_graph_plot::plot_line_t line;
+			// For line at 0 - axis should be drawn on top of the grid line.
 			line.style = zc_line_style(FL_LIGHT2, 1, FL_DOT);
-			if (axis.first == zc_graph_axis::X_AXIS) {
+			if (axis.second->is_horizontal()) {
 				// Default data type for X-axis to Y_VALUE for grid line transform.
 				// and use the YL axis range for the grid line endpoints.
 				line.transform = zc_graph_base::Y_VALUE;
 				// Vertical grid line at x = value
 				line.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(value, axes_.at(zc_graph_axis::YL_AXIS)->get_range().min)
+					zc_graph_plot::plot_vertex_t(value, axes_.at(default_y_axis)->get_range().min)
 				));
 				line.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(value, axes_.at(zc_graph_axis::YL_AXIS)->get_range().max)
+					zc_graph_plot::plot_vertex_t(value, axes_.at(default_y_axis)->get_range().max)
 				));
 			}
 			else {
@@ -186,10 +187,10 @@ void zc_graph_xy::generate_grid() {
 				}
 				// Horizontal grid line at y = value
 				line.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(axes_.at(zc_graph_axis::X_AXIS)->get_range().min, value)
+					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().min, value)
 				));
 				line.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(axes_.at(zc_graph_axis::X_AXIS)->get_range().max, value)
+					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().max, value)
 				));
 			}
 			// Add the grid line to the plot data for this data type.
