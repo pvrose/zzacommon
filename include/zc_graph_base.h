@@ -48,7 +48,6 @@ public:
 		X2Y_LINE,                   //!< X-Y line graph with two Y axes (zc_graph_x2y)
 		XY_SCATTER,                 //!< X-Y scatter graph (not yet implemented)
 		POLAR,                      //!< Polar graph (Radius vs angle) (not yet implemented)
-		COMPLEX,                    //!< Complex graph (imaginary vs real) (not yet implemented)
 		SMITH,                      //!< Smith chart (not yet implemented)
 	};
 
