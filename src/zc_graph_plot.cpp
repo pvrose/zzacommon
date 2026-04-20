@@ -66,19 +66,8 @@ void zc_graph_plot::draw() {
 	for (auto& ds : data_sets_) {
 		fl_push_matrix();
 		apply_transformation(ds.first);
-		for (auto& line : ds.second->background_lines) {
-			fl_color(line.style.colour);
-			fl_line_style(line.style.style, line.style.width);
-			fl_begin_line();
-			for (auto& seg : line.segments) {
-				if (seg.type == plot_segment_t::VERTEX) {
-					fl_vertex(seg.v.x, seg.v.y);
-				} else if (seg.type == plot_segment_t::ARC) {
-					fl_arc(seg.a.x, seg.a.y, seg.a.r, seg.a.r, seg.a.a1, seg.a.a2);
-				}
-			}
-			fl_end_line();
-			fl_line_style(0); // reset to default line style
+		for (auto& object : ds.second->background_objects) {
+			plot_object(object);
 		}
 		fl_pop_matrix();
 	}
@@ -86,22 +75,76 @@ void zc_graph_plot::draw() {
 	for (auto& ds : data_sets_) {
 		fl_push_matrix();
 		apply_transformation(ds.first);
-		for (auto& line : ds.second->foreground_lines) {
-			fl_color(line.style.colour);
-			fl_line_style(line.style.style, line.style.width);
-			fl_begin_line();
-			for (auto& seg : line.segments) {
-				if (seg.type == plot_segment_t::VERTEX) {
-					fl_vertex(seg.v.x, seg.v.y);
-				} else if (seg.type == plot_segment_t::ARC) {
-					fl_arc(seg.a.x, seg.a.y, seg.a.r, seg.a.r, seg.a.a1, seg.a.a2);
-				}
-			}
-			fl_end_line();
-			fl_line_style(0); // reset to default line style
+		for (auto& object : ds.second->foreground_objects) {
+			plot_object(object);
 		}
 		fl_pop_matrix();
 	}
 	fl_pop_clip();
+}
+
+// Plot a drawing object.
+void zc_graph_plot::plot_object(const plot_object_t& object) {
+	switch (object.shape) {
+	case POINTS:
+		fl_color(object.style.colour);
+		fl_begin_points();
+		for (auto& seg : object.segments) {
+			if (seg.type == plot_segment_t::VERTEX) {
+				fl_vertex(seg.v.x, seg.v.y);
+			}
+			else if (seg.type == plot_segment_t::ARC) {
+				fl_arc(seg.a.x, seg.a.y, seg.a.r, seg.a.r, seg.a.a1, seg.a.a2);
+			}
+		}
+		fl_end_points();
+		fl_line_style(0); // reset to default line style
+		break;
+	case LINE_STRIP:
+		fl_color(object.style.colour);
+		fl_line_style(object.style.style, object.style.width);
+		fl_begin_line();
+		for (auto& seg : object.segments) {
+			if (seg.type == plot_segment_t::VERTEX) {
+				fl_vertex(seg.v.x, seg.v.y);
+			}
+			else if (seg.type == plot_segment_t::ARC) {
+				fl_arc(seg.a.x, seg.a.y, seg.a.r, seg.a.r, seg.a.a1, seg.a.a2);
+			}
+		}
+		fl_end_line();
+		fl_line_style(0); // reset to default line style
+		break;
+	case LOOP:
+		fl_color(object.style.colour);
+		fl_line_style(object.style.style, object.style.width);
+		fl_begin_loop();
+		for (auto& seg : object.segments) {
+			if (seg.type == plot_segment_t::VERTEX) {
+				fl_vertex(seg.v.x, seg.v.y);
+			}
+			else if (seg.type == plot_segment_t::ARC) {
+				fl_arc(seg.a.x, seg.a.y, seg.a.r, seg.a.r, seg.a.a1, seg.a.a2);
+			}
+		}
+		fl_end_loop();
+		fl_line_style(0); // reset to default line style
+		break;
+	case POLYGON:
+		fl_color(object.style.colour);
+		fl_line_style(object.style.style, object.style.width);
+		fl_begin_polygon();
+		for (auto& seg : object.segments) {
+			if (seg.type == plot_segment_t::VERTEX) {
+				fl_vertex(seg.v.x, seg.v.y);
+			}
+			else if (seg.type == plot_segment_t::ARC) {
+				fl_arc(seg.a.x, seg.a.y, seg.a.r, seg.a.r, seg.a.a1, seg.a.a2);
+			}
+		}
+		fl_end_polygon();
+		fl_line_style(0); // reset to default line style
+		break;
+	}
 }
 

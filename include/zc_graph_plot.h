@@ -105,11 +105,22 @@ public:
 		}
 	};
 
-	//! \brief Type of data to plot for one line.
-	struct plot_line_t {
-		zc_line_style style;              //!< Line style to use for plotting
-		zc_graph_base::data_type_t transform; //!< Data type to use for transforming the line coordinates.
-		std::vector<plot_segment_t> segments; //!< List of line segments to plot
+	//! \brief Type of construct to draw.
+	//! This maps on to the drawing functions: fl_begin_xxx()/fl_end_xxx() where xxx
+	//! is the shape type (e.g. line, loop, points, polygon)
+	enum shape_t : uint8_t {
+		POINTS,         //!< Points defined by a list of vertices.
+		LINE_STRIP,     //!< Line strip defined by a list of vertices and arcs.
+		LOOP,           //!< Loop defined by a list of vertices and arcs (i.e. closed line strip).
+		POLYGON         //!< Polygon defined by a list of vertices and arcs (filled).
+	};
+
+	//! \brief Type of data to plot for one object.
+	struct plot_object_t {
+		shape_t shape = LINE_STRIP;           //!< The shape of the object
+		zc_line_style style;                  //!< Line style to use for plotting
+		zc_graph_base::data_type_t transform; //!< Data type to use for transforming the object coordinates.
+		std::vector<plot_segment_t> segments; //!< List of segments to plot
 	};
 
 	//! \brief Transformation schema for the plot data. 
@@ -130,8 +141,8 @@ public:
 	//! Background lines are plotted before foreground lines, so will appear behind them.
 	struct plot_data_t {
 		plot_xform_t xform_schema; //!< Transformation schema to apply to the data points for this data type.
-		std::vector<plot_line_t> background_lines; //!< List of background lines to plot (e.g. grid lines)
-		std::vector<plot_line_t> foreground_lines; //!< List of foreground lines to plot (e.g. data lines)
+		std::vector<plot_object_t> background_objects; //!< List of background objects to plot (e.g. grid lines)
+		std::vector<plot_object_t> foreground_objects; //!< List of foreground objects to plot (e.g. data lines)
 	};
 
 	//! \brief Constructor
@@ -160,15 +171,15 @@ public:
 	//! \param type The data type to add the line for.
 	//! \param fg Whether the line is a foreground line (true) or a background line (false).
 	//! \param line The line to add to the plot.
-	void add_line(zc_graph_base::data_type_t type, bool fg, const plot_line_t& line) {
+	void add_line(zc_graph_base::data_type_t type, bool fg, const plot_object_t& line) {
 		// Check that the data type exists in the data sets map, and if not, create a new plot_data_t for it.
 		if (data_sets_.find(type) == data_sets_.end()) {
 			data_sets_[type] = new plot_data_t();
 		}
 		if (fg) {
-			data_sets_[type]->foreground_lines.push_back(line);
+			data_sets_[type]->foreground_objects.push_back(line);
 		} else {
-			data_sets_[type]->background_lines.push_back(line);
+			data_sets_[type]->background_objects.push_back(line);
 		}
 	}
 
@@ -193,6 +204,10 @@ private:
 	//! \brief Apply transformation for FLTK complex drawing functions.
 	//! \param type The data type to apply the transformation for.
 	void apply_transformation(zc_graph_base::data_type_t type);
+
+	//! \brief Plot a single drawing object
+	//! \param obj The object to plot.
+	void plot_object(const plot_object_t& obj);
 
 	//! \brief List of data sets to plot, by data type.
 	std::map<zc_graph_base::data_type_t, plot_data_t*> data_sets_;

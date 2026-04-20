@@ -135,7 +135,7 @@ void zc_graph_xy::convert_data_to_points(data_set_t* ds) {
 	auto& y_axis = axes_.at(y_axis_type);
 
 	// Create new plot line for this data set.
-	zc_graph_plot::plot_line_t line;
+	zc_graph_plot::plot_object_t line;
 	line.style = ds->style;
 	line.transform = ds->type_b;
 
@@ -157,7 +157,7 @@ void zc_graph_xy::generate_grid() {
 		if (!axis.second) continue; // Skip if axis not defined
 		auto grid_values = axis.second->get_grid_lines();
 		for (const auto& value : grid_values) {
-			zc_graph_plot::plot_line_t line;
+			zc_graph_plot::plot_object_t line;
 			// For line at 0 - axis should be drawn on top of the grid line.
 			line.style = zc_line_style(FL_LIGHT2, 1, FL_DOT);
 			if (axis.second->is_horizontal()) {
