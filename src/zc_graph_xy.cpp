@@ -207,79 +207,109 @@ void zc_graph_xy::add_markers() {
 		// Get the axis orientation for this marker based on the data type.
 		zc_graph_axis::orientation_t axis_orientation = get_axis(marker.type);
 		zc_graph_axis* axis = axes_.at(axis_orientation);
+		// Ignore if the values are outside the axis range.
+		if (marker.value_1 < axis->get_range().min && marker.value_2 < axis->get_range().min) continue;
+		if (marker.value_1 > axis->get_range().max && marker.value_2 > axis->get_range().max) continue;
 		// If the axis is horizontal, the marker is vertical.
 		if (axis->is_horizontal()) {
 			// Use YL axis range for the marker endpoints.
 			object.transform = zc_graph_base::Y_VALUE;
-			// Vertical line if value_a == value_b
-			if (marker.value_a == marker.value_b) {
-				// Draw a line at x = value_a from the bottom to the top of the plot area.
+			// Vertical line if value_1 == value_2
+			if (marker.value_1 == marker.value_2) {
+				// Draw a line at x = value_1 from the bottom to the top of the plot area.
 				object.style = marker.style;
 				object.shape = zc_graph_plot::LINE_STRIP;
 				object.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(marker.value_a, axes_.at(default_y_axis)->get_range().min)
+					zc_graph_plot::plot_vertex_t(marker.value_1, axes_.at(default_y_axis)->get_range().min)
 				));
 				object.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(marker.value_a, axes_.at(default_y_axis)->get_range().max)
+					zc_graph_plot::plot_vertex_t(marker.value_1, axes_.at(default_y_axis)->get_range().max)
 				));
 			} else {
-				// Draw a shaded area from x = value_a to x = value_b across the full height of the plot area.
+				// Draw a shaded area from x = value_1 to x = value_2 across the full height of the plot area.
 				object.style = marker.style;
 				object.shape = zc_graph_plot::POLYGON;
 				// Add vertices for the corners of the shaded area.
 				object.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(marker.value_a, axes_.at(default_y_axis)->get_range().min)
+					zc_graph_plot::plot_vertex_t(marker.value_1, axes_.at(default_y_axis)->get_range().min)
 				));
 				object.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(marker.value_b, axes_.at(default_y_axis)->get_range().min)
+					zc_graph_plot::plot_vertex_t(marker.value_2, axes_.at(default_y_axis)->get_range().min)
 				));
 				object.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(marker.value_b, axes_.at(default_y_axis)->get_range().max)
+					zc_graph_plot::plot_vertex_t(marker.value_2, axes_.at(default_y_axis)->get_range().max)
 				));
 				object.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(marker.value_a, axes_.at(default_y_axis)->get_range().max)
+					zc_graph_plot::plot_vertex_t(marker.value_1, axes_.at(default_y_axis)->get_range().max)
 				));
 				object.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(marker.value_a, axes_.at(default_y_axis)->get_range().min)
+					zc_graph_plot::plot_vertex_t(marker.value_1, axes_.at(default_y_axis)->get_range().min)
 				));
 			}
 		} else {
 			// Use provided axis range for the marker endpoints.
 			object.transform = marker.type;
-			// Horizontal line if value_a == value_b
-			if (marker.value_a == marker.value_b) {
-				// Draw a line at y = value_a from the left to the right of the plot area.
+			// Horizontal line if value_1 == value_2
+			if (marker.value_1 == marker.value_2) {
+				// Draw a line at y = value_1 from the left to the right of the plot area.
 				object.style = marker.style;
 				object.shape = zc_graph_plot::LINE_STRIP;
 				object.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().min, marker.value_a)
+					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().min, marker.value_1)
 				));
 				object.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().max, marker.value_a)
+					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().max, marker.value_1)
 				));
 			} else {
-				// Draw a shaded area from y = value_a to y = value_b across the full width of the plot area.
+				// Draw a shaded area from y = value_1 to y = value_2 across the full width of the plot area.
 				object.style = marker.style;
 				object.shape = zc_graph_plot::POLYGON;
 				// Add vertices for the corners of the shaded area.
 				object.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().min, marker.value_a)
+					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().min, marker.value_1)
 				));
 				object.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().max, marker.value_a)
+					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().max, marker.value_1)
 				));
 				object.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().max, marker.value_b)
+					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().max, marker.value_2)
 				));
 				object.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().min, marker.value_b)
+					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().min, marker.value_2)
 				));
 				object.segments.push_back(zc_graph_plot::plot_segment_t(
-					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().min, marker.value_a)
+					zc_graph_plot::plot_vertex_t(axes_.at(default_x_axis)->get_range().min, marker.value_1)
 				));
 			}
 		}
 		// Add the marker object to the plot data for this marker's data type.
+		plot_->add_object(object.transform, false, object);
+	}
+	for (auto& label : labels_) {
+		zc_graph_plot::plot_object_t object;
+		object.shape = zc_graph_plot::TEXT;
+		object.text_style = label.style;
+		object.transform = zc_graph_base::Y_VALUE; 
+		object.text = label.text;
+		// If either value is +/-FLT_MAX, align to the edge of the plot area.
+		coord pos = label.position;
+		if (pos.a == -FLT_MAX) {
+			pos.a = axes_.at(default_x_axis)->get_range().min;
+		} else if (pos.a == FLT_MAX) {
+			pos.a = axes_.at(default_x_axis)->get_range().max;
+		}
+		if (pos.b == -FLT_MAX) {
+			pos.b = axes_.at(default_y_axis)->get_range().min;
+		} else if (pos.b == FLT_MAX) {
+			pos.b = axes_.at(default_y_axis)->get_range().max;
+		}
+		// Ignore if the label position is outside the axis ranges.
+		if (pos.a < axes_.at(default_x_axis)->get_range().min || pos.a > axes_.at(default_x_axis)->get_range().max) continue;
+		if (pos.b < axes_.at(default_y_axis)->get_range().min || pos.b > axes_.at(default_y_axis)->get_range().max) continue;
+		object.segments.push_back(zc_graph_plot::plot_segment_t(
+			zc_graph_plot::plot_vertex_t(pos.a, pos.b)
+		));
+		// Add the label object to the plot data for this label's data type.
 		plot_->add_object(object.transform, false, object);
 	}
 }

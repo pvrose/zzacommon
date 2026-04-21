@@ -144,6 +144,30 @@ void zc_graph_plot::plot_object(const plot_object_t& object) {
 		fl_end_polygon();
 		fl_line_style(0); // reset to default line style
 		break;
+	case TEXT: {
+		fl_color(object.text_style.colour);
+		// Save the current font and size, and set the font and size for the text.
+		Fl_Font old_font = fl_font();
+		Fl_Fontsize old_size = fl_size();
+		fl_font(object.text_style.font, object.text_style.size);
+		// Transform coordinates from data cords to pixel coords for text position.
+		int tx = fl_transform_x(object.segments[0].v.x, object.segments[0].v.y) + 1;
+		int ty = fl_transform_y(object.segments[0].v.x, object.segments[0].v.y) - 1;
+		// Measure the text size to adjust the position for alignment where necessary.
+		int tw, th;
+		fl_measure(object.text.c_str(), tw, th);
+		// Adjust the text position based on alignment.
+		if (tx + tw > x() + w()) {
+			tx = x() + w() - tw - 2; // Align to right edge
+		}
+		if (ty < y()) {
+			ty = y() + th + 1; // Align to top edge with a small margin
+		}
+		fl_draw(object.text.c_str(), tx, ty);
+		// Restore the previous font and size.
+		fl_font(old_font, old_size);
+		break;
+	}
 	}
 }
 

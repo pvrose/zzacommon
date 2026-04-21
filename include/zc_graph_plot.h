@@ -20,6 +20,7 @@
 
 #include "zc_graph_base.h"
 #include "zc_line_style.h"
+#include "zc_text_style.h"
 
 #include <FL/Fl_Widget.H>
 
@@ -112,7 +113,8 @@ public:
 		POINTS,         //!< Points defined by a list of vertices.
 		LINE_STRIP,     //!< Line strip defined by a list of vertices and arcs.
 		LOOP,           //!< Loop defined by a list of vertices and arcs (i.e. closed line strip).
-		POLYGON         //!< Polygon defined by a list of vertices and arcs (filled).
+		POLYGON,        //!< Polygon defined by a list of vertices and arcs (filled).
+		TEXT			//!< Text label defined by a position and string.
 	};
 
 	//! \brief Type of data to plot for one object.
@@ -120,8 +122,10 @@ public:
 	struct plot_object_t {
 		shape_t shape = LINE_STRIP;           //!< The shape of the object
 		zc_line_style style;                  //!< Line style to use for plotting
+		zc_text_style text_style;             //!< Text style to use for plotting (only used if shape is TEXT)
 		zc_graph_base::data_type_t transform; //!< Data type to use for transforming the object coordinates.
 		std::vector<plot_segment_t> segments; //!< List of segments to plot
+		std::string text;                    //!< Text string to plot (only used if shape is TEXT)
 	};
 
 	//! \brief Transformation schema for the plot data. 

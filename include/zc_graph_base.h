@@ -19,6 +19,7 @@
 
 #include "zc_graph_axis.h"
 #include "zc_line_style.h"
+#include "zc_text_style.h"
 
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Widget.H>
@@ -57,6 +58,13 @@ public:
 	struct coord {
 		float a = 0.0F;     //!< First coordinate (X, angle, or real part)
 		float b = 0.0F;     //!< Second coordinate (Y, radius, or imaginary part)
+
+		//! \brief Copy constructor
+		coord(const coord& other) : a(other.a), b(other.b) {}
+		//! \brief Default constructor
+		coord() : a(0.0F), b(0.0F) {}
+		//! \brief Constructor with parameters
+		coord(float a_, float b_) : a(a_), b(b_) {}
 	};
 
 	//! \brief Data value type. A data set will typically consist of pairs of these data types.
@@ -95,10 +103,20 @@ public:
 	struct marker_t {
 		data_type_t type;      //!< Type of data this marker is associated with (e.g. X_VALUE for vertical line markers)
 		zc_line_style style;  //!< Line style to use to draw this marker
-		float value_a;        //!< First value for this marker (e.g. X value for a vertical line, or start of range for a shaded area)
-		float value_b;        //!< Second value for this marker (e.g. same as value_a for a single line, or end of range for a shaded area)
-		};
+		float value_1;        //!< First value for this marker (e.g. X value for a vertical line, or start of range for a shaded area)
+		float value_2;        //!< Second value for this marker (e.g. same as value_1 for a single line, or end of range for a shaded area)
+	};
 
+	//! \brief Overlay text labels for the plot, such as annotations at specific coordinates.
+	//! Each label includes a text string, a text style for rendering, and the coordinates for the label.
+	//! A coordinate of +/-FLT_MAX can be used to indicate that the label should be aligned to the edge of the plot in that dimension.
+	struct label_t {
+		data_type_t type;      //!< Type of data this label is associated with (e.g. X_VALUE for a label aligned to the X axis)
+		std::string text;    //!< Text string for the label
+		zc_text_style style; //!< Text style to use to draw this label
+		coord position;      //!< Coordinates for the label (e.g. X and Y values for an annotation). Use +/-FLT_MAX to align to edge of plot.
+	};
+	
 	//! \brief Constructor
 	//! \param X The X coordinate of the top-left corner of the graph drawing area
 	//! \param Y The Y coordinate of the top-left corner of the graph drawing area
@@ -155,8 +173,8 @@ public:
 	//! This must be implemented by derived classes to generate the grid lines for the graph.
 	virtual void generate_grid() = 0;
 
-	//! \brief Add the markers to the plot.
-	//! This must be implemented by derived classes to add the markers to the plot widget.
+	//! \brief Add the markers and labels to the plot.
+	//! This must be implemented by derived classes to add the markers and labels to the plot widget.
 	virtual void add_markers() = 0;
 
 	//! \brief override of Fl_Group handle to allow for zooming and scrolling on axes.
@@ -201,19 +219,36 @@ public:
 		return data_type_to_axis_.at(type);
 	};
 
-	//! \brief Add a marker to the plot.
+	//! \brief Add a line marker to the plot. 
+	//! \param type The data type this marker is associated with (e.g. X_VALUE for a vertical line marker).
+	//! \param style The line style for the marker.
+	//! \param value_a The data value for the marker.
 	void add_marker(data_type_t type, zc_line_style style, float value_a) {
 		add_marker(type, style, value_a, value_a);
 	}
 
-	//! \brief Add a marker to the plot with a range of values.
-	void add_marker(data_type_t type, zc_line_style style, float value_a, float value_b) {
+	//! \brief Add a bar marker to the plot with a range of values.
+	//! \param type The data type this marker is associated with (e.g. X_VALUE for a vertical line marker).
+	//! \param style The line style for the marker.
+	//! \param value_1 The first data value for the marker (e.g. start of range for a shaded area).
+	//! \param value_2 The second data value for the marker (e.g. end of range for a shaded area).
+	void add_marker(data_type_t type, zc_line_style style, float value_1, float value_2) {
 		marker_t marker;
 		marker.type = type;
 		marker.style = style;
-		marker.value_a = value_a;
-		marker.value_b = value_b;
+		marker.value_1 = value_1;
+		marker.value_2 = value_2;
 		markers_.push_back(marker);
+	}
+
+	//! \brief Add a text label to the plot.
+	void add_label(data_type_t type, const std::string& text, zc_text_style style, coord position) {
+		label_t label;
+		label.type = type;
+		label.text = text;
+		label.style = style;
+		label.position = coord(position);
+		labels_.push_back(label);
 	}
 
 
@@ -261,6 +296,9 @@ protected:
 
 	//! \brief The vector of markers to add to the plot.
 	std::vector<marker_t> markers_;
+
+	//! \brief The vector of labels to add to the plot.
+	std::vector<label_t> labels_;
 
 
 };
