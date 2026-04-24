@@ -116,7 +116,11 @@ void zc_banner::create_form() {
 	op_app_title_->labelsize(FL_NORMAL_SIZE * 2);
 	op_app_title_->labelfont(FL_BOLD);
 	std::string title = APP_NAME + " " + APP_VERSION;
+#ifdef _DEBUG
+	if (zc_app::debug(DEBUG_DEVELOPMENT)) title += "\n(DEVT/DEBUG)";
+#else
 	if (zc_app::debug(DEBUG_DEVELOPMENT)) title += "\n(DEVELOPMENT)";
+#endif
 	op_app_title_->copy_label(title.c_str());
 	op_app_title_->align(FL_ALIGN_LEFT | FL_ALIGN_INSIDE);
 
@@ -175,7 +179,7 @@ void zc_banner::create_form() {
 	g_top->end();
 
 	curr_x = x() + GAP;
-	curr_y = g_topleft->y() + g_topleft->h();
+	curr_y = g_topleft->y() + g_topleft->h() + GAP;
 
 	int h_display = h() - curr_y;
 
