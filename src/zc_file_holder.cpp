@@ -228,6 +228,16 @@ bool zc_file_holder::copy_source_to_working(uint8_t type) {
 			status_->misc_status(ST_NOTE, "FILE: Existing %s removed.", filename.c_str());
 		}
 	}
+	boost::filesystem::path dest_path(filename);
+	boost::filesystem::create_directories(dest_path.parent_path(), ec);
+	if (ec) {
+		char msg[256];
+		snprintf(msg, sizeof(msg), "FILE: Failed to create directories for %s: %s", 
+			filename.c_str(), 
+			ec.message().c_str());
+		if (status_) status_->misc_status(ST_ERROR, msg);
+		return false;
+	}
 	boost::filesystem::copy(
 		source.c_str(),
 		filename.c_str(),
@@ -329,6 +339,15 @@ bool zc_file_holder::copy_working_to_source(uint8_t type) const {
 
 file_control_t zc_file_holder::file_control(uint8_t type) const {
 	return control_data_.at(type);
+}
+
+// Add file to list of files to be managed. Look for next available type
+uint8_t zc_file_holder::add_file(const file_control_t& ctrl, uint8_t type) {
+	while (control_data_.find(type) != control_data_.end()) {
+		type++;
+	}
+	control_data_[type] = ctrl;
+	return type;
 }
 
 // Display file info

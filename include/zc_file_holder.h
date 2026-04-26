@@ -154,6 +154,10 @@ public:
 		}
 	}
 
+	//! Add file to list of files to be managed. Look for next available type
+	//! starting from \p type.
+	uint8_t add_file(const file_control_t& ctrl, uint8_t type = FILE_USER);
+
 	//! \brief Release working copy to git source. 
 	//! \note This is only available for development use. 
 	bool copy_working_to_source(uint8_t type) const;
@@ -164,6 +168,11 @@ public:
 
 	//! Get file control for type.
 	file_control_t file_control(uint8_t type) const;
+
+	//! Replace file control for type.
+	void file_control(uint8_t type, const file_control_t& ctrl) {
+		control_data_[type] = ctrl;
+	}
 
 	//! \brief Display (to status) file information
 	void display_info() const;
