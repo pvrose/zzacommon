@@ -17,7 +17,7 @@
 #]=]
 
 # zzacommon Runtime DLL Helper Functions
-# This module provides functions for detecting and managing runtime DLLs (zlib, Boost)
+# This module provides functions for detecting and managing runtime DLLs (zlib, Boost, CURL)
 
 # Function to detect zlib DLL paths from vcpkg
 # Sets: ZZACOMMON_ZLIB_DLL_RELEASE, ZZACOMMON_ZLIB_DLL_DEBUG
@@ -92,6 +92,41 @@ function(zzacommon_find_boost_dlls VCPKG_ROOT_DIR)
             list(REMOVE_DUPLICATES _BOOST_DLLS_DEBUG)
             set(ZZACOMMON_BOOST_DLLS_DEBUG "${_BOOST_DLLS_DEBUG}" PARENT_SCOPE)
             message(STATUS "zzacommon: Found Boost debug DLLs: ${_BOOST_DLLS_DEBUG}")
+        endif()
+    endif()
+endfunction()
+
+# Function to detect CURL DLL paths from vcpkg
+# Sets: ZZACOMMON_CURL_DLL_RELEASE, ZZACOMMON_CURL_DLL_DEBUG
+function(zzacommon_find_curl_dlls VCPKG_ROOT_DIR)
+    if(NOT MSVC)
+        return()
+    endif()
+
+    if(NOT VCPKG_ROOT_DIR OR NOT EXISTS "${VCPKG_ROOT_DIR}")
+        return()
+    endif()
+
+    set(VCPKG_BIN_DIR "${VCPKG_ROOT_DIR}/installed/x64-windows/bin")
+    set(VCPKG_DEBUG_BIN_DIR "${VCPKG_ROOT_DIR}/installed/x64-windows/debug/bin")
+
+    # Find release DLL
+    if(EXISTS "${VCPKG_BIN_DIR}")
+        file(GLOB CURL_RELEASE_DLLS "${VCPKG_BIN_DIR}/libcurl*.dll")
+        if(CURL_RELEASE_DLLS)
+            list(GET CURL_RELEASE_DLLS 0 _CURL_DLL_RELEASE)
+            set(ZZACOMMON_CURL_DLL_RELEASE "${_CURL_DLL_RELEASE}" PARENT_SCOPE)
+            message(STATUS "zzacommon: Found CURL release DLL: ${_CURL_DLL_RELEASE}")
+        endif()
+    endif()
+
+    # Find debug DLL
+    if(EXISTS "${VCPKG_DEBUG_BIN_DIR}")
+        file(GLOB CURL_DEBUG_DLLS "${VCPKG_DEBUG_BIN_DIR}/libcurl*.dll")
+        if(CURL_DEBUG_DLLS)
+            list(GET CURL_DEBUG_DLLS 0 _CURL_DLL_DEBUG)
+            set(ZZACOMMON_CURL_DLL_DEBUG "${_CURL_DLL_DEBUG}" PARENT_SCOPE)
+            message(STATUS "zzacommon: Found CURL debug DLL: ${_CURL_DLL_DEBUG}")
         endif()
     endif()
 endfunction()
@@ -172,7 +207,40 @@ function(zzacommon_copy_boost_dlls TARGET_NAME)
     endif()
 endfunction()
 
-# Convenience function to copy all required DLLs (zlib + Boost)
+# Helper function to copy CURL DLL to target output directory
+# Usage: zzacommon_copy_curl_dll(target_name)
+function(zzacommon_copy_curl_dll TARGET_NAME)
+    if(NOT TARGET ${TARGET_NAME})
+        message(FATAL_ERROR "Target ${TARGET_NAME} does not exist")
+        return()
+    endif()
+
+    if(ZZACOMMON_CURL_DLL_RELEASE OR ZZACOMMON_CURL_DLL_DEBUG)
+        if(ZZACOMMON_CURL_DLL_RELEASE AND EXISTS "${ZZACOMMON_CURL_DLL_RELEASE}")
+            add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${ZZACOMMON_CURL_DLL_RELEASE}"
+                    "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+                COMMENT "Copying CURL DLL (Release) to $<TARGET_FILE_DIR:${TARGET_NAME}>"
+            )
+            message(STATUS "zzacommon: Will copy libcurl.dll (Release) to ${TARGET_NAME} output directory")
+        endif()
+
+        if(ZZACOMMON_CURL_DLL_DEBUG AND EXISTS "${ZZACOMMON_CURL_DLL_DEBUG}")
+            add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${ZZACOMMON_CURL_DLL_DEBUG}"
+                    "$<TARGET_FILE_DIR:${TARGET_NAME}>"
+                COMMENT "Copying CURL DLL (Debug) to $<TARGET_FILE_DIR:${TARGET_NAME}>"
+            )
+            message(STATUS "zzacommon: Will copy libcurl-d.dll (Debug) to ${TARGET_NAME} output directory")
+        endif()
+    else()
+        message(WARNING "zzacommon: No CURL DLL paths available. Make sure zzax component was built with vcpkg.")
+    endif()
+endfunction()
+
+# Convenience function to copy all required DLLs (zlib + Boost + CURL)
 # Usage: zzacommon_copy_runtime_dlls(target_name)
 function(zzacommon_copy_runtime_dlls TARGET_NAME)
     if(NOT TARGET ${TARGET_NAME})
@@ -188,6 +256,11 @@ function(zzacommon_copy_runtime_dlls TARGET_NAME)
     # Copy Boost DLLs if zzab or zzafb component is used
     if(ZZACOMMON_BOOST_DLLS_RELEASE OR ZZACOMMON_BOOST_DLLS_DEBUG)
         zzacommon_copy_boost_dlls(${TARGET_NAME})
+    endif()
+
+    # Copy CURL DLL if zzax component is used
+    if(ZZACOMMON_CURL_DLL_RELEASE OR ZZACOMMON_CURL_DLL_DEBUG)
+        zzacommon_copy_curl_dll(${TARGET_NAME})
     endif()
 endfunction()
 
@@ -232,6 +305,14 @@ function(zzacommon_install_runtime_dlls)
                 list(APPEND DLLS_TO_INSTALL "${BOOST_DLL}")
             endif()
         endforeach()
+    endif()
+
+    # Add CURL DLLs
+    if(ZZACOMMON_CURL_DLL_RELEASE AND EXISTS "${ZZACOMMON_CURL_DLL_RELEASE}")
+        list(APPEND DLLS_TO_INSTALL "${ZZACOMMON_CURL_DLL_RELEASE}")
+    endif()
+    if(ZZACOMMON_CURL_DLL_DEBUG AND EXISTS "${ZZACOMMON_CURL_DLL_DEBUG}")
+        list(APPEND DLLS_TO_INSTALL "${ZZACOMMON_CURL_DLL_DEBUG}")
     endif()
 
     # Install the DLLs

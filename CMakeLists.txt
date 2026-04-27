@@ -21,7 +21,7 @@ if(NOT MSVC)
 endif()
 
 ## Library zzacommon. 
-project(ZZACOMMON VERSION 1.1.2)
+project(ZZACOMMON VERSION 1.1.2.1)
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
 
 # Language requirememnts
@@ -330,6 +330,11 @@ if(NOT ZZAX_INDEX EQUAL -1)
     message(STATUS "CURL found: ${CURL_VERSION}")
     message(STATUS "CURL include dir: ${CURL_INCLUDE_DIR}")
     message(STATUS "CURL libraries: ${CURL_LIBRARIES}")
+
+    # Find and export CURL DLL location for user applications (MSVC only)
+    if(MSVC)
+      zzacommon_find_curl_dlls("${VCPKG_ROOT}")
+    endif()
   else()
     message(STATUS "CURL not found")
   endif()

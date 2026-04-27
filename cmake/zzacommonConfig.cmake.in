@@ -362,6 +362,9 @@ if(NOT ZZAX_REQUESTED EQUAL -1 AND FLTK_FOUND AND CURL_FOUND AND _ZZAX_PUGIXML_R
 
         # Export zlib DLL paths for user applications
         zzacommon_find_zlib_dlls("${_ZZACOMMON_VCPKG_ROOT}")
+
+        # Export CURL DLL paths for user applications
+        zzacommon_find_curl_dlls("${_ZZACOMMON_VCPKG_ROOT}")
     endif()
 endif()
 

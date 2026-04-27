@@ -262,6 +262,16 @@ if(NOT ZZAX_REQUESTED EQUAL -1)
         if(ZZACOMMON_ZLIB_DLL_DEBUG)
             message(STATUS "zzacommon: ZLIB debug DLL available: ${ZZACOMMON_ZLIB_DLL_DEBUG}")
         endif()
+
+        # Export CURL DLL paths from build tree
+        set(ZZACOMMON_CURL_DLL_RELEASE "@ZZACOMMON_CURL_DLL_RELEASE@")
+        set(ZZACOMMON_CURL_DLL_DEBUG "@ZZACOMMON_CURL_DLL_DEBUG@")
+        if(ZZACOMMON_CURL_DLL_RELEASE)
+            message(STATUS "zzacommon: CURL release DLL available: ${ZZACOMMON_CURL_DLL_RELEASE}")
+        endif()
+        if(ZZACOMMON_CURL_DLL_DEBUG)
+            message(STATUS "zzacommon: CURL debug DLL available: ${ZZACOMMON_CURL_DLL_DEBUG}")
+        endif()
     endif()
 endif()
 
