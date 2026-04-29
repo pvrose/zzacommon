@@ -71,11 +71,11 @@ public:
 	//! Derived graph classes will define which data types they support and how they map
 	//! to axes or plot components.
 	enum data_type_t : uint8_t {
+		NO_DATA,                      //!< No data
 		X_VALUE,                      //!< X-axis data
 		Y_VALUE,                      //!< Y-axis data
 		Y2_VALUE,                     //!< Y2-axis data (for X2Y_LINE graph)
 		RADIUS,                     //!< Radius data (for POLAR graph)
-		THETA,                      //!< Angle data (for POLAR graph)
 		REAL,                       //!< Real part data (for SMITH graph)
 		IMAGINARY,                  //!< Imaginary part data (for SMITH graph)
 	};
@@ -256,6 +256,9 @@ protected:
 
 	//! \brief Return true if the data type is valid for this graph.
 	bool data_type_valid(const data_type_t& type) const {
+		if (type == NO_DATA) {
+			return true; // NO_DATA is always valid
+		}
 		return data_type_to_axis_.find(type) != data_type_to_axis_.end();
 	}
 

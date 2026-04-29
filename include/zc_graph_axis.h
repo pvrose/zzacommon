@@ -229,7 +229,10 @@ public:
 
 	//! \brief Return true if the axis is horizontal (X-axis) or false if the axis is vertical (Y-axis).
 	bool is_horizontal() const {
-		return orientation_ == XB_AXIS || orientation_ == XT_AXIS || orientation_ == X0_AXIS;
+		return orientation_ == XB_AXIS || 
+			orientation_ == XT_AXIS || 
+			orientation_ == X0_AXIS ||
+			orientation_ == R_AXIS;
 	};
 private:
 

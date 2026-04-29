@@ -69,7 +69,8 @@ public:
 		//! The type of segment.
 		enum segment_type_t :uint8_t {
 			VERTEX,          //!< A single vertex (point) defined by X and Y coordinates.
-			ARC              //!< Arc segment defined by center, radius, and angles.
+			ARC,             //!< Arc segment defined by center, radius, and angles.
+			GAP              //!< Gap in the line strip, used to break lines into segments.
 		} type;  
 		//! The data for the segment.
 		union {
@@ -82,12 +83,14 @@ public:
 		plot_segment_t(const plot_vertex_t& vertex) : type(VERTEX), v(vertex) {} 
 		//! Constructor for arc segment.
 		plot_segment_t(const plot_arc_t& arc) : type(ARC), a(arc) {} 
+		//! Constructor for gap segment.
+		plot_segment_t(bool is_gap) : type(GAP) {}
 		
 		//! Copy constructor
 		plot_segment_t(const plot_segment_t& other) : type(other.type) {
 			if (type == VERTEX) {
 				v = other.v;
-			} else {
+			} else if (type == ARC) {
 				a = other.a;
 			}
 		}
@@ -98,7 +101,7 @@ public:
 				type = other.type;
 				if (type == VERTEX) {
 					v = other.v;
-				} else {
+				} else if (type == ARC) {
 					a = other.a;
 				}
 			}
@@ -114,6 +117,7 @@ public:
 		LINE_STRIP,     //!< Line strip defined by a list of vertices and arcs.
 		LOOP,           //!< Loop defined by a list of vertices and arcs (i.e. closed line strip).
 		POLYGON,        //!< Polygon defined by a list of vertices and arcs (filled).
+		COMPLEX,        //!< Complex shape defined by a list of vertices, gaps and arcs - see FLTK Complex polygon.
 		TEXT			//!< Text label defined by a position and string.
 	};
 

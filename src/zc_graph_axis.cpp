@@ -111,7 +111,8 @@ void zc_graph_axis::set_range(range new_range) {
 //! \param zoom_factor The factor to zoom by: +10 indictaes x2 zoom, -10 indicates x0.5 zoom.
 void zc_graph_axis::zoom(int mouse_pos, int zoom_factor) {
 	// Calculate the value at the mouse position before the zoom change.
-	float mouse_value = pixel_to_float(mouse_pos);
+	// Fix zooming for R_AXIS by zooming around 0.
+	float mouse_value = (orientation_ == R_AXIS) ? 0.0F : pixel_to_float(mouse_pos);
 	// Zoom change is 2^^(delta/10) - so every 10 units of delta doubles the zoom factor, every -10 units halves it.
 	float zoom_change = powf(2.0F, (float)zoom_factor / 10.0F);
 	// Calculate the new range based on the zoom change and mouse value.
@@ -126,6 +127,10 @@ void zc_graph_axis::zoom(int mouse_pos, int zoom_factor) {
 //! \param scroll_offset The offset to scroll by in pixels (positive or negative).
 //! \return True if the scroll was applied, False if the scroll was not applied due to limits.
 void zc_graph_axis::scroll(int scroll_offset) {
+	// Ignore scroll if the axis is R_AXIS as it does not make sense to scroll a radius axis.
+	if (orientation_ == R_AXIS) {
+		return;
+	}
 	// Calculate the new range based on the scroll offset and current scale.
 	float new_min = current_range_.min + scroll_offset * scale_;
 	float new_max = current_range_.max + scroll_offset * scale_;
@@ -150,6 +155,7 @@ void zc_graph_axis::draw_axis_line() {
 	switch (orientation_) {
 	case zc_graph_axis::XB_AXIS:
 	case zc_graph_axis::X0_AXIS:
+	case zc_graph_axis::R_AXIS:
 		// Draw along the top of the widget area.
 		fl_line(x(), y(), x() + w(), y());
 		break;
@@ -187,6 +193,7 @@ void zc_graph_axis::draw_ticks() {
 		switch (orientation_) {
 		case zc_graph_axis::XB_AXIS:
 		case zc_graph_axis::X0_AXIS:
+		case zc_graph_axis::R_AXIS:
 			// Draw the tick extending down from the axis line.
 			fl_line(tick.position, y(), tick.position, y() + 5);
 			// Draw the tick label centered below the tick.
@@ -229,6 +236,7 @@ void zc_graph_axis::draw_label() {
 	switch (orientation_) {
 	case zc_graph_axis::XB_AXIS:
 	case zc_graph_axis::X0_AXIS:
+	case zc_graph_axis::R_AXIS:
 		// Draw centered below the axis line.
 		angle = 0;
 		lx = x() + w() / 2 - tw / 2;
@@ -285,96 +293,96 @@ void zc_graph_axis::set_ticks() {
 	// Clear the existing ticks.
 	ticks_.clear();
 	// Calculate the tick spacing in data units based on the desired pixel spacing and current scale.
-	float tick_spacing_units = std::abs(tick_spacing_pixels_ * scale_);
+	tick_spacing_ = std::abs(tick_spacing_pixels_ * scale_);
 	float tick_mantissa;
 	float tick_power10;
-	float grid_spacing_units = tick_spacing_units;
+	float grid_spacing_units = tick_spacing_;
 	std::string format = "%0.0f";
 	uint32_t si_prefix_exponent = ' ';
-	normalise(tick_spacing_units, tick_mantissa, tick_power10, si_prefix_exponent);
+	normalise(tick_spacing_, tick_mantissa, tick_power10, si_prefix_exponent);
 	// Calculate the actual tick spacing in data units.
 	switch (modifier_) {
 	case NO_MODIFIER:
-		if (tick_spacing_units >= 0.7F) format = "%0.0f";
-		else if (tick_spacing_units >= 0.07F) format = "%0.1F";
-		else if (tick_spacing_units >= 0.007F) format = "%0.2F";
+		if (tick_spacing_ >= 0.7F) format = "%0.0f";
+		else if (tick_spacing_ >= 0.07F) format = "%0.1F";
+		else if (tick_spacing_ >= 0.007F) format = "%0.2F";
 		else format = "%g";
 		// Fall through to the same tick spacing as POWER_OF_10 - but with different formatting.
 		[[fallthrough]];
 	case POWER_OF_10:
 		// If normalised value > 7 - set tick at 10 * power10 
 		if (tick_mantissa > 7.0F) {
-			tick_spacing_units = 10.0F * tick_power10;
+			tick_spacing_ = 10.0F * tick_power10;
 		}
 		// If normalised value is between 3.2 and 7 - set tick at 5*10^N		
 		else if (tick_mantissa > 3.2F) {
-			tick_spacing_units = 5.0F * tick_power10;
+			tick_spacing_ = 5.0F * tick_power10;
 		}
 		// If normalised value is between 1.4 and 3.2 - set tick at 2*10^N
 		else if (tick_mantissa > 1.4F) {
-			tick_spacing_units = 2.0F * tick_power10;
+			tick_spacing_ = 2.0F * tick_power10;
 		}
 		// Otherwise set tick at 10^N
 		else {
-			tick_spacing_units = tick_power10;
+			tick_spacing_ = tick_power10;
 		}
 		break;
 	case SI_PREFIX:
 		// If normalised value > 70 - set tick at 100 * power10
 		if (tick_mantissa > 70.0F) {
-			tick_spacing_units = 100.0F * tick_power10;
+			tick_spacing_ = 100.0F * tick_power10;
 		}
 		// If normalised value is between 32 and 70 - set tick at 50*10^N		
 		else if (tick_mantissa > 32.0F) {
-			tick_spacing_units = 50.0F * tick_power10;
+			tick_spacing_ = 50.0F * tick_power10;
 		}
 		// If normalised value is between 14 and 32 - set tick at 20*10^N
 		else if (tick_mantissa > 14.0F) {
-			tick_spacing_units = 20.0F * tick_power10;
+			tick_spacing_ = 20.0F * tick_power10;
 		}
 		// If normalised value is between 7 and 14 - set tick at 10*10^N
 		else if (tick_mantissa > 7.0F) {
-			tick_spacing_units = 10.0F * tick_power10;
+			tick_spacing_ = 10.0F * tick_power10;
 		}
 		// If normalised value is between 3.2 and 7 - set tick at 5*10^N		
 		else if (tick_mantissa > 3.2F) {
-			tick_spacing_units = 5.0F * tick_power10;
+			tick_spacing_ = 5.0F * tick_power10;
 		}
 		// If normalised value is between 1.4 and 3.2 - set tick at 2*10^N
 		else if (tick_mantissa > 1.4F) {
-			tick_spacing_units = 2.0F * tick_power10;
+			tick_spacing_ = 2.0F * tick_power10;
 		}
 		// If normalised value is between 0.7 and 1.4 - set tick at 10^N
 		else if (tick_mantissa > 0.7F) {
-			tick_spacing_units = tick_power10;
+			tick_spacing_ = tick_power10;
 		}
 		// If normalised value is between 0.32 and 0.7 - set tick at 0.5*10^N
 		else if (tick_mantissa > 0.32F) {
-			tick_spacing_units = 0.5F * tick_power10;
+			tick_spacing_ = 0.5F * tick_power10;
 			format = "%0.1f";
 		}
 		// If normalised value is between 0.14 and 0.32 - set tick at 0.2*10^N
 		else if (tick_mantissa > 0.14F) {
-			tick_spacing_units = 0.2F * tick_power10;
+			tick_spacing_ = 0.2F * tick_power10;
 			format = "%0.1f";
 		}
 		// Otherwise set tick at 0.1*10^N
 		else {
-			tick_spacing_units = 0.1F * tick_power10;
+			tick_spacing_ = 0.1F * tick_power10;
 			format = "%0.1f";
 		}
 		break;
 	}
 	// Always have the grid every two ticks. Every 5 units with ticks every 2 looked daft.
-	grid_spacing_units = 2.0 * tick_spacing_units;
+	grid_spacing_units = 2.0 * tick_spacing_;
 	// Calculate the tick positions and labels based on the current range and tick spacing.
 	ticks_.clear();
 	// Start at the first tick position less than or equal to the minimum of the current range.
-	float tick_value = floorf(current_range_.min / tick_spacing_units) * tick_spacing_units;
+	float tick_value = floorf(current_range_.min / tick_spacing_) * tick_spacing_;
 	while (tick_value <= current_range_.max) {
-		// Ignore tick_value ledd than the minimum.
+		// Ignore tick_value less than the minimum.
 		if (tick_value < current_range_.min) {
-			tick_value += tick_spacing_units;
+			tick_value += tick_spacing_;
 			continue;
 		}
 		// Format the tick label based on the modifier.
@@ -393,7 +401,7 @@ void zc_graph_axis::set_ticks() {
 		// Calculate the pixel position of the tick and add it to the list of ticks.
 		int tick_position = float_to_pixel(tick_value);
 		ticks_.push_back({ tick_position, std::string(label) });
-		tick_value += tick_spacing_units;
+		tick_value += tick_spacing_;
 	}
 	// Calculate the grid line positions based on the grid spacing.
 	grid_lines_.clear();

@@ -109,7 +109,7 @@ void zc_graph_plot::plot_object(const plot_object_t& object) {
 				fl_vertex(seg.v.x, seg.v.y);
 			}
 			else if (seg.type == plot_segment_t::ARC) {
-				fl_arc(seg.a.x, seg.a.y, seg.a.r, seg.a.r, seg.a.a1, seg.a.a2);
+				fl_arc(seg.a.x, seg.a.y, seg.a.r, seg.a.a1, seg.a.a2);
 			}
 		}
 		fl_end_line();
@@ -124,7 +124,7 @@ void zc_graph_plot::plot_object(const plot_object_t& object) {
 				fl_vertex(seg.v.x, seg.v.y);
 			}
 			else if (seg.type == plot_segment_t::ARC) {
-				fl_arc(seg.a.x, seg.a.y, seg.a.r, seg.a.r, seg.a.a1, seg.a.a2);
+				fl_arc(seg.a.x, seg.a.y, seg.a.r, seg.a.a1, seg.a.a2);
 			}
 		}
 		fl_end_loop();
@@ -138,10 +138,27 @@ void zc_graph_plot::plot_object(const plot_object_t& object) {
 				fl_vertex(seg.v.x, seg.v.y);
 			}
 			else if (seg.type == plot_segment_t::ARC) {
-				fl_arc(seg.a.x, seg.a.y, seg.a.r, seg.a.r, seg.a.a1, seg.a.a2);
+				fl_arc(seg.a.x, seg.a.y, seg.a.r, seg.a.a1, seg.a.a2);
 			}
 		}
 		fl_end_polygon();
+		fl_line_style(0); // reset to default line style
+		break;
+	case COMPLEX:
+		fl_color(object.style.colour);
+		fl_begin_complex_polygon();
+		for (auto& seg : object.segments) {
+			if (seg.type == plot_segment_t::VERTEX) {
+				fl_vertex(seg.v.x, seg.v.y);
+			}
+			else if (seg.type == plot_segment_t::ARC) {
+				fl_arc(seg.a.x, seg.a.y, seg.a.r, seg.a.a1, seg.a.a2);
+			}
+			else if (seg.type == plot_segment_t::GAP) {
+				fl_gap();
+			}
+		}
+		fl_end_complex_polygon();
 		fl_line_style(0); // reset to default line style
 		break;
 	case TEXT: {

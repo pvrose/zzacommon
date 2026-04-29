@@ -21,7 +21,7 @@ if(NOT MSVC)
 endif()
 
 ## Library zzacommon. 
-project(ZZACOMMON VERSION 1.1.2.1)
+project(ZZACOMMON VERSION 1.1.2.2)
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
 
 # Language requirememnts
@@ -76,7 +76,9 @@ set(ZZAF_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_base.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_plot.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_polar.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_xy.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_xy0.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_x2y.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_input_hierch.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_line_style.cpp

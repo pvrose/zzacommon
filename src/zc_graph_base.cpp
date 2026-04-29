@@ -108,7 +108,7 @@ int zc_graph_base::handle(int event) {
 				axis_under_mouse->scroll(dy * 10);
 			}
 			else {
-				if (axis_under_mouse->get_orientation() == zc_graph_axis::X_AXIS) {
+				if (axis_under_mouse->is_horizontal()) {
 					axis_under_mouse->zoom(mouse_x, -dy);
 				}
 				else {
@@ -123,7 +123,7 @@ int zc_graph_base::handle(int event) {
 				// zoom on all axes.
 				for (auto& it : axes_) {
 					if (!it.second) continue;
-					if (it.second->get_orientation() == zc_graph_axis::X_AXIS) {
+					if (it.second->is_horizontal()) {
 						it.second->zoom(mouse_x, -dy);
 					}
 					else {
@@ -180,7 +180,7 @@ int zc_graph_base::handle(int event) {
 		zc_graph_axis* axis_under_mouse = dynamic_cast<zc_graph_axis*>(below_mouse);
 		zc_graph_plot* plot_under_mouse = dynamic_cast<zc_graph_plot*>(below_mouse);
 		if (axis_under_mouse) {
-			if (axis_under_mouse->get_orientation() == zc_graph_axis::X_AXIS) {
+			if (axis_under_mouse->is_horizontal()) {
 				axis_under_mouse->scroll(dx);
 			}
 			else {
@@ -195,7 +195,7 @@ int zc_graph_base::handle(int event) {
 			if (Fl::event_button() == FL_LEFT_MOUSE) {
 				for (auto& it : axes_) {
 					if (!it.second) continue;
-					if (it.second->get_orientation() == zc_graph_axis::X_AXIS) {
+					if (it.second->is_horizontal()) {
 						it.second->scroll(dx);
 					}
 					else if (it.second->get_orientation() == zc_graph_axis::YL_AXIS) {
@@ -210,7 +210,7 @@ int zc_graph_base::handle(int event) {
 				// Scroll on X and YR axis.
 				for (auto& it : axes_) {
 					if (!it.second) continue;
-					if (it.second->get_orientation() == zc_graph_axis::X_AXIS) {
+					if (it.second->is_horizontal()) {
 						it.second->scroll(dx);
 					}
 					else if (it.second->get_orientation() == zc_graph_axis::YR_AXIS) {
