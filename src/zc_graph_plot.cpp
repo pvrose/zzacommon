@@ -60,7 +60,7 @@ void zc_graph_plot::draw() {
 	fl_rect(x(), y(), w(), h(), FL_FOREGROUND_COLOR);
 	// Set drawing clip to the widget area as some
 	// of the data may be outside the widget area and we don't want to draw this.
-	fl_push_clip(x(), y(), w(), h());
+	fl_push_clip(x() + 1, y() + 1, w() - 2, h() - 2);
 	// Draw the data sets - first the background lines
 	// For each data type, apply the transformation schema, then draw the bg lines.
 	for (auto& ds : data_sets_) {
