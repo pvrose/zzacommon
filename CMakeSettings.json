@@ -17,7 +17,12 @@
           "type": "BOOL"
         }
       ],
-      "intelliSenseMode": "windows-msvc-x64"
+      "intelliSenseMode": "windows-msvc-x64",
+      "intelliSenseOptions": {
+        "additionalCompilerArgs": [
+          "/std:c++17"
+        ]
+      }
     },
     {
       "name": "x64-release",

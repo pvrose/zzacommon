@@ -31,8 +31,9 @@
 #include <utility>
 #include <vector>
 
-// Forward declaration to avoid circular dependency
+// Forward declarations to avoid circular dependency
 class zc_graph_plot;
+class zc_graph_axis;
 
 //! \brief Base class for graph widgets. 
 //! 
@@ -203,7 +204,7 @@ public:
 	//! \brief Define the parameters for an axis.
 	//! \param axis_params Parameter structure for one axis, specified by orientation field.
 	//! \return True if the parameters were set successfully, False if there was an error (e.g. missing parameters for an axis).
-	bool set_axis_params(const zc_graph_axis::axis_params_t& axis_params);
+	bool set_axis_params(data_type_t type, const zc_graph_axis::axis_params_t& axis_params);
 
 	//! \brief Set the range for the specified data type.
 	//! \param type The data type to set the range for.
@@ -212,10 +213,10 @@ public:
 	bool set_data_range(data_type_t type, zc_graph_axis::range new_range);
 
 	//! \brief Get the current range supported by the axis.
-	zc_graph_axis::range get_data_range(zc_graph_axis::orientation_t orientation) const;
+	zc_graph_axis::range get_data_range(data_type_t type) const;
 
 	//! \brief Get the axis for the specified data type.
-	zc_graph_axis::orientation_t get_axis(data_type_t type) const {
+	zc_graph_axis* get_axis(data_type_t type) const {
 		return data_type_to_axis_.at(type);
 	};
 
@@ -276,18 +277,13 @@ protected:
 	//! \brief The data sets to plot. Each data set includes the data types, line style, and pointer to the data.
 	std::vector<data_set_t*> data_sets_;
 
-	//! \brief List of axis widgets for this graph, mapped by orientation.
-	//! The presence of an axis in this map indicates that the graph supports the
-	//! corresponding orientation and any data types mapped to that orientation.
-	std::map<zc_graph_axis::orientation_t, zc_graph_axis*> axes_; 
-
 	//! Pointer to the plot widget for this graph.
 	zc_graph_plot* plot_;
 
 	//! \brief Valid data types for this graph, mapped to the axis component
 	//! that they should be plotted on - to be defined by derived classes in 
 	//! define_data_types()
-	std::map<data_type_t, zc_graph_axis::orientation_t> data_type_to_axis_;
+	std::map<data_type_t, zc_graph_axis*> data_type_to_axis_;
 
 	//! \brief Valid combinations of data types for a single data set - 
 	//! to be defined by derived classes in define_data_types()

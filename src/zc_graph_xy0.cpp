@@ -18,8 +18,8 @@
 #include "zc_graph_xy0.h"
 
 #include "zc_drawing.h"
-#include "zc_graph_axis_linx.h"
-#include "zc_graph_axis_liny.h"
+#include "zc_graph_axis_linx0.h"
+#include "zc_graph_axis_liny0.h"
 #include "zc_graph_base.h"
 #include "zc_graph_plot.h"
 #include "zc_graph_xy.h"
@@ -35,8 +35,6 @@
 //! \brief Constructor
 zc_graph_xy0::zc_graph_xy0(int X, int Y, int W, int H, const char* L) :
 	zc_graph_xy(X, Y, W, H, L) {
-	default_x_axis = zc_graph_axis::X0_AXIS;
-	default_y_axis = zc_graph_axis::Y0_AXIS;
 }
 
 
@@ -56,12 +54,9 @@ void zc_graph_xy0::define_data_types() {
 	// Otherwise the X-axis is at the zero position in the plot area.
 	// Similarly, the Y-axis.
 	data_type_to_axis_ = {
-		{ X_VALUE, zc_graph_axis::X0_AXIS },
-		{ Y_VALUE, zc_graph_axis::Y0_AXIS }
+		{ X_VALUE, nullptr },
+		{ Y_VALUE, nullptr }
 	};
-	// We need two axes - X and Y at the zero position.
-	axes_[zc_graph_axis::X0_AXIS] = nullptr;
-	axes_[zc_graph_axis::Y0_AXIS] = nullptr;
 }
 
 void zc_graph_xy0::create_components() {
@@ -82,21 +77,23 @@ void zc_graph_xy0::create_components() {
 
 	// Add Y axis in the middle.
 	cx = x() + w() / 2 - axis_width_ / 2;
-	axes_.at(zc_graph_axis::Y0_AXIS) = new zc_graph_axis_liny(cx, cy, axis_width_, ch, "Y");
-	add(axes_.at(zc_graph_axis::Y0_AXIS));
+	data_type_to_axis_[Y_VALUE] = new zc_graph_axis_liny0(cx, cy, axis_width_, ch, "Y");
+	add(data_type_to_axis_[Y_VALUE]);
 	// Add X axis in the middle.
 	cx = x();
 	cy = y() + h() / 2 - axis_width_ / 2;
-	axes_.at(zc_graph_axis::X0_AXIS) = new zc_graph_axis_linx(cx, cy, cw, axis_width_, "X");
-	add(axes_.at(zc_graph_axis::X0_AXIS));
+	data_type_to_axis_[X_VALUE] = new zc_graph_axis_linx0(cx, cy, cw, axis_width_, "X");
+	add(data_type_to_axis_[X_VALUE]);
 	end();
 }
 
 // reposition the axes (and if necessary the plot area ) based on the data origins.
 void zc_graph_xy0::position_axes() {
+	auto xaxis = data_type_to_axis_.at(X_VALUE);
+	auto yaxis = data_type_to_axis_.at(Y_VALUE);
 	// Check whether the axes need to be repositioned based on the data origins.
-	int x_origin = axes_.at(zc_graph_axis::X0_AXIS)->get_origin();
-	int y_origin = axes_.at(zc_graph_axis::Y0_AXIS)->get_origin();
+	int x_origin = xaxis->get_origin();
+	int y_origin = yaxis->get_origin();
 	// Set the positions of the axes and plot area based on the origins.
 	int xx, xy, xw, xh;
 	int yx, yy, yw, yh;
@@ -110,7 +107,7 @@ void zc_graph_xy0::position_axes() {
 		yw = axis_width_;
 		xx = x();
 		xw = w();
-		axes_.at(zc_graph_axis::Y0_AXIS)->set_orientation(zc_graph_axis::Y0_AXIS);
+		yaxis->set_tick_direction(zc_graph_axis::LEFTWARDS);
 	}
 	else if (x_origin < x()) {
 		// If the X-origin is to the left of the plot area, the plot is
@@ -119,7 +116,7 @@ void zc_graph_xy0::position_axes() {
 		pw = w() - axis_width_;
 		yx = x();
 		yw = axis_width_;
-		axes_.at(zc_graph_axis::Y0_AXIS)->set_orientation(zc_graph_axis::YL_AXIS);
+		yaxis->set_tick_direction(zc_graph_axis::LEFTWARDS);
 		xx = x() + axis_width_;
 		xw = w() - axis_width_;
 	} else {
@@ -129,7 +126,7 @@ void zc_graph_xy0::position_axes() {
 		pw = w() - axis_width_;
 		yx = x() + w() - axis_width_;
 		yw = axis_width_;
-		axes_.at(zc_graph_axis::Y0_AXIS)->set_orientation(zc_graph_axis::YR_AXIS);
+		yaxis->set_tick_direction(zc_graph_axis::RIGHTWARDS);
 		xx = x();
 		xw = w() - axis_width_;
 	}
@@ -139,7 +136,7 @@ void zc_graph_xy0::position_axes() {
 		ph = h();
 		xy = y_origin;
 		xh = axis_width_;
-		axes_.at(zc_graph_axis::X0_AXIS)->set_orientation(zc_graph_axis::X0_AXIS);
+		xaxis->set_tick_direction(zc_graph_axis::DOWNWARDS);
 		yy = y();
 		yh = h();
 	}
@@ -148,7 +145,7 @@ void zc_graph_xy0::position_axes() {
 		ph = h() - axis_width_;
 		xy = y();
 		xh = axis_width_;
-		axes_.at(zc_graph_axis::X0_AXIS)->set_orientation(zc_graph_axis::XT_AXIS);
+		xaxis->set_tick_direction(zc_graph_axis::UPWARDS);
 		yy = y() + axis_width_;
 		yh = h() - axis_width_;
 	} else {
@@ -156,13 +153,13 @@ void zc_graph_xy0::position_axes() {
 		ph = h();
 		xy = y() + h();
 		xh = axis_width_;
-		axes_.at(zc_graph_axis::X0_AXIS)->set_orientation(zc_graph_axis::XB_AXIS);
+		xaxis->set_tick_direction(zc_graph_axis::DOWNWARDS);
 		yy = y();
 		yh = h();
 	}
 	// Set the positions of the axes and plot area.
-	axes_.at(zc_graph_axis::X0_AXIS)->resize(xx, xy, xw, xh);
-	axes_.at(zc_graph_axis::Y0_AXIS)->resize(yx, yy, yw, yh);
+	xaxis->resize(xx, xy, xw, xh);
+	yaxis->resize(yx, yy, yw, yh);
 	plot_->resize(px, py, pw, ph);
 }
 

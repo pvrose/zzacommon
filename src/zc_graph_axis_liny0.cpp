@@ -15,7 +15,7 @@
 	If not, see <https://www.gnu.org/licenses/>.
 
 */
-#include "zc_graph_axis_linr.h"
+#include "zc_graph_axis_liny0.h"
 #include "zc_graph_axis_linear.h"
 #include "zc_graph_axis.h"
 #include "zc_graph_base.h"
@@ -23,24 +23,33 @@
 #include "zc_fltk.h"
 
 //! \brief Constructor
-zc_graph_axis_linr::zc_graph_axis_linr(int X, int Y, int W, int H, const char* L) :
+zc_graph_axis_liny0::zc_graph_axis_liny0(int X, int Y, int W, int H, const char* L) :
 	zc_graph_axis_linear(X, Y, W, H, L) {
-	tick_direction_ = DOWNWARDS;
 }
 
 //! \brief Draw the line for the axis.
-void zc_graph_axis_linr::draw_axis_line() {
+void zc_graph_axis_liny0::draw_axis_line() {
 	// Set the color and line width for the axis line.
 	fl_color(FL_FOREGROUND_COLOR);
 	fl_line_style(FL_SOLID, 1);
-	// Draw along the top of the widget area.
-	fl_line(x(), y(), x() + w(), y());
+	switch (get_tick_direction()) {
+	case zc_graph_axis::LEFTWARDS:
+		// Draw along the right side of the widget area.
+		fl_line(x() + w(), y(), x() + w(), y() + h());
+		break;
+	case zc_graph_axis::RIGHTWARDS:
+		// Draw along the left side of the widget area.
+		fl_line(x(), y(), x(), y() + h());
+		break;
+	default:
+		break; // Do not draw if tick direction is invalid.
+	}
 	// Restore the default line style.
 	fl_line_style(0);
 }
 
 //! \brief Draw the ticks for the axis.
-void zc_graph_axis_linr::draw_ticks() {
+void zc_graph_axis_liny0::draw_ticks() {
 	// Set the color and line width for the ticks.
 	fl_color(FL_FOREGROUND_COLOR);
 	fl_line_style(FL_SOLID, 1);
@@ -51,17 +60,29 @@ void zc_graph_axis_linr::draw_ticks() {
 		// Get the size of the tick label.
 		int tw = 0, th = 0;
 		fl_measure(tick.label.c_str(), tw, th);
-		// Draw the tick extending down from the axis line.
-		fl_line(tick.position, y(), tick.position, y() + 5);
-		// Draw the tick label centered below the tick.
-		fl_draw(tick.label.c_str(), tick.position - tw / 2, y() + 5 + th);
+		switch (get_tick_direction()) {
+		case zc_graph_axis::LEFTWARDS:
+			// Draw the tick extending left from the axis line.
+			fl_line(x() + w(), tick.position, x() + w() - 5, tick.position);
+			// Draw the tick label centered to the right of the tick.
+			fl_draw(tick.label.c_str(), x() + w() - 5 - tw, tick.position + th / 2);
+			break;
+		case zc_graph_axis::RIGHTWARDS:
+			// Draw the tick extending right from the axis line.
+			fl_line(x(), tick.position, x() + 5, tick.position);
+			// Draw the tick label centered to the left of the tick.
+			fl_draw(tick.label.c_str(), x() + 5, tick.position + th / 2);
+			break;
+		default:
+			break; // Do not draw if tick direction is invalid.
+		}
 	}
 	// Restore the default line style.
 	fl_line_style(0);
 }
 
 //! \brief Draw the label for the axis.
-void zc_graph_axis_linr::draw_label() {
+void zc_graph_axis_liny0::draw_label() {
 	//Centre the label on the axis and draw it.
 	// Set the color and font for the label.
 	fl_color(FL_FOREGROUND_COLOR);
@@ -71,14 +92,30 @@ void zc_graph_axis_linr::draw_label() {
 	fl_measure(label_.c_str(), tw, th);
 	// Draw the label based on the orientation.
 	int lx = 0, ly = 0, lw = 0, lh = 0, ltx = 0, lty = 0, angle = 0;
-	// Draw centered below the axis line.
-	angle = 0;
-	lx = x() + w() / 2 - tw / 2;
-	ly = y() + h() / 4;
-	lw = tw;
-	lh = th;
-	ltx = lx;
-	lty = ly + th;
+	switch (get_tick_direction()) {
+	case zc_graph_axis::LEFTWARDS:
+		// Draw centered to the left of the axis line.
+		angle = 90;
+		lx = x() + w() / 4;
+		ly = y() + h() / 2 - tw / 2;
+		lw = th;
+		lh = tw;
+		ltx = lx + th;
+		lty = ly + lh;
+		break;
+	case zc_graph_axis::UPWARDS:
+		// Draw centered to the right of the axis line.
+		angle = 90;
+		lx = x() + w() / 4;
+		ly = y() + h() / 2 - tw / 2;
+		lw = th;
+		lh = tw;
+		ltx = lx + th;
+		lty = ly + lh;
+		break;
+	default:
+		break; // Do not draw if tick direction is invalid.
+	}
 	// TODO - this ought to be done between drawing the grid lines and drawing the plot data
 	// to avoid the label being overwritten by the grid lines but also to avoid
 	// overwriting the plot data with the label background. 

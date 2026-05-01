@@ -26,12 +26,12 @@
 //! 
 //! \image html zc_graph_axis_liny.png "Showing a linear Y axis with SI prefix modifier and grid lines"
 //! 
-class zc_graph_axis_liny : public zc_graph_axis_linear {
+class zc_graph_axis_linyr : public zc_graph_axis_linear {
 
 public:
 
 	//! \brief Constructor
-	zc_graph_axis_liny(int X, int Y, int W, int H, const char* L = nullptr);
+	zc_graph_axis_linyr(int X, int Y, int W, int H, const char* L = nullptr);
 
 	//! \brief Return true if the axis is horizontal (X-axis) or false if the axis is vertical (Y-axis).
 	bool is_horizontal() const override { return false; }
@@ -48,34 +48,6 @@ public:
 	virtual void draw_ticks() override;
 	//! \brief Draw the label for the axis.
 	virtual void draw_label() override;
-
-	//! \brief Is the given orientation valid for this derived class of axis?
-	virtual bool is_valid_orientation(orientation_t orientation) const override {
-		if (valid_orientations_.find(orientation) != valid_orientations_.end()) {
-			return true;
-		}
-		return false;
-	}
-
-
-	//! \brief Return the tick direction for the axis based on the orientation.
-	virtual tick_direction_t get_tick_direction() const override {
-		switch (orientation_) {
-		case YL_AXIS:
-		case Y0_AXIS:
-			return LEFTWARDS;
-		case YR_AXIS:
-			return RIGHTWARDS;
-		default:
-			return INVALID; // Default to invalid if somehow an invalid orientation is set.
-		}
-	}
-
-
-
-protected:
-
-	std::set<orientation_t> valid_orientations_ = { YL_AXIS, YR_AXIS, Y0_AXIS };
 
 
 

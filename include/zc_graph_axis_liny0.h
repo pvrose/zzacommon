@@ -24,23 +24,23 @@
 
 //! \brief Class to represent a linear X axis on a graph, including scaling and zooming options.
 //! 
-//! \image html zc_graph_axis_linr.png "Showing a linear X axis with SI prefix modifier and grid lines"
+//! \image html zc_graph_axis_liny.png "Showing a linear Y axis with SI prefix modifier and grid lines"
 //! 
-class zc_graph_axis_linr : public zc_graph_axis_linear {
+class zc_graph_axis_liny0 : public zc_graph_axis_linear {
 
 public:
 
 	//! \brief Constructor
-	zc_graph_axis_linr(int X, int Y, int W, int H, const char* L = nullptr);
+	zc_graph_axis_liny0(int X, int Y, int W, int H, const char* L = nullptr);
 
 	//! \brief Return true if the axis is horizontal (X-axis) or false if the axis is vertical (Y-axis).
-	bool is_horizontal() const override { return true; }
+	bool is_horizontal() const override { return false; }
 
 	//! \brief Returns the zoom capability of the axis.
-	zc_graph_axis::zoom_capability_t get_zoom_capability() const override { return zc_graph_axis::ZOOM_ON_ORIGIN; }
+	zc_graph_axis::zoom_capability_t get_zoom_capability() const override { return zc_graph_axis::ZOOM_ON_CURSOR; }
 
 	//! \brief Returns whether the axis can be scrolled.
-	bool can_scroll() const override { return false; }
+	bool can_scroll() const override { return true; }
 
 	//! \brief Draw the line for the axis.
 	virtual void draw_axis_line() override;
@@ -49,7 +49,7 @@ public:
 	//! \brief Draw the label for the axis.
 	virtual void draw_label() override;
 
-};
 
+};
 
 

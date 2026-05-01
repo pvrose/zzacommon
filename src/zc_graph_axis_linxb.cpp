@@ -15,21 +15,23 @@
 	If not, see <https://www.gnu.org/licenses/>.
 
 */
-#include "zc_graph_axis_linr.h"
+#include "zc_graph_axis_linxb.h"
 #include "zc_graph_axis_linear.h"
 #include "zc_graph_axis.h"
 #include "zc_graph_base.h"
 
 #include "zc_fltk.h"
 
+#include <FL/fl_draw.H>
+
 //! \brief Constructor
-zc_graph_axis_linr::zc_graph_axis_linr(int X, int Y, int W, int H, const char* L) :
+zc_graph_axis_linxb::zc_graph_axis_linxb(int X, int Y, int W, int H, const char* L) :
 	zc_graph_axis_linear(X, Y, W, H, L) {
 	tick_direction_ = DOWNWARDS;
 }
 
 //! \brief Draw the line for the axis.
-void zc_graph_axis_linr::draw_axis_line() {
+void zc_graph_axis_linxb::draw_axis_line() {
 	// Set the color and line width for the axis line.
 	fl_color(FL_FOREGROUND_COLOR);
 	fl_line_style(FL_SOLID, 1);
@@ -40,7 +42,7 @@ void zc_graph_axis_linr::draw_axis_line() {
 }
 
 //! \brief Draw the ticks for the axis.
-void zc_graph_axis_linr::draw_ticks() {
+void zc_graph_axis_linxb::draw_ticks() {
 	// Set the color and line width for the ticks.
 	fl_color(FL_FOREGROUND_COLOR);
 	fl_line_style(FL_SOLID, 1);
@@ -61,7 +63,7 @@ void zc_graph_axis_linr::draw_ticks() {
 }
 
 //! \brief Draw the label for the axis.
-void zc_graph_axis_linr::draw_label() {
+void zc_graph_axis_linxb::draw_label() {
 	//Centre the label on the axis and draw it.
 	// Set the color and font for the label.
 	fl_color(FL_FOREGROUND_COLOR);

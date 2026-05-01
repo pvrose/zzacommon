@@ -76,8 +76,12 @@ set(ZZAF_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linear.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linr.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linx.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_liny.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linx0.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linxt.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linxb.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linyl.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linyr.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_liny0.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_base.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_plot.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_polar.cpp
@@ -148,9 +152,13 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linear.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linx.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_liny.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linx.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linr.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_liny0.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linyl.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linyr.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linx0.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linxt.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linx0.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph_base.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph_plot.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph_xy.h

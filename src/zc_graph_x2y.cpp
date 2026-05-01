@@ -18,8 +18,9 @@
 #include "zc_graph_x2y.h"
 
 #include "zc_drawing.h"
-#include "zc_graph_axis_linx.h"
-#include "zc_graph_axis_liny.h"
+#include "zc_graph_axis_linxb.h"
+#include "zc_graph_axis_linyl.h"
+#include "zc_graph_axis_linyr.h"
 #include "zc_graph_base.h"
 #include "zc_graph_plot.h"
 #include "zc_graph_xy.h"
@@ -49,14 +50,10 @@ void zc_graph_x2y::define_data_types() {
 	data_type_combos_ = { { X_VALUE, Y_VALUE }, { X_VALUE, Y2_VALUE } };
 	// X data maps to X axis, Y data maps to left Y axis.
 	data_type_to_axis_ = {
-		{ X_VALUE, zc_graph_axis::X_AXIS },
-		{ Y_VALUE, zc_graph_axis::YL_AXIS },
-		{ Y2_VALUE, zc_graph_axis::YR_AXIS  }
+		{ X_VALUE, nullptr },
+		{ Y_VALUE, nullptr },
+		{ Y2_VALUE, nullptr  }
 	};
-	// We need three axes - X, Y left, and Y right.
-	axes_[zc_graph_axis::X_AXIS] = nullptr;
-	axes_[zc_graph_axis::YL_AXIS] = nullptr;
-	axes_[zc_graph_axis::YR_AXIS] = nullptr;
 }
 
 void zc_graph_x2y::create_components() {
@@ -73,8 +70,8 @@ void zc_graph_x2y::create_components() {
 	int cw = w();
 	int ch = h() - axis_width - GAP;
 	// Add Y axis on the left.
-	axes_.at(zc_graph_axis::YL_AXIS) = new zc_graph_axis_liny(cx, cy, axis_width, ch, "Y");
-	add(axes_.at(zc_graph_axis::YL_AXIS));
+	data_type_to_axis_[Y_VALUE] = new zc_graph_axis_linyl(cx, cy, axis_width, ch, "Y");
+	add(data_type_to_axis_[Y_VALUE]);
 	// Add the plot area
 	cx += axis_width;
 	cw -= axis_width;
@@ -83,14 +80,14 @@ void zc_graph_x2y::create_components() {
 	add(plot_);
 	// Add Y axis on the right.
 	cx += cw;
-	axes_.at(zc_graph_axis::YR_AXIS) = new zc_graph_axis_liny(cx, cy, axis_width, ch, "Y2");	
-	add(axes_.at(zc_graph_axis::YR_AXIS));
+	data_type_to_axis_[Y2_VALUE] = new zc_graph_axis_linyr(cx, cy, axis_width, ch, "Y2");	
+	add(data_type_to_axis_[Y2_VALUE]);
 	// Add X axis on the bottom.
 	cx = plot_->x();
 	cw = plot_->w();
 	cy += ch;
-	axes_.at(zc_graph_axis::X_AXIS) = new zc_graph_axis_linx(cx, cy, cw, axis_width, "X");
-	add(axes_.at(zc_graph_axis::X_AXIS));
+	data_type_to_axis_[X_VALUE] = new zc_graph_axis_linxb(cx, cy, cw, axis_width, "X");
+	add(data_type_to_axis_[X_VALUE]);
 	end();
 	resizable(plot_);
 }

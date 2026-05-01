@@ -91,22 +91,9 @@ public:
 		POWER_OF_10,            //!< Power of 10 (e.g. 10^3) - displayed as "x10^3" in the label.
 	};
 
-	//!\brief Axis orientation type. Derived classes will limit the available orientations.
-	enum orientation_t : uint8_t {
-		XB_AXIS,                 //!< X-axis (horizontal at the bottom of the graph).
-		X_AXIS = XB_AXIS,       //!< Legacy name for X-axis (horizontal at the bottom of the graph).
-		YL_AXIS,                //!< Y-axis (vertical to left of graph).
-		YR_AXIS,                //!< Y-axis (vertical to right of graph).
-		R_AXIS,                 //!< Radius axis for polar graph. Will be
-		//!< drawn horizontally at the 3 o'clock position and the labels will be rotated.
-		X0_AXIS,                //!< X-axis (horizontal overlays the plot area at the Y=0 position).
-		Y0_AXIS,                //!< Y-axis (vertical overlays the plot area at the X=0 position).
-		XT_AXIS,                //!< X-axis (horizontal at the top of the graph).
-	};
 
 	//! \brief Parameter structure for axis configuration.
 	struct axis_params_t {
-		orientation_t orientation;     //!< Orientation of the axis
 		range outer_range;             //!< Absolute minimum and maximum for zooming
 		range inner_range;             //!< Current minimum and maximum for display
 		range default_range;           //!< Default range in the absence of data
@@ -124,8 +111,7 @@ public:
 		//! \param modifier Modifier for axis labels
 		//! \param unit Unit to display on the axis (e.g. "Hz")
 		//! \param label Base label for the axis (e.g. "Frequency")
-		axis_params_t(orientation_t orientation, range range, modifier_t modifier = NO_MODIFIER, const std::string& unit = "", const std::string& label = "") :
-			orientation(orientation), 
+		axis_params_t(range range, modifier_t modifier = NO_MODIFIER, const std::string& unit = "", const std::string& label = "") :
 			outer_range(range), 
 			inner_range(range), 
 			default_range(range),
@@ -218,16 +204,15 @@ public:
 		return (p - origin_) * scale_;
 	}
 
-	//! \brief Return the orientation of the axis.
-	orientation_t get_orientation() const {
-		return orientation_;
-	}
-
-	//! \brief Set the orientation of the axis.
-	void set_orientation(orientation_t orientation) {
-		orientation_ = orientation;
-		set_range(current_range_);
+	//! \brief Set the tick direction for the axis.
+	void set_tick_direction(tick_direction_t tick_direction) {
+		tick_direction_ = tick_direction;
 		redraw();
+	}	
+
+	//! \brief Return the tick direction for the axis based on the orientation.
+	tick_direction_t get_tick_direction() const {
+		return tick_direction_;
 	}
 
 	//! Override draw to draw the axis, ticks and labels.
@@ -276,16 +261,8 @@ protected:
 	//! \brief Draw the label for the axis.
 	virtual void draw_label() = 0;
 
-	//! \brief Is the given orientation valid for this derived class of axis?
-	virtual bool is_valid_orientation(orientation_t orientation) const = 0;
-
-	//! \brief Return the tick direction for the axis based on the orientation.
-	virtual tick_direction_t get_tick_direction() const = 0;
-
-
 		
     // Specified parameters
-    orientation_t orientation_;   //!< Orientation of the axis in degrees (0 for X-axis, 90 for Y-axis)
 	range outer_range_;           //!< Absolute minimum and maximum for zooming
 	range inner_range_;           //!< Current minimum and maximum for display
 	range default_range_;         //!< Default range in the absence of data
@@ -303,6 +280,9 @@ protected:
 	range current_range_;         //!< Current range for display (may be zoomed or scrolled)
 	//! Upper zoom limit - set by the data range, used to prevent zooming out beyond the data range.
 	range zoom_limit_range_;
+
+	//! Tick direction.
+	tick_direction_t tick_direction_ = INVALID;
 
 	//! Tick structure to represent a tick mark on the axis.
 	struct tick_t {

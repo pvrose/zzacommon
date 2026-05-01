@@ -59,7 +59,6 @@ static std::map<int, uint32_t> SI_PREFIXES = {
 //! \brief Constructor
 zc_graph_axis::zc_graph_axis(int X, int Y, int W, int H, const char* L) :
 	Fl_Widget(X, Y, W, H, L),
-	orientation_(XB_AXIS),
 	modifier_(NO_MODIFIER),
 	unit_(""),
 	tick_spacing_pixels_(20),
@@ -75,12 +74,6 @@ zc_graph_axis::~zc_graph_axis() {
 
 //! \brief Set the parameters for this axis.
 void zc_graph_axis::set_params(const axis_params_t& params) {
-	if (!is_valid_orientation(params.orientation)) {
-		// Invalid orientation for this axis type - do not update.
-		throw std::invalid_argument("Invalid orientation for this axis type");
-		return;
-	}
-	orientation_ = params.orientation;
 	outer_range_ = params.outer_range;
 	inner_range_ = params.inner_range;
 	default_range_ = params.default_range;

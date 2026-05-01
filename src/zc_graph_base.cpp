@@ -52,23 +52,22 @@ void zc_graph_base::clear_data_sets() {
 }
 
 //! \brief Set the parameters of an axis.
-bool zc_graph_base::set_axis_params(const zc_graph_axis::axis_params_t& params) {
-	auto it = axes_.find(params.orientation);
-	if (it == axes_.end() || !it->second) {
-		return false;
+bool zc_graph_base::set_axis_params(data_type_t type, const zc_graph_axis::axis_params_t& params) {
+	if (type == NO_DATA) {
+		return false; // NO_DATA is not associated with an axis
 	}
-	it->second->set_params(params);
+	auto axis = data_type_to_axis_.find(type); 
+	if (axis == data_type_to_axis_.end()) {
+		return false; // Data type not associated with any axis
+	}
+	axis->second->set_params(params);
 	return true;
 }
 
 //! Set the range for a data type
 bool zc_graph_base::set_data_range(data_type_t type, zc_graph_axis::range new_range) {
-	auto axis_type = data_type_to_axis_.find(type);
-	if (axis_type == data_type_to_axis_.end()) {
-		return false;
-	}
-	auto axis = axes_.find(axis_type->second);
-	if (axis == axes_.end() || !axis->second) {
+	auto axis = data_type_to_axis_.find(type);
+	if (axis == data_type_to_axis_.end()) {
 		return false;
 	}
 	axis->second->set_range(new_range);
@@ -76,12 +75,12 @@ bool zc_graph_base::set_data_range(data_type_t type, zc_graph_axis::range new_ra
 }
 
 //! Get the range for the specific axis.
-zc_graph_axis::range zc_graph_base::get_data_range(zc_graph_axis::orientation_t orientation) const {
-	auto it = axes_.find(orientation);
-	if (it == axes_.end() || !it->second) {
+zc_graph_axis::range zc_graph_base::get_data_range(data_type_t type) const {
+	auto axis = data_type_to_axis_.find(type);
+	if (axis == data_type_to_axis_.end()) {
 		return {0.0F, 1.0F};
 	}
-	return it->second->get_range();
+	return axis->second->get_range();
 }
 
 //! \brief override of Fl_Group handle to allow for zooming and scrolling on axes.
@@ -121,7 +120,7 @@ int zc_graph_base::handle(int event) {
 			if (!shift_pressed) {
 				// If the mouse wheel event was on the plot and Shift is not pressed, 
 				// zoom on all axes.
-				for (auto& it : axes_) {
+				for (auto& it : data_type_to_axis_) {
 					if (!it.second) continue;
 					if (it.second->is_horizontal()) {
 						it.second->zoom(mouse_x, -dy);
@@ -158,7 +157,7 @@ int zc_graph_base::handle(int event) {
 			}
 			else if (plot_under_mouse) {
 				// If the double-click was on the plot, reset all axes to their default range.
-				for (auto& it : axes_) {
+				for (auto& it : data_type_to_axis_) {
 					if (!it.second) continue;
 					it.second->reset_range();
 				}
@@ -191,14 +190,15 @@ int zc_graph_base::handle(int event) {
 		}
 		else if (plot_under_mouse) {
 			// If left mouse button is held and the mouse is dragged on the plot,
-			// Scroll on X axis and YL axis.
+			// Scroll on horizontal and leftwards vertical axes.
+			// Other axes will ignore scroll.
 			if (Fl::event_button() == FL_LEFT_MOUSE) {
-				for (auto& it : axes_) {
+				for (auto& it : data_type_to_axis_) {
 					if (!it.second) continue;
 					if (it.second->is_horizontal()) {
 						it.second->scroll(dx);
 					}
-					else if (it.second->get_orientation() == zc_graph_axis::YL_AXIS) {
+					else if (it.second->get_tick_direction() == zc_graph_axis::LEFTWARDS) {
 						it.second->scroll(dy);
 					}
 				}
@@ -207,13 +207,14 @@ int zc_graph_base::handle(int event) {
 			}
 			else if (Fl::event_button() == FL_RIGHT_MOUSE) {
 				// If right mouse button is held and the mouse is dragged on the plot,
-				// Scroll on X and YR axis.
-				for (auto& it : axes_) {
+				// Scroll on horizontal and rightwards vertical axes.
+				// Other axes will ignore scroll.
+				for (auto& it : data_type_to_axis_) {
 					if (!it.second) continue;
 					if (it.second->is_horizontal()) {
 						it.second->scroll(dx);
 					}
-					else if (it.second->get_orientation() == zc_graph_axis::YR_AXIS) {
+					else if (it.second->get_tick_direction() == zc_graph_axis::RIGHTWARDS) {
 						it.second->scroll(dy);
 					}
 				}

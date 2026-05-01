@@ -17,7 +17,6 @@
 */
 #pragma once
 
-#include "zc_graph_base.h"
 #include "zc_graph_xy.h"
 
 //! \brief Class for X-Y+Y line graph. 

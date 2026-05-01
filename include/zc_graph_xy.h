@@ -18,7 +18,6 @@
 #pragma once
 
 #include "zc_graph_base.h"
-#include "zc_graph_axis.h"
 
 //! \brief Class for X-Y line graph.
 //! 
@@ -57,11 +56,5 @@ public:
 
 	//! \brief Plot the markers for the graph.
 	void add_markers() override;
-
-protected:
-	//! \brief Default X-axis orientation
-	zc_graph_axis::orientation_t default_x_axis = zc_graph_axis::orientation_t::X_AXIS;
-	//! \brief Default Y-axis orientation
-	zc_graph_axis::orientation_t default_y_axis = zc_graph_axis::orientation_t::YL_AXIS;
 
 };

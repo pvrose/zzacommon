@@ -53,10 +53,8 @@ void zc_graph_polar::define_data_types() {
 	data_type_combos_ = { { RADIUS, NO_DATA } };
 	// Radius maps onto X axis overlayed on to the plot. Theta does not map.
 	data_type_to_axis_ = {
-		{ RADIUS, zc_graph_axis::R_AXIS }
+		{ RADIUS, nullptr }
 	};
-	// We need one axis.
-	axes_[zc_graph_axis::R_AXIS] = nullptr;
 };
 
 void zc_graph_polar::create_components() {
@@ -79,8 +77,8 @@ void zc_graph_polar::create_components() {
 	cx = x() + w() / 2;
 	cy = y() + h() / 2;
 	cw = w() / 2;
-	axes_.at(zc_graph_axis::R_AXIS) = new zc_graph_axis_linr(cx, cy, cw, axis_width, "R");
-	add(*axes_.at(zc_graph_axis::R_AXIS));
+	data_type_to_axis_[RADIUS] = new zc_graph_axis_linr(cx, cy, cw, axis_width, "R");
+	add(data_type_to_axis_[RADIUS]);
 	end();
 	resizable(plot_);
 }
@@ -90,7 +88,7 @@ void zc_graph_polar::create_components() {
 // these to cartesian coordinates which will be scaled by the drawing
 // transformation based on the X axis. So we define the transformation for the radius data.
 void zc_graph_polar::define_plot_xforms() {
-	auto axis_r = axes_.at(zc_graph_axis::R_AXIS);
+	auto axis_r = data_type_to_axis_.at(RADIUS);
 	// Get the data range for the radius axis.
 	auto range_r = axis_r->get_range();
 	// Define the transformation for the radius data for X and scale it for Y.
@@ -142,7 +140,7 @@ void zc_graph_polar::convert_data_to_points(data_set_t* ds) {
 // When the circumferential distance is big enough, we add additional radial
 // lines at 10 degree intervals and then at 5 degree intervals.
 void zc_graph_polar::generate_grid() {
-	auto axis_r = axes_.at(zc_graph_axis::R_AXIS);
+	auto axis_r = data_type_to_axis_.at(RADIUS);
 	auto range_r = axis_r->get_range();
 	std::vector<float> grid_lines_r = axis_r->get_grid_lines();
 	// Generate concentric circles for the radius grid.
@@ -218,7 +216,7 @@ void zc_graph_polar::add_markers() {
 		if (marker.type != RADIUS) {
 			continue;
 		}
-		zc_graph_axis* axis = axes_.at(zc_graph_axis::R_AXIS);
+		zc_graph_axis* axis = data_type_to_axis_.at(RADIUS);
 		// Ignore the marker if it is outside the radius range.
 		auto range = axis->get_range();
 		if (marker.value_1 < range.min || marker.value_1 > range.max) {
@@ -257,7 +255,7 @@ void zc_graph_polar::add_markers() {
 		if (label.type != RADIUS) {
 			continue;
 		}
-		zc_graph_axis* axis = axes_.at(zc_graph_axis::R_AXIS);
+		zc_graph_axis* axis = data_type_to_axis_.at(RADIUS);
 		// Ignore the label if it is outside the radius range.
 		auto range = axis->get_range();
 		if (label.position.a < range.min || label.position.a > range.max) {
