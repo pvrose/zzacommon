@@ -18,7 +18,8 @@
 #include "zc_graph_xy0.h"
 
 #include "zc_drawing.h"
-#include "zc_graph_axis.h"
+#include "zc_graph_axis_linx.h"
+#include "zc_graph_axis_liny.h"
 #include "zc_graph_base.h"
 #include "zc_graph_plot.h"
 #include "zc_graph_xy.h"
@@ -81,12 +82,12 @@ void zc_graph_xy0::create_components() {
 
 	// Add Y axis in the middle.
 	cx = x() + w() / 2 - axis_width_ / 2;
-	axes_.at(zc_graph_axis::Y0_AXIS) = new zc_graph_axis(cx, cy, axis_width_, ch, "Y");
+	axes_.at(zc_graph_axis::Y0_AXIS) = new zc_graph_axis_liny(cx, cy, axis_width_, ch, "Y");
 	add(axes_.at(zc_graph_axis::Y0_AXIS));
 	// Add X axis in the middle.
 	cx = x();
 	cy = y() + h() / 2 - axis_width_ / 2;
-	axes_.at(zc_graph_axis::X0_AXIS) = new zc_graph_axis(cx, cy, cw, axis_width_, "X");
+	axes_.at(zc_graph_axis::X0_AXIS) = new zc_graph_axis_linx(cx, cy, cw, axis_width_, "X");
 	add(axes_.at(zc_graph_axis::X0_AXIS));
 	end();
 }

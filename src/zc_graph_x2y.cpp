@@ -18,7 +18,8 @@
 #include "zc_graph_x2y.h"
 
 #include "zc_drawing.h"
-#include "zc_graph_axis.h"
+#include "zc_graph_axis_linx.h"
+#include "zc_graph_axis_liny.h"
 #include "zc_graph_base.h"
 #include "zc_graph_plot.h"
 #include "zc_graph_xy.h"
@@ -72,7 +73,7 @@ void zc_graph_x2y::create_components() {
 	int cw = w();
 	int ch = h() - axis_width - GAP;
 	// Add Y axis on the left.
-	axes_.at(zc_graph_axis::YL_AXIS) = new zc_graph_axis(cx, cy, axis_width, ch, "Y");
+	axes_.at(zc_graph_axis::YL_AXIS) = new zc_graph_axis_liny(cx, cy, axis_width, ch, "Y");
 	add(axes_.at(zc_graph_axis::YL_AXIS));
 	// Add the plot area
 	cx += axis_width;
@@ -82,13 +83,13 @@ void zc_graph_x2y::create_components() {
 	add(plot_);
 	// Add Y axis on the right.
 	cx += cw;
-	axes_.at(zc_graph_axis::YR_AXIS) = new zc_graph_axis(cx, cy, axis_width, ch, "Y2");	
+	axes_.at(zc_graph_axis::YR_AXIS) = new zc_graph_axis_liny(cx, cy, axis_width, ch, "Y2");	
 	add(axes_.at(zc_graph_axis::YR_AXIS));
 	// Add X axis on the bottom.
 	cx = plot_->x();
 	cw = plot_->w();
 	cy += ch;
-	axes_.at(zc_graph_axis::X_AXIS) = new zc_graph_axis(cx, cy, cw, axis_width, "X");
+	axes_.at(zc_graph_axis::X_AXIS) = new zc_graph_axis_linx(cx, cy, cw, axis_width, "X");
 	add(axes_.at(zc_graph_axis::X_AXIS));
 	end();
 	resizable(plot_);

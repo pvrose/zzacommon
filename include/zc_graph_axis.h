@@ -27,6 +27,10 @@
 #include <vector>
 
 //! \brief Class to represent an axis on a graph, including scaling and zooming options.
+//! This class is intended to have derived classes for specific types of axes to control
+//! in particular the orientation, labelling and setting of ticks and grid lines.
+//! 
+//! Most functionality is implemented in this base class.
 //! 
 //! \image html zc_graph_axis.png "Showing three axes with different orientations and modifiers"
 class zc_graph_axis : public Fl_Widget {
@@ -87,7 +91,7 @@ public:
 		POWER_OF_10,            //!< Power of 10 (e.g. 10^3) - displayed as "x10^3" in the label.
 	};
 
-	//!\brief Axis orientation type.
+	//!\brief Axis orientation type. Derived classes will limit the available orientations.
 	enum orientation_t : uint8_t {
 		XB_AXIS,                 //!< X-axis (horizontal at the bottom of the graph).
 		X_AXIS = XB_AXIS,       //!< Legacy name for X-axis (horizontal at the bottom of the graph).
@@ -130,6 +134,23 @@ public:
 			label(label), 
 			tick_spacing_pixels(30) {
 		};
+	};
+
+	//! \brief Zoom capability of the axis.
+	enum zoom_capability_t : uint8_t {
+		NO_ZOOM,           //!< No zooming allowed - the range is fixed.
+		ZOOM_ON_ORIGIN,       //!< Zooming allowed but the origin (0 value) is fixed in place.
+		ZOOM_ON_CURSOR,       //!< Zooming allowed and the zoom is centered on the cursor position.
+	};
+
+	//! \brief Tick direction for the axis.
+	enum tick_direction_t : uint8_t {
+		INVALID,	   //!< Invalid tick direction - should not be used.
+		UPWARDS,        //!< Ticks point upwards (for horizontal axes)
+		DOWNWARDS,      //!< Ticks point downwards (for horizontal axes)
+		LEFTWARDS,      //!< Ticks point leftwards (for vertical axes)
+		RIGHTWARDS,     //!< Ticks point rightwards (for vertical axes)
+		OUTWARDS,      //!< Ticks point outwards from the plot area (surrounding axes only)
 	};
 
 	//! \brief Constructor
@@ -197,11 +218,6 @@ public:
 		return (p - origin_) * scale_;
 	}
 
-	//! \brief Return the current tick spacing in data units.
-	float get_tick_spacing() const {
-		return tick_spacing_;
-	}
-
 	//! \brief Return the orientation of the axis.
 	orientation_t get_orientation() const {
 		return orientation_;
@@ -224,20 +240,52 @@ public:
 
 	//! \brief Return the list of grid lines to draw on the plot.
 	std::vector<float> get_grid_lines() const {
-		return grid_lines_;
+		return grid_values_;
 	}
 
 	//! \brief Return true if the axis is horizontal (X-axis) or false if the axis is vertical (Y-axis).
-	bool is_horizontal() const {
-		return orientation_ == XB_AXIS || 
-			orientation_ == XT_AXIS || 
-			orientation_ == X0_AXIS ||
-			orientation_ == R_AXIS;
-	};
-private:
+	virtual bool is_horizontal() const = 0;
 
-	// Specified parameters
-	orientation_t orientation_;   //!< Orientation of the axis in degrees (0 for X-axis, 90 for Y-axis)
+	//! \brief Returns the zoom capability of the axis.
+	virtual zoom_capability_t get_zoom_capability() const = 0;
+
+	//! \brief Returns whether the axis can be scrolled.
+	virtual bool can_scroll() const = 0;
+
+	//! Return the pixel position of the axis minimum (either x() for horizontal axis or y() + h() for vertical axis).
+	int get_axis_min_pixel() const {
+		return is_horizontal() ? x() : y() + h();
+	}
+
+	//! Return the width/height of the axis in pixels (either w() for horizontal axis or -h() for vertical axis).
+	int get_axis_length_pixels() const {
+		return is_horizontal() ? w() : -h();
+	}
+protected:
+
+	//!\brief Set the tick positions and labels based on the current range and tick spacing.
+	virtual void set_ticks() = 0;
+
+	//! \brief Set the grid lines based on the current tick positions.
+	virtual void set_grid_lines() = 0;
+
+	//! \brief Draw the line for the axis.
+	virtual void draw_axis_line() = 0;
+	//! \brief Draw the ticks for the axis.
+	virtual void draw_ticks() = 0;
+	//! \brief Draw the label for the axis.
+	virtual void draw_label() = 0;
+
+	//! \brief Is the given orientation valid for this derived class of axis?
+	virtual bool is_valid_orientation(orientation_t orientation) const = 0;
+
+	//! \brief Return the tick direction for the axis based on the orientation.
+	virtual tick_direction_t get_tick_direction() const = 0;
+
+
+		
+    // Specified parameters
+    orientation_t orientation_;   //!< Orientation of the axis in degrees (0 for X-axis, 90 for Y-axis)
 	range outer_range_;           //!< Absolute minimum and maximum for zooming
 	range inner_range_;           //!< Current minimum and maximum for display
 	range default_range_;         //!< Default range in the absence of data
@@ -249,7 +297,6 @@ private:
 	float scale_;                //!< Scale factor - number of units per pixel
 	float inv_scale_;            //!< Inverse scale factor - number of pixels per unit
 	int origin_;                 //!< Pixel position of 0 along the axis
-	float tick_spacing_;         //!< Spacing between ticks in units
 	std::string label_;          //!< Actual label to display (base label plus multiplier if appropriate)
                                  //!< The base label is set by the widget label() method.
 	// Current state
@@ -266,13 +313,11 @@ private:
 	//! The ticks to display on the axis.
 	std::vector<tick_t> ticks_;
 
-	//! Lines to draw every few ticks - float values in units,
-	std::vector<float> grid_lines_;
+	//! Values on the axis at which to draw the grid. These will be drawn on the plot area.
+	std::vector<float> grid_values_;
 
 	// Internal methods.
 
-	//!\brief Set the tick positions and labels based on the current range and tick spacing.
-	void set_ticks();
 
 	//! \brief Normalise a number and generate the appropriate multiplier.
 	//! For modifier_t values:
@@ -284,12 +329,6 @@ private:
 	//! \param si_prefix SI Prefix (if appropriate) - UTF-8 character
 	void normalise(float fin, float& norm, float& exp10, uint32_t& si_prefix) const;
 
-	//! \brief Draw the line for the axis.
-	void draw_axis_line();
-	//! \brief Draw the ticks for the axis.
-	void draw_ticks();
-	//! \brief Draw the label for the axis.
-	void draw_label();
 
 
 };

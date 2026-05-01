@@ -21,7 +21,7 @@ if(NOT MSVC)
 endif()
 
 ## Library zzacommon. 
-project(ZZACOMMON VERSION 1.1.2.2)
+project(ZZACOMMON VERSION 1.1.2.3)
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
 
 # Language requirememnts
@@ -74,6 +74,10 @@ set(ZZAF_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_fltk.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linear.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linr.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linx.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_liny.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_base.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_plot.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_polar.cpp
@@ -143,6 +147,10 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_fltk.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linear.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linx.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_liny.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linx.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph_base.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph_plot.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_graph_xy.h

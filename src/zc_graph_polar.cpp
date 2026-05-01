@@ -17,8 +17,7 @@
 */
 #include "zc_graph_polar.h"
 
-#include "zc_drawing.h"
-#include "zc_graph_axis.h"
+#include "zc_graph_axis_linr.h"
 #include "zc_graph_base.h"
 #include "zc_graph_plot.h"
 #include "zc_line_style.h"
@@ -80,7 +79,7 @@ void zc_graph_polar::create_components() {
 	cx = x() + w() / 2;
 	cy = y() + h() / 2;
 	cw = w() / 2;
-	axes_.at(zc_graph_axis::R_AXIS) = new zc_graph_axis(cx, cy, cw, axis_width, "R");
+	axes_.at(zc_graph_axis::R_AXIS) = new zc_graph_axis_linr(cx, cy, cw, axis_width, "R");
 	add(*axes_.at(zc_graph_axis::R_AXIS));
 	end();
 	resizable(plot_);
@@ -146,7 +145,6 @@ void zc_graph_polar::generate_grid() {
 	auto axis_r = axes_.at(zc_graph_axis::R_AXIS);
 	auto range_r = axis_r->get_range();
 	std::vector<float> grid_lines_r = axis_r->get_grid_lines();
-	double spacing_r = axis_r->get_tick_spacing();
 	// Generate concentric circles for the radius grid.
 	// Mximum radius is at the corners of the plot area, which is the Pythagorean distance
 	// from the center to the corner of the plot area.
