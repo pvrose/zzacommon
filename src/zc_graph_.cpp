@@ -125,6 +125,19 @@ void zc_graph_::set_axis_ranges(
 	axis_data.default_range = default_range;
 }
 
+// Get axis current range for a specific axis number.
+zc_graph_::range_t zc_graph_::get_axis_range(int axis_number) const {
+	// Check the axis data already exists for this axis number
+	auto it = axes_data_.find(axis_number);
+	if (it == axes_data_.end()) {
+		// Axis data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before getting axis range.");
+		return range_t();
+	}
+	const axis_data_t& axis_data = it->second;
+	return axis_data.current_range;
+}
+
 // Add data to the graph for a specific set of coordinates.
 void zc_graph_::add_data_set(
 	int axis_number,                    //!< Axis number to add the data set for (e.g. 0 for X or R axis, 1 for Y or Theta axis)

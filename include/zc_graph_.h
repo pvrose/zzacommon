@@ -32,14 +32,42 @@
 #include <utility>
 #include <vector>
 
-//! \brief Header for the base class for graph widgets.
+//! \brief Base graph class.
 //! 
+//! To use this and its derived classes:
+//! 
+//! \code
+//! zc_graph_xxx* graph = new zc_graph_xxx(...); // Create an instance of a derived graph class (e.g. zc_graph_cartesian)
+//! graph->set_axis_params(...); // Set parameters for the axes (e.g. labels, units, tick spacing)
+//! graph->set_axis_ranges(...); // Set the inner and outer ranges for the axes
+//! ... repeat for each axis as needed ...
+//! graph->add_data_set(...); // Add data sets to plot, specifying the axis number, data points, and line style
+//! ... repeat for each data set as needed ...
+//! graph->add_marker(...); // Add markers to the plot, specifying the axis number, layer, line style, and value(s) for the marker
+//! ... repeat for each marker as needed ...
+//! graph->initiate(); // Initiate the graph with the data and parameters
+//! graph->redraw(); // Redraw the graph to display the data
+//! :
+//! :
+//! graph->clear(); // Clear the graph of all data sets and markers when needed before reconfiguring.
+//! \endcode
+//! The base class zc_graph_ defines the data structures and functions
+//! for managing the graph data, axes, and plotting parameters, 
+//! but does not implement the layout of the graph,
+//! Based on the values set in the layout() function, the base
+//! class will implement the drawing of the graph.
+//! \todo Add support for logarithmic axes, including appropriate
+//! tick spacing and label formatting. This will probably require
+//! the set_ticks() function to be overridden.
 class zc_graph_ : public Fl_Widget {
 
 public:
 
-	//! \brief Type for a data type to be plotted. This is an identifier for the type of data being plotted.
-	typedef std::pair<double, double> data_point_t; //!< Type for a data point (x, y)
+	//! \brief Type for a data type to be plotted. 
+	//! 
+	//! This is an identifier for the type of data being plotted.
+	//! It represents a pair of coordinates, the meaning depending on the graph type.
+	typedef std::pair<double, double> data_point_t;
 
 	//! \brief Type of coordinates that a data_point_t represents.
 	enum graph_type_t : uint8_t {
@@ -56,14 +84,8 @@ public:
 		zc_line_style style; //!< Line style to use for plotting this data set
 	};
 
-	//! \brief Identifies which of the pair of coordinates in a data_point_t is to be used.
-	enum coordinate_type_t : uint8_t {
-		FIRST,  //!< Use the first coordinate (e.g. x in Cartesian, r in Polar)
-		SECOND, //!< Use the second coordinate (e.g. y in Cartesian, theta in Polar)
-	};
-
 	//! \brief Overlay markers for the plot, such as vertical lines to indicate specific X values.
-	//! Markers can be added to any data type, and comprose either a single value
+	//! Markers can be added to any data type, and comprise either a single value
 	//! or a range of values (e.g. for a shaded area on the plot). 
 	//! Each marker includes a line style for rendering and a label for the legend, 
 	//! plus a range of values. (For a single value, the range will be from that value to itself.)
@@ -73,25 +95,10 @@ public:
 		float value_2;        //!< Second value for this marker (e.g. same as value_1 for a single line, or end of range for a shaded area)
 	};
 
-	////! \brief Overlay marker type for a specific position on the plot.
-	//enum position_marker_t : uint8_t {
-	//	NO_MARKER,  //!< No marker
-	//	POINT,      //!< Point marker at a specific coordinate
-	//	LABEL,      //!< Text label at a specific coordinate
-	//};
-
-	////! \brief Data structure to represent a marker at a specific position on the plot.
-	//struct position_marker_data_t {
-	//	position_marker_t type; //!< Type of marker (e.g. POINT, LABEL)
-	//	data_point_t position;  //!< Position of the marker in data coordinates
-	//	std::string text;      //!< Text for the marker (only used if type is LABEL)
-	//	zc_line_style line_style; //!< Line style for the marker (only used if type is TICK or POINT)
-	//	zc_text_style text_style; //!< Text style for the marker (only used if type is LABEL)
-	//	double direction; //!< Direction for the marker (e.g. angle for a tick, or 0 for a point)
-	//};
-
 	//! \brief Minimum and maximum values for data coordinates for an
 	//! individual coordinate.
+	//! 
+	//! Reset value indicates an empty range, which can be readily expanded.
 	struct range_t {
 		double min = DBL_MAX; //!< Minimum value for the coordinate
 		double max = -(DBL_MAX); //!< Maximum value for the coordinate
@@ -105,7 +112,7 @@ public:
 			return *this;
 		}
 
-		//! \brief Add a single value to this range, expanding the range if necessary to include the value.
+		//! \brief Add a single \p value to this range, expanding the range if necessary to include the value.
 		range_t& operator|=(double value) {
 			min = std::min(min, value);
 			max = std::max(max, value);
@@ -195,7 +202,7 @@ public:
 		bool is_major;       //!< Whether this tick is a major tick (e.g. for grid lines) or a minor tick
 	};
 
-	// \brief data required for each axis.
+	//! \brief Data required for each axis.
 	struct axis_data_t {
 		range_t outer_range;       //!< Range of data values for this axis
 		range_t inner_range;       //!< Range of data values currently displayed for this axis (may be zoomed or scrolled)
@@ -213,14 +220,14 @@ public:
 		std::vector<tick_data_t> ticks; //!< Data for the ticks on this axis (value and label)
 	};
 
-	//! \brief data required for the data plot area.
+	//! \brief Data required for the data plot area.
 	struct data_area_t {
-		data_point_t display_min;   //!< Data coordinates to display the axis at (bottom-left)
-		data_point_t display_max;   //!< Data coordinates to display the axis at (top-right)
+		data_point_t display_min;   //!< Data coordinates of the bottom-left of the display area.
+		data_point_t display_max;   //!< Data coordinates of the top-right of the display area.
 	};
 
 	//! \brief Structure to represent a vertex (point) in the plot. This maps onto
-	//! the paarmeters of the FLTK function fl_vertex() when plotting
+	//! the parameters of the FLTK function fl_vertex() when plotting
 	//! lines or points.
 	struct plot_vertex_t {
 		double x = 0;        //!< X-coordinate of point
@@ -237,8 +244,8 @@ public:
 		double x = 0;        //!< X-coordinate of center of arc
 		double y = 0;        //!< Y-coordinate of center of arc
 		double r = 0;        //!< Radius of arc
-		double a1 = 0;       //!< Starting angle of arc in degrees (0 is to the right, positive is counter-clockwise)
-		double a2 = 0;       //!< Ending angle of arc in degrees (0 is to the right, positive is counter-clockwise)
+		double a1 = 0;       //!< Starting angle of arc in degrees (0 is to the right - 3 o'clock, positive is counter-clockwise)
+		double a2 = 0;       //!< Ending angle of arc in degrees (0 is to the right - 3 o'clock, positive is counter-clockwise)
 	};
 
 	//! \brief Structure to represent either a vertex or an arc segment in the plot.
@@ -248,7 +255,7 @@ public:
 		enum segment_type_t :uint8_t {
 			VERTEX,          //!< A single vertex (point) defined by X and Y coordinates.
 			ARC,             //!< Arc segment defined by center, radius, and angles.
-			GAP              //!< Gap in the line strip, used to break lines into segments.
+			GAP              //!< Gap in the line strip, used when constructing complex shapes with holes (e.g. FLTK Complex polygon).
 		} type;
 		//! The data for the segment.
 		union {
@@ -291,8 +298,9 @@ public:
 
 
 	//! \brief Type of construct to draw.
+	//! 
 	//! This maps on to the drawing functions: fl_begin_xxx()/fl_end_xxx() where xxx
-	//! is the shape type (e.g. line, loop, points, polygon)
+	//! is the shape type (e.g. line, loop, points, polygon). 
 	enum shape_t : uint8_t {
 		POINTS,         //!< Points defined by a list of vertices.
 		LINE_STRIP,     //!< Line strip defined by a list of vertices and arcs.
@@ -300,7 +308,7 @@ public:
 		POLYGON,        //!< Polygon defined by a list of vertices and arcs (filled).
 		COMPLEX,        //!< Complex shape defined by a list of vertices, gaps and arcs - see FLTK Complex polygon.
 		TEXT,			//!< Text label defined by a position and string.
-		TICK,			//!< Tick mark defined by a position and direction.
+		TICK,			//!< Tick mark defined by a position and direction. Includes a text label.
 		TEXT_BOX,       //!< Text box with opaque background defined by a position, string, and inclination.
 	};
 
@@ -314,24 +322,26 @@ public:
 	};
 
 	//! \brief Type of data to plot for one object.
-	//! \todo Add text labels as a type of plot object, with parameters for text string, font, size, and position.
 	struct plot_object_t {
 		shape_t shape = LINE_STRIP;           //!< The shape of the object
 		zc_line_style style;                  //!< Line style to use for plotting
 		zc_text_style text_style;             //!< Text style to use for plotting (only used if shape is TEXT, TICK or TEXT_BOX)
 		std::vector<plot_segment_t> segments; //!< List of segments to plot
 		std::string text;                    //!< Text string to plot (only used if shape is TEXT, TICK or TEXT_BOX)
-    	int text_angle = 0;                   //!< Angle to draw text at in degrees (only used if shape is TEXT or TEXT_BOX)
+		int text_angle = 0;                   //!< Angle to draw text at in degrees (only used if shape is TEXT or TEXT_BOX)
 		text_alignment_t text_alignment = ALIGN_CENTRE; //!< Alignment of text with respect to the specified position (only used if shape is TICK, TEXT or TEXT_BOX)
 	};
 
 	//! \brief Transformation schema for the plot data. 
+	//! 
 	//! Currently this is a simple linear transformation defined by the cartesian
 	//! coordinates of the extremes of the data to be plotted,
-	//! mapped onto the pixel coordinates of the widget. More than one
-	//! such schema can be defined, allowing different data types to be plotted
-	//! with different transformations (eg resistive and reactive components
-	//! of an impedance plot).
+	//! mapped onto the pixel coordinates of the widget.
+	//! When used with polar coordinates, the supplied data will be conevrted to cartesian
+	//! coordinates before applying the transformation, so the transformation schema
+	//! will still be defined in terms of cartesian coordinates.
+	//! 
+	//! This allows the use of FLTK complex shape drawing functions, but limited to linear transformations.
 	struct plot_xform_t {
 		double x_min_ = 0;    //!< Minimum X-coordinate of the plot in pixels. Maps onto x() of the widget.
 		double y_min_ = 0;    //!< Minimum Y-coordinate of the plot in pixels. Maps onto y() + h() of the widget (i.e. Y increases upwards).
@@ -342,30 +352,32 @@ public:
 	//! \brief Drawing layers. Lower number will be drawn first then
 	//! the remaining will be drawn on top.
 	enum layer_t : uint8_t {
-		BACKGROUND = 0,       //!< Items to be drawn behind all others. Background patters,
-		GRID_LINES,           //!< Typically lines of equal value related to ticks on the axes.
+		BACKGROUND = 0,       //!< Items to be drawn behind all others. Background patterns or shading could be drawn here.
+		GRID_LINES,           //!< Typically lines of equal value on each axis, drawn behind the axes and data.
 		AXES,                 //!< The axes.
-		DATA,                 //!< Points or lines reqpresenting the data displayed.
-		FOREGROUND,           //!< Items, typically markers, to be displayed on top of all else
+		DATA,                 //!< Points or lines representing the data displayed.
+		FOREGROUND,           //!< Items, typically markers to indicate specific values, to be drawn on top of the data.
 		MASK                  //!< Topmost layer to remove any unwanted artefacts from the plot area.
 	};
 
 	//! \brief All the data for specific data type to be plotted by layer.
+	//! 
+	//! Typically there will be one or two data types to plot. 
+	//! This does not preclude multiple sets of data within one data type.
 	typedef std::map<layer_t, std::vector<plot_object_t>> plot_layer_data_t;
 
 	//! \brief The graph can maintain multiple sets of data to be plotted.
-	//! Each data can be plotted using a different transnformation schema, 
+	//! Each data can be plotted using a different transformation schema, 
 	//! allowing for example different data types to be plotted on the 
 	//! same graph with different scales 
 	//! (e.g. resistive and reactive components of an impedance plot).
 	struct plot_data_t {
 		plot_xform_t xform_schema; //!< Transformation schema to apply to the data points for this data type.
 		data_area_t data_area; //!< Data coordinates corresponding to the plot area (i.e. the corners of the plot area in data coordinates). This is used to define the transformation schema for this data type.
-		axis_data_t* first_axis = nullptr; //!< Pointer to the axis data for the first coordinate (e.g. X axis for Cartesian, R axis for Polar)
-		axis_data_t* second_axis = nullptr; //!< Pointer to the axis data for the second coordinate (e.g. Y axis for Cartesian, Theta axis for Polar)
 		plot_layer_data_t layer_data; //!< Data to plot, organised by layer.
 	};
 
+public:
 	//! \brief Constructor
 	//! \param X The X coordinate of the top-left corner of the graph drawing area
 	//! \param Y The Y coordinate of the top-left corner of the graph drawing area
@@ -378,21 +390,27 @@ public:
 	~zc_graph_();
 
 	//! \brief Define coordinates for the graph.
+	//! \param type The type of coordinates to use for the graph (e.g. Cartesian, Polar).
 	void set_type(graph_type_t type) {
 		graph_type_ = type;
 	}
 
 	//! \brief Set the number of supported axes for the graph.
+	//! \param num_axes The number of axes to support for the graph. This should be set before setting the parameters for each axis.
 	void set_num_axes(int num_axes) {
 		num_axes_ = num_axes;
 	}
 
 	//! \brief Specify the basic parameters of an axis.
-	//! Axis number = 0 for the first coordinate (common for all coordinate types,
-	//! e.g. X axis for Cartesian, R axis for Polar), and the parameters for this axis
-	//! Axis number > 0 for the second coordinate (separate for each coordinate type).
+	//! \param axis_number Use 0 for the first and common axis. Use 1, 2 etc for subsequent axes.
+	//! \param modifier Modifier for the axis labels (e.g. SI prefix, power of 10).
+	//! \param unit Unit to display on the axis (e.g. "Hz").
+	//! \param label Base label for the axis (e.g. "Frequency").
+	//! \param tick_spacing_pixels Suggested spacing between ticks in pixels.
+	//! The actual tick spacing will be determined based on the range of the axis and the size of the graph,
+	//! and will be calculated to be a "nice" number (e.g. 1, 2, 5, 10, etc.) that is close to the suggested spacing in pixels.
 	void set_axis_params(
-		int axis_number,                    //!< 
+		int axis_number,
 		modifier_t modifier = NO_MODIFIER,
 		const std::string& unit = "",
 		const std::string& label = "",
@@ -400,17 +418,25 @@ public:
 	);
 
 	//! \brief Specify the inner and outer ranges for an axis.
+	//! \param axis_number The number of the axis to set the ranges for (starting from 0).
+	//! \param inner_range Cannot zoom closer than this range.
+	//! \param outer_range Cannot zoom further than this range.
+	//! \param default_range Default range to use for this axis - resetting zoom will reset to this range.
 	void set_axis_ranges(
-		int axis_number,                 //!< The number of the axis to set the ranges for (starting from 0).
-		const range_t& inner_range,      //!< Cannot zoom closer than this range
-		const range_t& outer_range,      //!< Cannot zoom further than this range
-		const range_t& default_range     //!< Default range to use for this axis - resetting zoom will reset to this range.
+		int axis_number,
+		const range_t& inner_range,
+		const range_t& outer_range,
+		const range_t& default_range
 	);
+
+	//! \brief Get the current range for an axis.
+	range_t get_axis_range(int axis_number) const;
 
 	//! \brief Add a data set to the graph.
 	//! \param axis_number The number of the data set to add (starting from 0). This allows multiple data sets to be plotted against different
 	//! axes or with different transformation schemata.
-	//! \param data The data points to plot for this data set.
+	//! \param data The data points to plot for this data set. A pointer is used so that when refreshing the data for plotting,
+	//! the data can be updated without needing to re-add the data set.
 	//! \param style The line style to use for this data set.
 	void add_data_set(
 		int axis_number,
@@ -419,17 +445,26 @@ public:
 	);
 
 	//! \brief Add a marker to the graph at a specific value or range of values.
+	//! \param axis_number The number of the axis to add the marker for (starting from 0).
+	//! \param layer The layer to draw the marker on (e.g. foreground, background).
+	//! \param style The line style to use for drawing the marker.
+	//! \param value_a The value for the marker.
 	virtual void add_marker(
 		int axis_number,
 		layer_t layer,
 		zc_line_style style,
 		double value_a
-		)	
+	)
 	{
 		add_marker(axis_number, layer, style, value_a, value_a);
 	};
 
 	//! \brief Add a marker to the graph at a specific value or range of values.
+	//! \param axis_number The number of the axis to add the marker for (starting from 0).
+	//! \param layer The layer to draw the marker on (e.g. foreground, background).
+	//! \param style The line style to use for drawing the marker.
+	//! \param value_1 The value for the marker range lower bound.
+	//! \param value_2 The value for the marker range upper bound.
 	virtual void add_marker(
 		int axis_number,
 		layer_t layer,
@@ -439,6 +474,11 @@ public:
 	) = 0;
 
 	//! \brief Add a text label to the graph at a specific position.
+	//! \param axis_number The number of the axis to add the label for (starting from 0).
+	//! \param layer The layer to draw the label on (e.g. foreground, background).
+	//! \param text The text string to display for the label.
+	//! \param style The text style to use for drawing the label.
+	//! \param position The position to draw the label in data coordinates. 
 	void add_label(
 		int axis_number,
 		layer_t layer,
@@ -448,9 +488,14 @@ public:
 	);
 
 	//! \brief Clear all data sets and markers from the graph.
+	//! 
+	//! This should be called before reconfiguring the graph with new axes, data sets and markers.
 	void clear();
 
-	//\brief Initiate the graph with data and parameters.
+	//! \brief Initiate the graph with data and parameters.
+	//! 
+	//! This should be called after setting the axes parameters and ranges, 
+	//! and adding the data sets and markers, to initiate the graph for plotting.
 	void initiate();
 
 	//! \brief override of Fl_Group handle to allow for zooming and scrolling on axes.
@@ -463,6 +508,7 @@ public:
 	//! - Drag on the plot with right mouse button to scroll on X and YR axes.
 	//! - Double click on an axis to reset the zoom on that axis to the default range.
 	//! - Double click on the plot to reset the zoom on all axes to the default range.
+	//! \todo Not yet implemented - copy from zc_graph_base_ and adapt as needed.
 	int handle(int event) override;
 
 	//! \brief override of Fl_Group resize to reset scaling factors on resize.
@@ -470,22 +516,31 @@ public:
 	//! \param Y The new Y coordinate of the top-left corner of the graph drawing area
 	//! \param W The new width of the graph drawing area
 	//! \param H The new height of the graph drawing area
+	//! 
+	//! This should be called when the graph drawing area is resized to update the scaling factors and layout.
+	//! If the actual size or position is unaltered the graph will NOT be redrawn.
 	void resize(int X, int Y, int W, int H) override;
 
 	//! \brief Draw the graph - override of Fl_Group draw to draw the components of the graph.
-	//! This should not need to be implemented by derived classes.
 	void draw() override;
 
 protected:
 
 	//! \brief Place the axes and plot areas. Define transformation schemata.
 	//! 
-	//! This MUST be implemented by derived classes to define the layout of the graph, including the placement of the axes and plot area, and the transformation schemata to apply to the data points for plotting.
+	//! This MUST be implemented by derived classes to define the layout of the graph, including
+	//! the placement of the axes and plot area, and the transformation schemata to 
+	//! apply to the data points for plotting.
 	//! 
 	virtual void layout() = 0;
 
 	//! 
 	//! \brief Convert given coordinates to Cartesian coordinates for plotting.
+	//! 
+	//! \param point The data point to convert, in the original coordinates for the graph type.
+	//! \todo Convert this to a virtual function if needed for different graph types, when 
+	//! the conversion is not just from polar to Cartesian. For example, supporting
+	//! logarithmic axes or smith charts.
 	const data_point_t convert_point(const data_point_t& point) const {
 		switch (graph_type_) {
 		case CARTESIAN:
@@ -506,43 +561,53 @@ protected:
 	}
 
 	//! \brief Apply the transformation schema to the data points for plotting.
+	//! \param schema The transformation schema to apply.
 	void apply_transformations(plot_xform_t schema);
 
 	//! \brief Generate axis drawing objects.
+	//! \param axis_number The number of the axis to generate the drawing objects for (starting from 0).
 	void generate_axis_grid(
-		int axis_number              //!< The number of the axis to generate (starting from 0).
+		int axis_number
 	);
 
 	//! \brief generate the axis line.
+	//! \param axis_number The number of the axis to generate the line for (starting from 0).
 	void generate_axis_line(
-		int axis_number              //!< The number of the axis to generate the line for (starting from 0).
+		int axis_number
 	);
 
 	//! \brief generate tick marks for the axis.
+	//! \param axis_number The number of the axis to generate ticks for (starting from 0).
 	void generate_axis_ticks(
-		int axis_number              //!< The number of the axis to generate ticks for (starting from 0).
+		int axis_number
 	);
 
 	//! \brief Generate grid lines for the plot.
+	//! \param axis_number The number of the axis to generate grid lines for (starting from 0). 
 	void generate_grid_lines(
-		int axis_number              //!< The number of the axis to generate grid lines for (starting from 0).
+		int axis_number
 	);
 
 	//! \brief Generate label for the axis.
+	//! \param axis_number The number of the axis to generate the label for (starting from 0).
 	void generate_axis_label(
-		int axis_number              //!< The number of the axis to generate the label for (starting from 0).
+		int axis_number
 	);
 
-	//! \brief Generate data lines for the data set.
+	//! \brief Generate data lines for the data set associated with the specified axis number.
+	//! \param axis_number The number of the data set to generate lines for (starting from 0).
 	void generate_data_lines(
-		int axis_number              //!< The number of the data set to generate lines for (starting from 0).
+		int axis_number
 	);
 
 	//! \brief Set tick and grid points for the axis
+	//! \param axis_number The number of the axis to generate ticks for (starting from 0).
+	//! \param tick_spacing_pixels The desired spacing between ticks in pixels.
+	//! \param length_pixels The length of the axis in pixels. 
 	void set_ticks(
-		int axis_number,              //!< The number of the axis to generate ticks for (starting from 0).
-		int tick_spacing_pixels,      //!< The desired spacing between ticks in pixels. This can be used to calculate the appropriate tick spacing in data coordinates based on the current zoom level and transformation schema.
-		int length_pixels             //!< The length of the axis in pixels. This can be used to calculate the number of ticks based on the desired spacing.
+		int axis_number,
+		int tick_spacing_pixels,
+		int length_pixels
 	);
 
 	//! \brief Normalise a number and generate the appropriate multiplier.
@@ -557,11 +622,12 @@ protected:
 	void normalise(double fin, modifier_t modifier, double& norm, double& exp10, uint32_t& si_prefix) const;
 
 	//! \brief Draw an individual object on the plot.
+	//! \param object The object to draw, including its shape, style and segments.
 	void draw_plot_object(
-		const plot_object_t & object     //!< The object to draw.
+		const plot_object_t & object 
 	);
 
-	//! The number of axes supported
+	//! \brief The number of axes supported
 	int num_axes_ = 0;
 
 	//! \brief The data for the graph. Pointers to application data.
