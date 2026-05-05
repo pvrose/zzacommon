@@ -24,7 +24,6 @@
 
 //! \brief Class to represent a linear X axis on a graph, including scaling and zooming options.
 //! 
-//! \image html zc_graph_axis_linr.png "Showing a linear X axis with SI prefix modifier and grid lines"
 //! 
 class zc_graph_axis_linr : public zc_graph_axis_linear {
 

@@ -21,7 +21,6 @@
 
 //! \brief Class for X-Y line graph.
 //! 
-//! \image html zc_graph_polar.png "Example of a polar graph with axes and grid lines"
 class zc_graph_polar : public zc_graph_base {
 
 public:

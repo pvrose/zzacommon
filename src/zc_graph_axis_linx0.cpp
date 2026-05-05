@@ -61,19 +61,20 @@ void zc_graph_axis_linx0::draw_ticks() {
 	for (const auto& tick : ticks_) {
 		// Get the size of the tick label.
 		int tw = 0, th = 0;
+		int tx = float_to_pixel(tick.position);
 		fl_measure(tick.label.c_str(), tw, th);
 		switch (get_tick_direction()) {
 		case zc_graph_axis::DOWNWARDS:
 			// Draw the tick extending down from the axis line.
-			fl_line(tick.position, y(), tick.position, y() + 5);
+			fl_line(tx, y(), tx, y() + 5);
 			// Draw the tick label centered below the tick.
-			fl_draw(tick.label.c_str(), tick.position - tw / 2, y() + 5 + th);
+			fl_draw(tick.label.c_str(), tx - tw / 2, y() + 5 + th);
 			break;
 		case zc_graph_axis::UPWARDS:
 			// Draw the tick extending up from the axis line.
-			fl_line(tick.position, y() + h(), tick.position, y() + h() - 5);
+			fl_line(tx, y() + h(), tx, y() + h() - 5);
 			// Draw the tick label centered above the tick.
-			fl_draw(tick.label.c_str(), tick.position - tw / 2, y() + h() - 5);
+			fl_draw(tick.label.c_str(), tx - tw / 2, y() + h() - 5);
 			break;
 		default:
 			break; // Do not draw if tick direction is invalid.

@@ -18,6 +18,7 @@
 #include "zc_graph_polar.h"
 
 #include "zc_graph_axis_linr.h"
+#include "zc_graph_axis_theta.h"
 #include "zc_graph_base.h"
 #include "zc_graph_plot.h"
 #include "zc_line_style.h"
@@ -50,10 +51,11 @@ zc_graph_polar::~zc_graph_polar() {
 void zc_graph_polar::define_data_types() {
 	// This graph displays radius and angle data.
 	// The valid combination is radius only.
-	data_type_combos_ = { { RADIUS, NO_DATA } };
+	data_type_combos_ = { { RADIUS, THETA } };
 	// Radius maps onto X axis overlayed on to the plot. Theta does not map.
 	data_type_to_axis_ = {
-		{ RADIUS, nullptr }
+		{ RADIUS, nullptr },
+		{ THETA, nullptr }
 	};
 };
 
@@ -64,21 +66,33 @@ void zc_graph_polar::create_components() {
 	int dw = 0, dh = 0;
 	fl_measure("dummy", dw, dh);
 	int axis_width = 2 * dh;
-	// Add components.
-	int cx = x();
-	int cy = y();
-	int cw = w();
-	int ch = h();
-	// Add plot area in the whole gtraph area.
+	// Add components. 
+	// Leave room for the annular width of the theta axis.
+	int cx = x() + axis_width;
+	int cy = y() + axis_width;
+	int cw = w() - 2 * axis_width;
+	int ch = h() - 2 * axis_width;
+	// Add plot area inside the theta axis annulus.
 	plot_ = new zc_graph_plot(cx, cy, cw, ch);
 	add(plot_);
 
 	// Add X axis overlayed on the plot area.
-	cx = x() + w() / 2;
-	cy = y() + h() / 2;
-	cw = w() / 2;
-	data_type_to_axis_[RADIUS] = new zc_graph_axis_linr(cx, cy, cw, axis_width, "R");
+	int rx = cx + cw / 2;
+	int ry = cy + ch / 2;
+	int rw = cw / 2;
+	data_type_to_axis_[RADIUS] = new zc_graph_axis_linr(rx, ry, rw, axis_width, "R");
 	add(data_type_to_axis_[RADIUS]);
+
+	// Add theta axis as an annulus around the plot area.
+	int tx = x();
+	int ty = y();
+	int tw = w();
+	int th = h();
+	zc_graph_axis_theta* theta_axis = new zc_graph_axis_theta(tx, ty, tw, th, "\xCE\xB8");
+	theta_axis->set_annular_width(axis_width);
+	data_type_to_axis_[THETA] = theta_axis;
+	add(theta_axis);
+
 	end();
 	resizable(plot_);
 }

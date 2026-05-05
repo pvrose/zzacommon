@@ -81,6 +81,14 @@ public:
 			result.set_intersection(other);
 			return result;
 		}
+		//! Union assignment operator - expands this range to include the other range.
+		//! \param other The other range to union with this range.
+		//! \return A reference to this range after the union operation.
+		range& operator|=(const range& other)
+		{
+			set_union(other);
+			return *this;
+		}
 	};
 
 	//! \brief Axis label modifier type. This indicates how the axis labels should be
@@ -106,7 +114,6 @@ public:
 		axis_params_t() {};
 
 		//! Minimalist constructor with mostly default values.
-		//! \param orientation Orientation of the axis
 		//! \param range Range for the axis (outer, inner, and default all set to the same value)
 		//! \param modifier Modifier for axis labels
 		//! \param unit Unit to display on the axis (e.g. "Hz")
@@ -155,7 +162,7 @@ public:
 
 	//! \brief Attempt to set the range to \p new_range.
 	//! \param new_range The new range to set. The range will be limited by the outer range.
-	void set_range(range new_range);
+	virtual void set_range(range new_range);
 
 	//! \brief Zoom by a factor of \p zoom_factor around the value at \p mouse_pos.
 	//! The zoom will be limited by the outer range.
@@ -286,7 +293,7 @@ protected:
 
 	//! Tick structure to represent a tick mark on the axis.
 	struct tick_t {
-		int position;           //!< Pixel position of the tick along the axis
+		float position;           //!< Pixel position of the tick along the axis
 		std::string label;      //!< Label to display for the tick
 	};
 

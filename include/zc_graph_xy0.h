@@ -22,7 +22,6 @@
 
 //! \brief Class for X-Y line graph with axes drawn at X=0 and Y=0.
 //! 
-//! \image html zc_graph_xy0.png "Example of an X-Y line graph with axes at X=0 and Y=0"
 class zc_graph_xy0 : public zc_graph_xy {
 
 public:

@@ -49,11 +49,12 @@ void zc_graph_axis_linyr::draw_ticks() {
 	for (const auto& tick : ticks_) {
 		// Get the size of the tick label.
 		int tw = 0, th = 0;
+		int ty = float_to_pixel(tick.position);
 		fl_measure(tick.label.c_str(), tw, th);
 		// Draw the tick extending right from the axis line.
-		fl_line(x(), tick.position, x() + 5, tick.position);
+		fl_line(x(), ty, x() + 5, ty);
 		// Draw the tick label centered to the left of the tick.
-		fl_draw(tick.label.c_str(), x() + 5, tick.position + th / 2);
+		fl_draw(tick.label.c_str(), x() + 5, ty + th / 2);
 	}
 	// Restore the default line style.
 	fl_line_style(0);

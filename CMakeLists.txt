@@ -72,22 +72,24 @@ set(ZZAF_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_file_viewer.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_filename_input.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_fltk.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linear.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linr.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linx0.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linxt.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linxb.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linyl.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linyr.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_liny0.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_base.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_plot.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_polar.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_xy.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_xy0.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_x2y.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linear.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linr.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linx0.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linxt.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linxb.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linyl.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_linyr.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_liny0.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_axis_theta.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_base.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_plot.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_polar.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_xy.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_xy0.cpp
+#  ${ZZACOMMON_SOURCE_DIR}/src/zc_graph_x2y.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_input_hierch.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_line_style.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_password_input.cpp
@@ -149,20 +151,22 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_file_viewer.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_filename_input.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_fltk.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linear.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linr.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_liny0.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linyl.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linyr.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linx0.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linxt.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linx0.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_base.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_plot.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_xy.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_x2y.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_.h
+#  ${ZZACOMMON_INCLUDE_DIR}/zc_graph.h
+#  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis.h
+#  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linear.h
+#  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linr.h
+#  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_liny0.h
+#  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linyl.h
+#  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linyr.h
+#  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linx0.h
+#  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linxt.h
+#  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_linx0.h
+#  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_axis_theta.h
+#  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_base.h
+#  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_plot.h
+#  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_xy.h
+#  ${ZZACOMMON_INCLUDE_DIR}/zc_graph_x2y.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_input_hierch.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_line_style.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_password_input.h

@@ -77,6 +77,7 @@ public:
 		Y_VALUE,                      //!< Y-axis data
 		Y2_VALUE,                     //!< Y2-axis data (for X2Y_LINE graph)
 		RADIUS,                     //!< Radius data (for POLAR graph)
+		THETA,                      //!< Angle data (for POLAR graph)
 		REAL,                       //!< Real part data (for SMITH graph)
 		IMAGINARY,                  //!< Imaginary part data (for SMITH graph)
 	};
@@ -202,6 +203,7 @@ public:
 	void draw() override;
 
 	//! \brief Define the parameters for an axis.
+	//! \param type The data type to set the axis parameters for.
 	//! \param axis_params Parameter structure for one axis, specified by orientation field.
 	//! \return True if the parameters were set successfully, False if there was an error (e.g. missing parameters for an axis).
 	bool set_axis_params(data_type_t type, const zc_graph_axis::axis_params_t& axis_params);

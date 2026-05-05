@@ -51,11 +51,12 @@ void zc_graph_axis_linxt::draw_ticks() {
 	for (const auto& tick : ticks_) {
 		// Get the size of the tick label.
 		int tw = 0, th = 0;
+		int tx = float_to_pixel(tick.position);
 		fl_measure(tick.label.c_str(), tw, th);
 		// Draw the tick extending up from the axis line.
-		fl_line(tick.position, y() + h(), tick.position, y() + h() - 5);
+		fl_line(tx, y() + h(), tx, y() + h() - 5);
 		// Draw the tick label centered above the tick.
-		fl_draw(tick.label.c_str(), tick.position - tw / 2, y() + h() - 5);
+		fl_draw(tick.label.c_str(), tx - tw / 2, y() + h() - 5);
 	}
 	// Restore the default line style.
 	fl_line_style(0);

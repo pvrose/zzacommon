@@ -135,8 +135,7 @@ void zc_graph_axis_linear::set_ticks() {
 			break;
 		}
 		// Calculate the pixel position of the tick and add it to the list of ticks.
-		int tick_position = float_to_pixel(tick_value);
-		ticks_.push_back({ tick_position, std::string(label) });
+		ticks_.push_back({ tick_value, std::string(label) });
 		tick_value += tick_spacing_;
 	}
 	// Add the SI prefix or power of 10 to the axis label if applicable.
