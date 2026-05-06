@@ -161,13 +161,37 @@ void zc_graph_::add_data_set(
 	data_set.style = style;
 };
 
+//! \brief Add a value marker to the graph for a specific axis number.
+void zc_graph_::add_marker(
+	int axis_number,
+	layer_t layer,
+	zc_line_style style,
+	double value_1,
+	double value_2
+) {
+	// Check the axis data already exists for this axis number
+	auto it = axes_data_.find(axis_number);
+	if (it == axes_data_.end()) {
+		// Axis data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a value marker.");
+		return;
+	}
+	// Create the marker object
+	value_marker_t marker;
+	marker.style = style;
+	marker.value_1 = value_1;
+	marker.value_2 = value_2;
+	value_markers_[axis_number][layer].push_back(marker);
+};
+
 //! \brief Add a text label to the graph at a specific position.
 void zc_graph_::add_label(
 	int axis_number,
 	layer_t layer,
 	const std::string& text,
 	zc_text_style style,
-	data_point_t position
+	data_point_t position,
+	bool opaque
 ) {
 	// Check the axis data already exists for this axis number
 	auto it = axes_data_.find(axis_number);
@@ -192,27 +216,29 @@ void zc_graph_::add_label(
 		// We cannot draw it, return.
 		return;
 	}
-	// Add a text label at the specified position
-	plot_object_t label;
-	label.shape = TEXT;
-	label.text = text;
-	label.text_style = style;
-	label.segments.push_back(plot_segment_t(plot_vertex_t(convert_point(position))));
-	int plot_number = (axis_number == 0) ? 1 : axis_number;
-	plot_data_[plot_number].layer_data[layer].push_back(label);
+	// Add the label to the list of point markers for this axis number and layer.
+	point_marker_t marker;
+	marker.position = position;
+	marker.text = text;
+	marker.style = style;
+	marker.opaque = opaque;
+	point_markers_[axis_number][layer].push_back(marker);
 }
 
 // Clear the plot_data
-void zc_graph_::clear() {
+void zc_graph_::clear_config() {
 	// Clear the plot data for all data types and layers
 	plot_data_.clear();
 	// Clear the axis data for all axes
 	axes_data_.clear();
-
+	// Clear the value markers for all axes and layers
+	value_markers_.clear();
+	// Clear the point markers for all axes and layers
+	point_markers_.clear();
 }
 
 // Initiaite the plot data
-void zc_graph_::initiate() {
+void zc_graph_::lock_config() {
 	default_text_size_ = labelsize() * 0.8F; // Default text size for labels and ticks is 80% of the widget label size.
 	axis_width_ = default_text_size_ * 2.0F; // Default width of the axes is twice the default text size.
 	// Update the current ranges for each axis to include the default ranges, if they are not already included.
@@ -223,6 +249,8 @@ void zc_graph_::initiate() {
 	// Generate the axis lines, ticks, grid lines and labels for each axis based on the current parameters and ranges.
 	for (int i = 0; i < num_axes_; ++i) {
 		generate_axis_grid(i);
+		generate_value_markers(i);
+		generate_point_markers(i);
 	}
 }
 
@@ -635,6 +663,78 @@ void zc_graph_::generate_data_lines(int axis_number) {
 	axis_data.current_range |= axis_data.default_range;
 }
 
+//! \brief Add a text label to the graph at a specific position.
+void zc_graph_::generate_point_markers(
+	int axis_number
+) {
+	// Check the axis data already exists for this axis number
+	auto it = axes_data_.find(axis_number);
+	if (it == axes_data_.end()) {
+		// Axis data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a label.");
+		return;
+	}
+	// Get the other axis number: If axis 0 then the primary axis.
+	int other_axis_number = (axis_number == 0) ? 1 : 0;
+	// Check the other axis data already exists for the other axis number
+	auto other_axis_it = axes_data_.find(other_axis_number);
+	if (other_axis_it == axes_data_.end()) {
+		// Other axis data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Other axis number " + std::to_string(other_axis_number) + " does not exist. Set axis parameters for both axes before adding a label.");
+		return;
+	}
+	for (auto& point_marker : point_markers_[axis_number]) {
+		layer_t layer = point_marker.first;
+		auto& point_data = point_marker.second;
+		// Check the position is within the outer range for both axes
+		axis_data_t& axis_data = it->second;
+		axis_data_t& other_axis_data = other_axis_it->second;
+		// Fore each point marker...
+		for (const auto& point_datum : point_data) {
+			if (!axis_data.outer_range.contains(point_datum.position.first) || !other_axis_data.outer_range.contains(point_datum.position.second)) {
+				// We cannot draw it, skip it.
+				continue;
+			}
+			// Add a point marker at the specified position
+			plot_object_t marker;
+			marker.shape = TEXT;
+			marker.text = point_datum.text;
+			marker.text_style = point_datum.style;
+			marker.segments.push_back(plot_segment_t(plot_vertex_t(convert_point(point_datum.position))));
+			int plot_number = (axis_number == 0) ? 1 : axis_number;
+			plot_data_[plot_number].layer_data[layer].push_back(marker);
+		}
+	}
+}
+
+// Generate value markers for a specific axis number.
+void zc_graph_::generate_value_markers(
+	int axis_number
+) {
+	// Check the axis data already exists for this axis number
+	auto it = axes_data_.find(axis_number);
+	if (it == axes_data_.end()) {
+		// Axis data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a label.");
+		return;
+	}
+	// Get the other axis number: If axis 0 then the primary axis.
+	int other_axis_number = (axis_number == 0) ? 1 : 0;
+	// Check the other axis data already exists for the other axis number
+	auto other_axis_it = axes_data_.find(other_axis_number);
+	if (other_axis_it == axes_data_.end()) {
+		// Other axis data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Other axis number " + std::to_string(other_axis_number) + " does not exist. Set axis parameters for both axes before adding a label.");
+		return;
+	}
+	for (auto& axis_marker : value_markers_[axis_number]) {
+		layer_t layer = axis_marker.first;
+		auto& layer_markers = axis_marker.second;
+		for (const auto& value_datum : layer_markers) {
+			generate_value_marker(axis_number, layer, value_datum);
+		}
+	}
+}
 
 // Override of handle
 // TODO: Implement and test the major functionality before adding 
@@ -913,12 +1013,10 @@ void zc_graph_cartesian::layout() {
 }
 
 // Add a marker for Cartesian graphs
-void zc_graph_cartesian::add_marker(
+void zc_graph_cartesian::generate_value_marker(
 	int axis_number,
 	layer_t layer,
-	zc_line_style style,
-	double value_1,
-	double value_2
+	const value_marker_t& marker
 ) {
 	// Check the axis data already exists for this axis number
 	auto it = axes_data_.find(axis_number);
@@ -935,7 +1033,7 @@ void zc_graph_cartesian::add_marker(
 	}
 	// Check the values are within the outer range for this axis
 	axis_data_t& axis_data = it->second;
-	if (!axis_data.outer_range.contains(value_1) || !axis_data.outer_range.contains(value_2)) {
+	if (!axis_data.outer_range.contains(marker.value_1) || !axis_data.outer_range.contains(marker.value_2)) {
 		return;
 	}
 	axis_data_t& other_axis_data = other_axis_it->second;
@@ -943,20 +1041,20 @@ void zc_graph_cartesian::add_marker(
 	int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the marker along is the other axis
 
 	// If the marker values are the same, add a single line marker. If they are different, add a shaded area marker.
-	if (value_1 == value_2) {
+	if (marker.value_1 == marker.value_2) {
 		// Add a single line marker at value_1
 		plot_object_t marker_line;
 		marker_line.shape = LINE_STRIP;
-		marker_line.style = style;
+		marker_line.style = marker.style;
 		if (axis_number == 0) {
 			// Vertical line at X = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.max)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
 		}
 		else {
 			// Horizontal line at Y = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_line);
 	}
@@ -964,20 +1062,20 @@ void zc_graph_cartesian::add_marker(
 		// Draw a rectangle between value 1 and 2 on 1 axis and min and max on the other
 		plot_object_t marker_shape;
 		marker_shape.shape = POLYGON;
-		marker_shape.style = style;
+		marker_shape.style = marker.style;
 		if (axis_number == 0) {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
 		}
 		else {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_shape);
 	}
@@ -1037,12 +1135,10 @@ void zc_graph_cartesian_2y::layout() {
 }
 
 // Add a marker for Cartesian 2Y graphs
-void zc_graph_cartesian_2y::add_marker(
+void zc_graph_cartesian_2y::generate_value_marker(
 	int axis_number,
 	layer_t layer,
-	zc_line_style style,
-	double value_1,
-	double value_2
+	const value_marker_t& marker
 ) {
 	// Check the axis data already exists for this axis number
 	auto it = axes_data_.find(axis_number);
@@ -1059,7 +1155,7 @@ void zc_graph_cartesian_2y::add_marker(
 	}
 	// Check the values are within the outer range for this axis
 	axis_data_t& axis_data = it->second;
-	if (!axis_data.outer_range.contains(value_1) || !axis_data.outer_range.contains(value_2)) {
+	if (!axis_data.outer_range.contains(marker.value_1) || !axis_data.outer_range.contains(marker.value_2)) {
 		return;
 	}
 	axis_data_t& other_axis_data = other_axis_it->second;
@@ -1067,20 +1163,20 @@ void zc_graph_cartesian_2y::add_marker(
 	int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the marker along is the other axis
 
 	// If the marker values are the same, add a single line marker. If they are different, add a shaded area marker.
-	if (value_1 == value_2) {
+	if (marker.value_1 == marker.value_2) {
 		// Add a single line marker at value_1
 		plot_object_t marker_line;
 		marker_line.shape = LINE_STRIP;
-		marker_line.style = style;
+		marker_line.style = marker.style;
 		if (axis_number == 0) {
 			// Vertical line at X = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.max)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
 		}
 		else {
 			// Horizontal line at Y = value_1 (for axis 1 or 2)
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_line);
 	}
@@ -1088,20 +1184,20 @@ void zc_graph_cartesian_2y::add_marker(
 		// Draw a rectangle between value 1 and 2 on 1 axis and min and max on the other
 		plot_object_t marker_shape;
 		marker_shape.shape = POLYGON;
-		marker_shape.style = style;
+		marker_shape.style = marker.style;
 		if (axis_number == 0) {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
 		}
 		else {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_shape);
 	}
@@ -1173,12 +1269,10 @@ void zc_graph_cart_overlay::layout() {
 }
 
 // Add a marker for Cartesian overlay graphs
-void zc_graph_cart_overlay::add_marker(
+void zc_graph_cart_overlay::generate_value_marker(
 	int axis_number,
 	layer_t layer,
-	zc_line_style style,
-	double value_1,
-	double value_2
+	const value_marker_t& marker
 ) {
 	// Check the axis data already exists for this axis number
 	auto it = axes_data_.find(axis_number);
@@ -1195,7 +1289,7 @@ void zc_graph_cart_overlay::add_marker(
 	}
 	// Check the values are within the outer range for this axis
 	axis_data_t& axis_data = it->second;
-	if (!axis_data.outer_range.contains(value_1) || !axis_data.outer_range.contains(value_2)) {
+	if (!axis_data.outer_range.contains(marker.value_1) || !axis_data.outer_range.contains(marker.value_2)) {
 		return;
 	}
 	axis_data_t& other_axis_data = other_axis_it->second;
@@ -1203,20 +1297,20 @@ void zc_graph_cart_overlay::add_marker(
 	int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the marker along is the other axis
 
 	// If the marker values are the same, add a single line marker. If they are different, add a shaded area marker.
-	if (value_1 == value_2) {
+	if (marker.value_1 == marker.value_2) {
 		// Add a single line marker at value_1
 		plot_object_t marker_line;
 		marker_line.shape = LINE_STRIP;
-		marker_line.style = style;
+		marker_line.style = marker.style;
 		if (axis_number == 0) {
 			// Vertical line at X = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.max)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
 		}
 		else {
 			// Horizontal line at Y = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_line);
 	}
@@ -1224,20 +1318,20 @@ void zc_graph_cart_overlay::add_marker(
 		// Draw a rectangle between value 1 and 2 on 1 axis and min and max on the other
 		plot_object_t marker_shape;
 		marker_shape.shape = POLYGON;
-		marker_shape.style = style;
+		marker_shape.style = marker.style;
 		if (axis_number == 0) {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
 		}
 		else {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_shape);
 	}
@@ -1280,12 +1374,10 @@ void zc_graph_polar::layout() {
 }
 
 // Add a marker for Polar graphs
-void zc_graph_polar::add_marker(
+void zc_graph_polar::generate_value_marker(
 	int axis_number,
 	layer_t layer,
-	zc_line_style style,
-	double value_1,
-	double value_2
+	const value_marker_t& marker
 ) {
 	// Check the axis data already exists for this axis number
 	auto it = axes_data_.find(axis_number);
@@ -1302,7 +1394,7 @@ void zc_graph_polar::add_marker(
 	}
 	// Check the values are within the outer range for this axis
 	axis_data_t& axis_data = it->second;
-	if (!axis_data.outer_range.contains(value_1) || !axis_data.outer_range.contains(value_2)) {
+	if (!axis_data.outer_range.contains(marker.value_1) || !axis_data.outer_range.contains(marker.value_2)) {
 		return;
 	}
 	axis_data_t& other_axis_data = other_axis_it->second;
@@ -1310,21 +1402,21 @@ void zc_graph_polar::add_marker(
 	int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the marker along is the other axis
 
 	// If the marker values are the same, add a single line marker. If they are different, add a shaded area marker.
-	if (value_1 == value_2) {
+	if (marker.value_1 == marker.value_2) {
 		// Add a single line marker at value_1
 		plot_object_t marker_line;
 		marker_line.shape = LINE_STRIP;
-		marker_line.style = style;
+		marker_line.style = marker.style;
 		if (axis_number == 0) {
 			// Circle at R = value_1
-			plot_arc_t arc = { 0, 0, value_1, 0, 360 };
+			plot_arc_t arc = { 0, 0, marker.value_1, 0, 360 };
 			marker_line.segments.push_back(plot_segment_t(arc));
 		}
 		else {
 			// Radial line at Theta = value_1
 			plot_vertex_t origin(0.0, 0.0);
 			marker_line.segments.push_back(origin);
-			data_point_t point1(other_axis_data.outer_range.max, value_1);
+			data_point_t point1(other_axis_data.outer_range.max, marker.value_1);
 			plot_vertex_t vertex1(convert_point(point1));
 			marker_line.segments.push_back(vertex1);
 		}
@@ -1332,12 +1424,12 @@ void zc_graph_polar::add_marker(
 	}
 	else {
 		plot_object_t marker_shape;
-		marker_shape.style = style;
+		marker_shape.style = marker.style;
 		if (axis_number == 0) {
 			// Draw an annulus from radius = value_1 to value_2
 			marker_shape.shape = COMPLEX;
-			double r0 = std::max(value_1, value_2);
-			double r1 = std::min(value_1, value_2);
+			double r0 = std::max(marker.value_1, marker.value_2);
+			double r1 = std::min(marker.value_1, marker.value_2);
 			plot_arc_t arc = { 0, 0, r0, 0, 360 };
 			marker_shape.segments.push_back(plot_segment_t(arc));
 			// Add a gap to break the line strip, then add the inner arc in the opposite direction to create a filled annulus.
@@ -1350,7 +1442,7 @@ void zc_graph_polar::add_marker(
 			marker_shape.shape = COMPLEX;
 			plot_vertex_t origin(0.0, 0.0);
 			marker_shape.segments.push_back(origin);
-			plot_arc_t arc = { 0, 0, other_axis_data.outer_range.max, value_1, value_2 };
+			plot_arc_t arc = { 0, 0, other_axis_data.outer_range.max, marker.value_1, marker.value_2 };
 			marker_shape.segments.push_back(plot_segment_t(arc));
 			// Add the origin again to create a closed shape for the sector.
 			marker_shape.segments.push_back(origin);

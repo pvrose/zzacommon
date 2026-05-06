@@ -95,6 +95,14 @@ public:
 		float value_2;        //!< Second value for this marker (e.g. same as value_1 for a single line, or end of range for a shaded area)
 	};
 
+	//! \brief Data required for a point label marker
+	struct point_marker_t {
+		data_point_t position; //!< Data coordinates of the point to label
+		std::string text;      //!< Text to display for the label
+		zc_text_style style;    //!< Text style to use for the label
+		bool opaque = false;   //!< Whether to draw an opaque background behind the label text for better visibility
+	};
+
 	//! \brief Minimum and maximum values for data coordinates for an
 	//! individual coordinate.
 	//! 
@@ -200,7 +208,7 @@ public:
 		double value;        //!< Value of the tick in data coordinates
 		std::string label;   //!< Label to display for the tick
 		bool is_major;       //!< Whether this tick is a major tick (e.g. for grid lines) or a minor tick
-	};
+	}; 
 
 	//! \brief Data required for each axis.
 	struct axis_data_t {
@@ -449,7 +457,7 @@ public:
 	//! \param layer The layer to draw the marker on (e.g. foreground, background).
 	//! \param style The line style to use for drawing the marker.
 	//! \param value_a The value for the marker.
-	virtual void add_marker(
+	void add_marker(
 		int axis_number,
 		layer_t layer,
 		zc_line_style style,
@@ -465,13 +473,13 @@ public:
 	//! \param style The line style to use for drawing the marker.
 	//! \param value_1 The value for the marker range lower bound.
 	//! \param value_2 The value for the marker range upper bound.
-	virtual void add_marker(
+	void add_marker(
 		int axis_number,
 		layer_t layer,
 		zc_line_style style,
 		double value_1,
 		double value_2
-	) = 0;
+	);
 
 	//! \brief Add a text label to the graph at a specific position.
 	//! \param axis_number The number of the axis to add the label for (starting from 0).
@@ -479,24 +487,28 @@ public:
 	//! \param text The text string to display for the label.
 	//! \param style The text style to use for drawing the label.
 	//! \param position The position to draw the label in data coordinates. 
+	//! \param opaque Whether to draw an opaque background behind the label text for better visibility.
 	void add_label(
 		int axis_number,
 		layer_t layer,
 		const std::string& text,
 		zc_text_style style,
-		data_point_t position
+		data_point_t position,
+		bool opaque = false
 	);
 
 	//! \brief Clear all data sets and markers from the graph.
 	//! 
 	//! This should be called before reconfiguring the graph with new axes, data sets and markers.
-	void clear();
+	void clear_config();
 
-	//! \brief Initiate the graph with data and parameters.
+	//! \brief Lock the graph configuration and prepare for plotting.
 	//! 
 	//! This should be called after setting the axes parameters and ranges, 
 	//! and adding the data sets and markers, to initiate the graph for plotting.
-	void initiate();
+	//! It copies the axis, gridline, data and marker data into 
+	//! internal structures for plotting.
+	void lock_config();
 
 	//! \brief override of Fl_Group handle to allow for zooming and scrolling on axes.
 	//! Mouse actions:-
@@ -600,6 +612,29 @@ protected:
 		int axis_number
 	);
 
+	//! \brief Generate the specfied value marker for the specified axis number.
+	//! \param axis_number The number of the axis to generate the marker for (starting from 0).
+	//! \param layer The layer to draw the marker on (e.g. foreground, background).
+	//! \param marker The marker to generate.
+	//! 
+	//! This will also be used to generate axis and grid lines and should 
+	//! be the only function that needs to be overridden.
+	virtual void generate_value_marker(
+		int axis_number,
+		layer_t layer,
+		const value_marker_t& marker
+	) = 0;
+
+	//! \brief Generate all the value markers for the specified axis number.
+	void generate_value_markers(
+		int axis_number
+	);
+
+	//! \brief Generate all the point markers for the specified axis number.
+	void generate_point_markers(
+		int axis_number
+	);
+
 	//! \brief Set tick and grid points for the axis
 	//! \param axis_number The number of the axis to generate ticks for (starting from 0).
 	//! \param tick_spacing_pixels The desired spacing between ticks in pixels.
@@ -631,16 +666,35 @@ protected:
 	int num_axes_ = 0;
 
 	//! \brief The data for the graph. Pointers to application data.
+	//! 
+	//! This data will be applied to the DATA layer.
 	std::map<int, data_set_t> data_sets_;
-
-	//! \brief The data
-	std::map<int, plot_data_t> plot_data_; //!< Map of data sets to plot, keyed by axis number (starting from 1).
 
 	//! \brief The graph_type for the graph, which defines the layout of the axes and plot area.
 	graph_type_t graph_type_ = NO_DATA;
 
-	//! \brief The axis data for the graph, keyed by axis number (starting from 0)
+	//! \brief The axis data for the graph, keyed by axis number (starting from 0).
+	//! 
+	//! Ths data will be applied to the AXES amd GRIDLINES layers.
 	std::map<int, axis_data_t> axes_data_;
+
+	//! \brief The value markers for the graph, keyed by axis number (starting from 0).
+	//! 
+	//! This data will be applied to either the BACKGROUND or FOREGROUND layer, as required 
+	//! by the application.
+	std::map<int, std::map<layer_t, std::vector<value_marker_t>>> value_markers_;
+
+	//! \brief The point markers for the graph, keyed by axis number (starting from 0).
+	//! 
+	//! This data will be applied to either the BACKGROUND or FOREGROUND layer, as required
+	//! by the application.
+	std::map<int, std::map<layer_t, std::vector<point_marker_t>>> point_markers_;
+
+	//! \brief The data for plotting.
+	//! 
+	//! This data will be regenerated from the application data and configuration
+	//! parameters every time the widget needs to be redrawn.
+	std::map<int, plot_data_t> plot_data_; //!< Map of data sets to plot, keyed by axis number (starting from 1).
 
 	//! \brief The width of the axes in pixels. This is used to calculate the dimensions of the plot area and the transformation schema for the data points.
 	int axis_width_ = 50;
@@ -671,13 +725,12 @@ public:
 	void layout() override;
 
 	//! \brief Add a marker to the graph at a specific value or range of values.
-	void add_marker(
+	virtual void generate_value_marker(
 		int axis_number,
 		layer_t layer,
-		zc_line_style style,
-		double value_1,
-		double value_2
+		const value_marker_t& marker
 	) override;
+
 };
 
 //! \brief Derived class for Cartesian graphs with a secondary Y axis.
@@ -694,12 +747,11 @@ public:
 	void layout() override;
 
 	//! \brief Add a marker to the graph at a specific value or range of values.
-	void add_marker(
+	//! \brief Add a marker to the graph at a specific value or range of values.
+	virtual void generate_value_marker(
 		int axis_number,
 		layer_t layer,
-		zc_line_style style,
-		double value_1,
-		double value_2
+		const value_marker_t& marker
 	) override;
 };
 
@@ -717,12 +769,11 @@ public:
 	void layout() override;
 
 	//! \brief Add a marker to the graph at a specific value or range of values.
-	void add_marker(
+	//! \brief Add a marker to the graph at a specific value or range of values.
+	virtual void generate_value_marker(
 		int axis_number,
 		layer_t layer,
-		zc_line_style style,
-		double value_1,
-		double value_2
+		const value_marker_t& marker
 	) override;
 };
 
@@ -740,12 +791,10 @@ public:
 	void layout() override;
 
 	//! \brief Add a marker to the graph at a specific value or range of values.
-	void add_marker(
+	virtual void generate_value_marker(
 		int axis_number,
 		layer_t layer,
-		zc_line_style style,
-		double value_1,
-		double value_2
+		const value_marker_t& marker
 	) override;
 };
 
