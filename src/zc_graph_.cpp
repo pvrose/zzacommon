@@ -301,7 +301,7 @@ void zc_graph_::generate_grid_lines(int axis_number) {
 	zc_line_style grid_line_style({ FL_LIGHT2, 1, FL_DOT });
 	for (auto& tick : axis_data.ticks) {
 		if (tick.is_major) {
-			add_marker(drawing_axis_number, GRID_LINES, grid_line_style, tick.value);
+			add_marker(axis_number, GRID_LINES, grid_line_style, tick.value);
 		}
 	}
 }
@@ -313,6 +313,12 @@ void zc_graph_::set_ticks(int axis_number, int tick_spacing_pixels, int length_p
 	if (it == axes_data_.end()) {
 		// Axis data does not exist for this axis number, throw an error
 		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before setting ticks.");
+		return;
+	}
+	// Check the current range is valid
+	if (!it->second.current_range.is_valid()) {
+		// Current range is not valid, throw an error
+		throw std::invalid_argument("Current range is not valid for axis number " + std::to_string(axis_number) + ". Set axis ranges before setting ticks.");
 		return;
 	}
 	axis_data_t& axis_data = it->second;
@@ -944,13 +950,13 @@ void zc_graph_cartesian::add_marker(
 		marker_line.style = style;
 		if (axis_number == 0) {
 			// Vertical line at X = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.outer_range.min)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.outer_range.max)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.max)));
 		}
 		else {
 			// Horizontal line at Y = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.min, value_1)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.max, value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_line);
 	}
@@ -960,18 +966,18 @@ void zc_graph_cartesian::add_marker(
 		marker_shape.shape = POLYGON;
 		marker_shape.style = style;
 		if (axis_number == 0) {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.outer_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.outer_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.outer_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.outer_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.outer_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
 		}
 		else {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.min, value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.max, value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.max, value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.min, value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.min, value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_shape);
 	}
@@ -1068,13 +1074,13 @@ void zc_graph_cartesian_2y::add_marker(
 		marker_line.style = style;
 		if (axis_number == 0) {
 			// Vertical line at X = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.outer_range.min)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.outer_range.max)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.max)));
 		}
 		else {
 			// Horizontal line at Y = value_1 (for axis 1 or 2)
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.min, value_1)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.max, value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_line);
 	}
@@ -1084,18 +1090,18 @@ void zc_graph_cartesian_2y::add_marker(
 		marker_shape.shape = POLYGON;
 		marker_shape.style = style;
 		if (axis_number == 0) {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.outer_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.outer_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.outer_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.outer_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.outer_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
 		}
 		else {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.min, value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.max, value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.max, value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.min, value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.min, value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_shape);
 	}
@@ -1204,13 +1210,13 @@ void zc_graph_cart_overlay::add_marker(
 		marker_line.style = style;
 		if (axis_number == 0) {
 			// Vertical line at X = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.outer_range.min)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.outer_range.max)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.max)));
 		}
 		else {
 			// Horizontal line at Y = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.min, value_1)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.max, value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_line);
 	}
@@ -1220,18 +1226,18 @@ void zc_graph_cart_overlay::add_marker(
 		marker_shape.shape = POLYGON;
 		marker_shape.style = style;
 		if (axis_number == 0) {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.outer_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.outer_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.outer_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.outer_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.outer_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_2, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(value_1, other_axis_data.current_range.min)));
 		}
 		else {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.min, value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.max, value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.max, value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.min, value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.outer_range.min, value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_shape);
 	}
