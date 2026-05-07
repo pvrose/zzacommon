@@ -63,7 +63,7 @@ zc_graph_::zc_graph_(int x, int y, int w, int h, const char* label) :
 	Fl_Widget(x, y, w, h, label)
 {
 	// Default text size is set to 80% of the default ZZA app font size.
-	default_text_size_ = DEFAULT_SIZE * 0.8;
+	default_text_size_ = FL_NORMAL_SIZE;
 }
 
 // Destructor
@@ -237,11 +237,14 @@ void zc_graph_::start_config() {
 
 // Initiaite the plot data
 void zc_graph_::end_config() {
-	axis_width_ = default_text_size_ * 2.0F; // Default width of the axes is twice the default text size.
+	axis_width_ = default_text_size_ * 2; // Default width of the axes is twice the default text size.
+	v_axis_width_ = default_text_size_ * 3; // Default width of the vertical axis is thrice the default text size.
 	// Update the current ranges for each axis to include the default ranges, if they are not already included.
 	for (auto& [axis_number, axis_data] : axes_data_) {
 		axis_data.current_range |= axis_data.default_range;
 	}
+	// Clear the plot data for all data types and layers.
+	plot_data_.clear();
 	// Set out the positions of the axes and plot area, set the 
 	// drawing transformation schemata.
 	layout();
@@ -1002,9 +1005,9 @@ void zc_graph_::draw_plot_object(const plot_object_t& object) {
 void zc_graph_cartesian::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
 	// calculate pixel dimensions for the plot area.
-	int plot_x = x() + axis_width_;
+	int plot_x = x() + v_axis_width_;
 	int plot_y = y();
-	int plot_w = w() - axis_width_;
+	int plot_w = w() - v_axis_width_;
 	int plot_h = h() - axis_width_;
 	double x_min = axes_data_[0].current_range.min;
 	double x_max = axes_data_[0].current_range.max;
@@ -1015,7 +1018,7 @@ void zc_graph_cartesian::layout() {
 	double dpp_y = (y_max - y_min) / plot_h;
 	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
 	plot_xform_t xform_schema;
-	xform_schema.x_min_ = x_min - axis_width_ * dpp_x;
+	xform_schema.x_min_ = x_min - v_axis_width_ * dpp_x;
 	xform_schema.x_max_ = x_max;
 	xform_schema.y_min_ = y_min - axis_width_ * dpp_y;
 	xform_schema.y_max_ = y_max;
@@ -1034,7 +1037,7 @@ void zc_graph_cartesian::layout() {
 	axes_data_[1].position = x_min;
 	axes_data_[1].tick_orientation = TICK_DECREASING;
 	axes_data_[1].inv_scale = dpp_y;
-	axes_data_[1].label_position = { x_min - axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
+	axes_data_[1].label_position = { x_min - v_axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
 	axes_data_[1].label_angle = 90;
 }
 
@@ -1109,9 +1112,9 @@ void zc_graph_cartesian::generate_value_marker(
 
 void zc_graph_cartesian_2y::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
-	int plot_x = x() + axis_width_;
+	int plot_x = x() + v_axis_width_;
 	int plot_y = y();
-	int plot_w = w() - 2 * axis_width_;
+	int plot_w = w() - 2 * v_axis_width_;
 	int plot_h = h() - axis_width_;
 	double x_min = axes_data_[0].current_range.min;
 	double x_max = axes_data_[0].current_range.max;
@@ -1122,8 +1125,8 @@ void zc_graph_cartesian_2y::layout() {
 	double dpp_y = (y_max - y_min) / plot_h;
 	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
 	plot_xform_t xform_schema;
-	xform_schema.x_min_ = x_min - axis_width_ * dpp_x;
-	xform_schema.x_max_ = x_max + axis_width_ * dpp_x;
+	xform_schema.x_min_ = x_min - v_axis_width_ * dpp_x;
+	xform_schema.x_max_ = x_max + v_axis_width_ * dpp_x;
 	xform_schema.y_min_ = y_min - axis_width_ * dpp_y;
 	xform_schema.y_max_ = y_max;
 	plot_data_[1].xform_schema = xform_schema;
@@ -1138,15 +1141,15 @@ void zc_graph_cartesian_2y::layout() {
 	axes_data_[1].position = x_min;
 	axes_data_[1].tick_orientation = TICK_DECREASING;
 	axes_data_[1].inv_scale = dpp_y;
-	axes_data_[1].label_position = { x_min - axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
+	axes_data_[1].label_position = { x_min - v_axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
 	axes_data_[1].label_angle = 90;
 	// Now set the transformation schema for the second Y axis to map its data range to the plot area dimensions.
 	double y2_min = axes_data_[2].current_range.min;
 	double y2_max = axes_data_[2].current_range.max;
 	double dpp_y2 = (y2_max - y2_min) / h();
 	plot_xform_t xform_schema_2;
-	xform_schema_2.x_min_ = x_min - axis_width_ * dpp_x;
-	xform_schema_2.x_max_ = x_max + axis_width_ * dpp_x;
+	xform_schema_2.x_min_ = x_min - v_axis_width_ * dpp_x;
+	xform_schema_2.x_max_ = x_max + v_axis_width_ * dpp_x;
 	xform_schema_2.y_min_ = y2_min - axis_width_ * dpp_y2;
 	xform_schema_2.y_max_ = y2_max;
 	plot_data_[2].xform_schema = xform_schema_2;
@@ -1156,7 +1159,7 @@ void zc_graph_cartesian_2y::layout() {
 	axes_data_[2].position = x_max;
 	axes_data_[2].tick_orientation = TICK_INCREASING;
 	axes_data_[2].inv_scale = dpp_y2;
-	axes_data_[2].label_position = { x_max + axis_width_ * dpp_x, y2_min + (y2_max - y2_min) / 2.0F };
+	axes_data_[2].label_position = { x_max + v_axis_width_ * dpp_x * 0.5, y2_min + (y2_max - y2_min) / 2.0F };
 	axes_data_[2].label_angle = 90;
 }
 
@@ -1265,13 +1268,18 @@ void zc_graph_cart_overlay::layout() {
 	}
 	axes_data_[1].inv_scale = dpp_y;
 	// Set the tick orientation down unless the axis width precludes it.
-	if (x_min > -(axis_width_ * dpp_x)) {
-		axes_data_[1].tick_orientation = TICK_INCREASING;
-	}
-	else {
+	if (x_min > -(v_axis_width_ * dpp_x)) {
 		axes_data_[1].tick_orientation = TICK_DECREASING;
 	}
-	axes_data_[1].label_position = { axes_data_[1].position + axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
+	else {
+		axes_data_[1].tick_orientation = TICK_INCREASING;
+	}
+	if (axes_data_[1].tick_orientation == TICK_DECREASING) {
+		axes_data_[1].label_position = { axes_data_[1].position - v_axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
+	}
+	else {
+	    axes_data_[1].label_position = { axes_data_[1].position + v_axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
+	}
 	axes_data_[1].label_angle = 90;
 	// And repeat for the X axis.
 	if (y_min <= 0 && y_max >= 0) {
@@ -1290,7 +1298,12 @@ void zc_graph_cart_overlay::layout() {
 		axes_data_[0].tick_orientation = TICK_DECREASING;
 	}
 	axes_data_[0].inv_scale = dpp_x;
-	axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, axes_data_[0].position + axis_width_ * dpp_y * 0.5 };
+	if (axes_data_[0].tick_orientation == TICK_INCREASING) {
+		axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, axes_data_[0].position + axis_width_ * dpp_y * 0.5 };
+	}
+	else {
+		axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, axes_data_[0].position - axis_width_ * dpp_y * 0.5 };
+	}
 	axes_data_[0].label_angle = 0;
 }
 
@@ -1366,9 +1379,9 @@ void zc_graph_cart_overlay::generate_value_marker(
 // Polar layout
 void zc_graph_polar::layout() {
 	// For polar coordinates, we will set the transformation schema to map the R and Theta ranges to the plot area dimensions.
-	int plot_x = x() + axis_width_;
+	int plot_x = x() + v_axis_width_;
 	int plot_y = y() + axis_width_;
-	int plot_w = w() - 2 * axis_width_;
+	int plot_w = w() - 2 * v_axis_width_;
 	int plot_h = h() - 2 * axis_width_;
 	double r_max = axes_data_[0].current_range.max;
 	// data per pixel values
@@ -1395,7 +1408,7 @@ void zc_graph_polar::layout() {
 	axes_data_[1].position = r_max;
 	axes_data_[1].tick_orientation = TICK_INCREASING;
 	axes_data_[1].inv_scale = 0.0; // Theta is not scaled in the same way as R, so we can set the inverse scale to 0 to indicate that it should not be used for scaling.
-	axes_data_[1].label_position = { 0.0, -rmax_y + axis_width_ * dpp_r * 0.5 };
+	axes_data_[1].label_position = { 0.0, -rmax_y - axis_width_ * dpp_r * 0.5 };
 	axes_data_[1].label_angle = 0;
 }
 

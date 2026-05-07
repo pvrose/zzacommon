@@ -735,6 +735,7 @@ protected:
 
 	//! \brief The width of the axes in pixels. This is used to calculate the dimensions of the plot area and the transformation schema for the data points.
 	int axis_width_ = 50;
+	int v_axis_width_ = 50;
 
 	//! \brief Zoom capability for the axes.
 	zoom_capability_t zoom_capability_ = ZOOM_ON_CURSOR;
