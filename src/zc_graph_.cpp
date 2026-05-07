@@ -194,6 +194,7 @@ void zc_graph_::add_label(
 	const std::string& text,
 	zc_text_style style,
 	data_point_t position,
+	text_alignment_t alignment,
 	bool opaque
 ) {
 	// Check the axis data already exists for this axis number
@@ -217,6 +218,7 @@ void zc_graph_::add_label(
 	marker.position = position;
 	marker.text = text;
 	marker.style = style;
+	marker.alignment = alignment;
 	marker.opaque = opaque;
 	point_markers_[axis_number][layer].push_back(marker);
 }
@@ -708,6 +710,7 @@ void zc_graph_::generate_point_markers(
 			marker.shape = TEXT;
 			marker.text = point_datum.text;
 			marker.text_style = point_datum.style;
+			marker.text_alignment = point_datum.alignment;
 			// If the point is outside the current range for either axis, move it to the edge of the current range for that axis.
 			data_point_t position = point_datum.position;
 			if (position.second < other_axis_data.current_range.min) {
@@ -930,21 +933,15 @@ void zc_graph_::draw_plot_object(const plot_object_t& object) {
 		fl_font(object.text_style.font, object.text_style.size);
 		fl_measure(object.text.c_str(), tw, th);
 		// Adjust the text position based on the specified text alignment.
-		switch (object.text_alignment) {
-		case ALIGN_CENTRE:
-			break;
-		case ALIGN_LEFT:
-			tx -= (tw / 2);
-			break;
-		case ALIGN_RIGHT:
-			tx += (tw / 2);
-			break;
-		case ALIGN_ABOVE:
-			ty -= (th / 2);
-			break;
-		case ALIGN_BELOW:
-			ty += (th / 2);
-			break;
+		if ((object.text_alignment & ALIGN_MASK_LR) == ALIGN_LEFT) {
+			tx -= tw / 2;
+		} else if ((object.text_alignment & ALIGN_MASK_LR) == ALIGN_RIGHT) {
+			tx += tw / 2;
+		}
+		if ((object.text_alignment & ALIGN_MASK_AB) == ALIGN_ABOVE) {
+			ty -= th / 2;
+		} else if ((object.text_alignment & ALIGN_MASK_AB) == ALIGN_BELOW) {
+			ty += th / 2;
 		}
 		// Adjust for the size and angle of the label.
 		double angle_rad = object.text_angle * zc::PI / 180.0F;

@@ -78,6 +78,19 @@ public:
 		POLAR,        //!< Polar coordinates (r, theta)
 	};
 
+	//! \brief Text alignment wrt the specified position for text labels and text boxes.
+	//! ALIGN_LEFT/RIGHT can be orred with ALIGN_ABOVE/BELOW to specify the 
+	//! alignment in both dimensions.
+	enum text_alignment_t : uint8_t {
+		ALIGN_CENTRE = 0,   //!< Align text centred on the specified position.
+		ALIGN_LEFT = 1,     //!< Align text to the left of the specified position.
+		ALIGN_RIGHT = 2,    //!< Align text to the right of the specified position.
+		ALIGN_MASK_LR = 3, //!< Mask for left/right alignment bits.
+		ALIGN_ABOVE = 4,    //!< Align text above the specified position.
+		ALIGN_BELOW = 8,     //!< Align text below the specified position.
+		ALIGN_MASK_AB = 12 //!< Mask for above/below alignment bits.
+	};
+
 	//! \brief Structure to represent a set of data to be plotted.
 	struct data_set_t {
 		std::vector<data_point_t>* data; //!< Pointer to a vector of data points to be plotted
@@ -100,6 +113,7 @@ public:
 		data_point_t position; //!< Data coordinates of the point to label
 		std::string text;      //!< Text to display for the label
 		zc_text_style style;    //!< Text style to use for the label
+		text_alignment_t alignment; //!< Alignment of the label text relative to the point (e.g. centered, above, below, left, right)
 		bool opaque = false;   //!< Whether to draw an opaque background behind the label text for better visibility
 	};
 
@@ -320,15 +334,6 @@ public:
 		TEXT_BOX,       //!< Text box with opaque background defined by a position, string, and inclination.
 	};
 
-	//! \brief Text alignment wrt the specified position for text labels and text boxes.
-	enum text_alignment_t : uint8_t {
-		ALIGN_LEFT,     //!< Align text to the left of the specified position.
-		ALIGN_CENTRE,   //!< Align text centred on the specified position.
-		ALIGN_RIGHT,    //!< Align text to the right of the specified position.
-		ALIGN_ABOVE,    //!< Align text above the specified position.
-		ALIGN_BELOW     //!< Align text below the specified position.
-	};
-
 	//! \brief Type of data to plot for one object.
 	struct plot_object_t {
 		shape_t shape = LINE_STRIP;           //!< The shape of the object
@@ -494,6 +499,7 @@ public:
 		const std::string& text,
 		zc_text_style style,
 		data_point_t position,
+		text_alignment_t alignment = (text_alignment_t)(ALIGN_RIGHT | ALIGN_ABOVE),
 		bool opaque = false
 	);
 
