@@ -81,15 +81,14 @@ public:
 	//! \brief Text alignment wrt the specified position for text labels and text boxes.
 	//! ALIGN_LEFT/RIGHT can be orred with ALIGN_ABOVE/BELOW to specify the 
 	//! alignment in both dimensions.
-	enum text_alignment_t : uint8_t {
-		ALIGN_CENTRE = 0,   //!< Align text centred on the specified position.
-		ALIGN_LEFT = 1,     //!< Align text to the left of the specified position.
-		ALIGN_RIGHT = 2,    //!< Align text to the right of the specified position.
-		ALIGN_MASK_LR = 3, //!< Mask for left/right alignment bits.
-		ALIGN_ABOVE = 4,    //!< Align text above the specified position.
-		ALIGN_BELOW = 8,     //!< Align text below the specified position.
-		ALIGN_MASK_AB = 12 //!< Mask for above/below alignment bits.
-	};
+	typedef uint8_t text_alignment_t;
+	const static text_alignment_t ALIGN_CENTRE = 0;  //!< Align text centred on the specified position.
+	const static text_alignment_t ALIGN_LEFT = 1;     //!< Align text to the left of the specified position.
+	const static text_alignment_t ALIGN_RIGHT = 2;    //!< Align text to the right of the specified position.
+	const static text_alignment_t ALIGN_MASK_LR = 3; //!< Mask for left/right alignment bits.
+	const static text_alignment_t ALIGN_ABOVE = 4;    //!< Align text above the specified position.
+	const static text_alignment_t ALIGN_BELOW = 8;     //!< Align text below the specified position.
+	const static text_alignment_t ALIGN_MASK_AB = 12; //!< Mask for above/below alignment bits.
 
 	//! \brief Structure to represent a set of data to be plotted.
 	struct data_set_t {
@@ -234,6 +233,7 @@ public:
 		std::string unit;          //!< Unit to display on the axis (e.g. "Hz")
 		std::string label;         //!< Base label for the axis (e.g. "Frequency")
 		data_point_t label_position; //!< Position on the axis to draw the label (in data coordinates)
+		std::string modified_label;      //!< Label to display for the axis, including any modifier (e.g. "Frequency (kHz)")
 		int label_angle = 0;         //!< Angle to draw the label at (in degrees, where 0 is horizontal and positive is counter-clockwise)
 		int tick_spacing_pixels = 0;   //!< Suggested spacing between ticks in pixels
 		double position = 0.0;     //!< Position on other axis where this is drawn
@@ -499,7 +499,7 @@ public:
 		const std::string& text,
 		zc_text_style style,
 		data_point_t position,
-		text_alignment_t alignment = (text_alignment_t)(ALIGN_RIGHT | ALIGN_ABOVE),
+		text_alignment_t alignment = ALIGN_RIGHT | ALIGN_ABOVE,
 		bool opaque = false
 	);
 

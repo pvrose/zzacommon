@@ -500,7 +500,7 @@ void zc_graph_::set_ticks(int axis_number, int tick_spacing_pixels, int length_p
 	else {
 		snprintf(ll, sizeof(ll), "%s", axis_data.label.c_str());
 	}
-	axis_data.label = ll;
+	axis_data.modified_label = ll;
 
 }
 
@@ -526,7 +526,7 @@ void zc_graph_::generate_axis_ticks(int axis_number) {
 		tick_mark.shape = TICK;
 		tick_mark.style = zc_line_style({ FL_FOREGROUND_COLOR, 1, FL_SOLID });
 		tick_mark.text = tick.label;
-		tick_mark.text_style = zc_text_style({ FL_FOREGROUND_COLOR, 0, default_text_size_ });
+		tick_mark.text_style = zc_text_style({ FL_FOREGROUND_COLOR, textfont(), default_text_size_});
 		if (axis_number == 0) {
 			auto other_axis_it = axes_data_.find(1);
 			axis_data_t& other_axis_data = other_axis_it->second;
@@ -599,8 +599,8 @@ void zc_graph_::generate_axis_label(int axis_number) {
 	// Add a text label at the specified position
 	plot_object_t label;
 	label.shape = TEXT_BOX;
-	label.text = axis_data.label;
-	label.text_style = zc_text_style({ FL_BLACK, 0, default_text_size_ });
+	label.text = axis_data.modified_label;
+	label.text_style = zc_text_style({ FL_BLACK, textfont(), default_text_size_});
 	label.segments.push_back(plot_segment_t(plot_vertex_t(axis_data.label_position)));
 	label.text_angle = axis_data.label_angle;
 	label.text_alignment = ALIGN_CENTRE;
@@ -703,6 +703,8 @@ void zc_graph_::generate_point_markers(
 		// Check the position is within the outer range for both axes
 		axis_data_t& axis_data = it->second;
 		axis_data_t& other_axis_data = other_axis_it->second;
+		axis_data_t& x_axis_data = (axis_number == 0) ? axis_data : other_axis_data;
+		axis_data_t& y_axis_data = (axis_number == 0) ? other_axis_data : axis_data;
 		// Fore each point marker...
 		for (const auto& point_datum : point_data) {
 			// Add a point marker at the specified position
@@ -711,13 +713,24 @@ void zc_graph_::generate_point_markers(
 			marker.text = point_datum.text;
 			marker.text_style = point_datum.style;
 			marker.text_alignment = point_datum.alignment;
-			// If the point is outside the current range for either axis, move it to the edge of the current range for that axis.
+			// If the point is set to maximum for either axis, move it to the edge of the current range for that axis.
 			data_point_t position = point_datum.position;
-			if (position.second < other_axis_data.current_range.min) {
-				position.second = other_axis_data.current_range.min;
+			if (position.second == -DBL_MAX) {
+				position.second = y_axis_data.current_range.min;
 			}
-			else if (position.second > other_axis_data.current_range.max) {
-				position.second = other_axis_data.current_range.max;
+			else if (position.second == DBL_MAX) {
+				position.second = y_axis_data.current_range.max;
+			} 
+			if (position.first == -DBL_MAX) {
+				position.first = x_axis_data.current_range.min;
+			}
+			else if (position.first == DBL_MAX) {
+				position.first = x_axis_data.current_range.max;
+			}
+			// If position is still outside the current range for either axis, skip it.
+			if (!x_axis_data.current_range.contains(position.first) ||
+				!y_axis_data.current_range.contains(position.second)) {
+				continue;
 			}
 			marker.segments.push_back(plot_segment_t(plot_vertex_t(convert_point(position))));
 			int plot_number = (axis_number == 0) ? 1 : axis_number;
@@ -1046,7 +1059,7 @@ void zc_graph_cartesian::generate_value_marker(
 	}
 	// Check the values are within the outer range for this axis
 	axis_data_t& axis_data = it->second;
-	if (!axis_data.outer_range.contains(marker.value_1) || !axis_data.outer_range.contains(marker.value_2)) {
+	if (!axis_data.current_range.contains(marker.value_1) || !axis_data.current_range.contains(marker.value_2)) {
 		return;
 	}
 	axis_data_t& other_axis_data = other_axis_it->second;
@@ -1168,7 +1181,7 @@ void zc_graph_cartesian_2y::generate_value_marker(
 	}
 	// Check the values are within the outer range for this axis
 	axis_data_t& axis_data = it->second;
-	if (!axis_data.outer_range.contains(marker.value_1) || !axis_data.outer_range.contains(marker.value_2)) {
+	if (!axis_data.current_range.contains(marker.value_1) || !axis_data.current_range.contains(marker.value_2)) {
 		return;
 	}
 	axis_data_t& other_axis_data = other_axis_it->second;
@@ -1302,7 +1315,7 @@ void zc_graph_cart_overlay::generate_value_marker(
 	}
 	// Check the values are within the outer range for this axis
 	axis_data_t& axis_data = it->second;
-	if (!axis_data.outer_range.contains(marker.value_1) || !axis_data.outer_range.contains(marker.value_2)) {
+	if (!axis_data.current_range.contains(marker.value_1) || !axis_data.current_range.contains(marker.value_2)) {
 		return;
 	}
 	axis_data_t& other_axis_data = other_axis_it->second;
@@ -1407,7 +1420,7 @@ void zc_graph_polar::generate_value_marker(
 	}
 	// Check the values are within the outer range for this axis
 	axis_data_t& axis_data = it->second;
-	if (!axis_data.outer_range.contains(marker.value_1) || !axis_data.outer_range.contains(marker.value_2)) {
+	if (!axis_data.current_range.contains(marker.value_1) || !axis_data.current_range.contains(marker.value_2)) {
 		return;
 	}
 	axis_data_t& other_axis_data = other_axis_it->second;
