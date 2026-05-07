@@ -17,6 +17,7 @@
 */
 #include "zc_graph_.h"
 
+#include "zc_drawing.h"
 #include "zc_line_style.h"
 #include "zc_text_style.h"
 #include "zc_utils.h"
@@ -61,6 +62,8 @@ static std::map<int, uint32_t> SI_PREFIXES = {
 zc_graph_::zc_graph_(int x, int y, int w, int h, const char* label) :
 	Fl_Widget(x, y, w, h, label)
 {
+	// Default text size is set to 80% of the default ZZA app font size.
+	default_text_size_ = DEFAULT_SIZE * 0.8;
 }
 
 // Destructor
@@ -209,13 +212,6 @@ void zc_graph_::add_label(
 		throw std::invalid_argument("Other axis number " + std::to_string(other_axis_number) + " does not exist. Set axis parameters for both axes before adding a label.");
 		return;
 	}
-	// Check the position is within the outer range for both axes
-	axis_data_t& axis_data = it->second;
-	axis_data_t& other_axis_data = other_axis_it->second;
-	if (!axis_data.outer_range.contains(position.first) || !other_axis_data.outer_range.contains(position.second)) {
-		// We cannot draw it, return.
-		return;
-	}
 	// Add the label to the list of point markers for this axis number and layer.
 	point_marker_t marker;
 	marker.position = position;
@@ -226,7 +222,7 @@ void zc_graph_::add_label(
 }
 
 // Clear the plot_data
-void zc_graph_::clear_config() {
+void zc_graph_::start_config() {
 	// Clear the plot data for all data types and layers
 	plot_data_.clear();
 	// Clear the axis data for all axes
@@ -238,13 +234,14 @@ void zc_graph_::clear_config() {
 }
 
 // Initiaite the plot data
-void zc_graph_::lock_config() {
-	default_text_size_ = labelsize() * 0.8F; // Default text size for labels and ticks is 80% of the widget label size.
+void zc_graph_::end_config() {
 	axis_width_ = default_text_size_ * 2.0F; // Default width of the axes is twice the default text size.
 	// Update the current ranges for each axis to include the default ranges, if they are not already included.
 	for (auto& [axis_number, axis_data] : axes_data_) {
 		axis_data.current_range |= axis_data.default_range;
 	}
+	// Set out the positions of the axes and plot area, set the 
+	// drawing transformation schemata.
 	layout();
 	// Generate the axis lines, ticks, grid lines and labels for each axis based on the current parameters and ranges.
 	for (int i = 0; i < num_axes_; ++i) {
@@ -310,8 +307,16 @@ void zc_graph_::generate_axis_line(int axis_number) {
 	}
 	axis_data_t& axis_data = it->second;
 	// Generate the axis line for this axis number based on the current ranges and tick spacing
+	value_marker_t marker;
+	marker.style = zc_line_style({ FL_BLACK, 1, FL_SOLID });
+	marker.value_1 = axis_data.position;
+	marker.value_2 = axis_data.position;
 	int drawing_axis_number = (axis_number == 0) ? 1 : 0; // The axis number to draw the line along is the other axis
-	add_marker(drawing_axis_number, AXES, zc_line_style({ FL_BLACK, 1, FL_SOLID }), axis_data.position);
+	generate_value_marker(
+		drawing_axis_number,
+		AXES,
+		marker
+	);
 }
 
 // Generate grid_lines
@@ -325,11 +330,18 @@ void zc_graph_::generate_grid_lines(int axis_number) {
 	}
 	axis_data_t& axis_data = it->second;
 	// Generate the grid lines for this axis number based on the current ranges and tick spacing
-	int drawing_axis_number = (axis_number == 0) ? 1 : 0; // The axis number to draw the lines along is the other axis
 	zc_line_style grid_line_style({ FL_LIGHT2, 1, FL_DOT });
 	for (auto& tick : axis_data.ticks) {
 		if (tick.is_major) {
-			add_marker(axis_number, GRID_LINES, grid_line_style, tick.value);
+			value_marker_t marker;
+			marker.style = grid_line_style;
+			marker.value_1 = tick.value;
+			marker.value_2 = tick.value;
+			generate_value_marker(
+				axis_number,
+				GRID_LINES,
+				marker
+			);
 		}
 	}
 }
@@ -691,16 +703,20 @@ void zc_graph_::generate_point_markers(
 		axis_data_t& other_axis_data = other_axis_it->second;
 		// Fore each point marker...
 		for (const auto& point_datum : point_data) {
-			if (!axis_data.outer_range.contains(point_datum.position.first) || !other_axis_data.outer_range.contains(point_datum.position.second)) {
-				// We cannot draw it, skip it.
-				continue;
-			}
 			// Add a point marker at the specified position
 			plot_object_t marker;
 			marker.shape = TEXT;
 			marker.text = point_datum.text;
 			marker.text_style = point_datum.style;
-			marker.segments.push_back(plot_segment_t(plot_vertex_t(convert_point(point_datum.position))));
+			// If the point is outside the current range for either axis, move it to the edge of the current range for that axis.
+			data_point_t position = point_datum.position;
+			if (position.second < other_axis_data.current_range.min) {
+				position.second = other_axis_data.current_range.min;
+			}
+			else if (position.second > other_axis_data.current_range.max) {
+				position.second = other_axis_data.current_range.max;
+			}
+			marker.segments.push_back(plot_segment_t(plot_vertex_t(convert_point(position))));
 			int plot_number = (axis_number == 0) ? 1 : axis_number;
 			plot_data_[plot_number].layer_data[layer].push_back(marker);
 		}

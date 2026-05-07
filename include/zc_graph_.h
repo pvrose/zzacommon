@@ -38,6 +38,7 @@
 //! 
 //! \code
 //! zc_graph_xxx* graph = new zc_graph_xxx(...); // Create an instance of a derived graph class (e.g. zc_graph_cartesian)
+//! graph->start_config(); // Start configuration of the graph
 //! graph->set_axis_params(...); // Set parameters for the axes (e.g. labels, units, tick spacing)
 //! graph->set_axis_ranges(...); // Set the inner and outer ranges for the axes
 //! ... repeat for each axis as needed ...
@@ -45,11 +46,10 @@
 //! ... repeat for each data set as needed ...
 //! graph->add_marker(...); // Add markers to the plot, specifying the axis number, layer, line style, and value(s) for the marker
 //! ... repeat for each marker as needed ...
-//! graph->initiate(); // Initiate the graph with the data and parameters
+//! graph->end_config(); // End configuration of the graph.
+//! ... Contents of the data buffers may be changed at any time, after which...
 //! graph->redraw(); // Redraw the graph to display the data
-//! :
-//! :
-//! graph->clear(); // Clear the graph of all data sets and markers when needed before reconfiguring.
+//! 
 //! \endcode
 //! The base class zc_graph_ defines the data structures and functions
 //! for managing the graph data, axes, and plotting parameters, 
@@ -497,18 +497,18 @@ public:
 		bool opaque = false
 	);
 
-	//! \brief Clear all data sets and markers from the graph.
+	//! \brief Start configuration: clear all data sets and markers from the graph.
 	//! 
 	//! This should be called before reconfiguring the graph with new axes, data sets and markers.
-	void clear_config();
+	void start_config();
 
-	//! \brief Lock the graph configuration and prepare for plotting.
+	//! \brief End configuration.
 	//! 
 	//! This should be called after setting the axes parameters and ranges, 
 	//! and adding the data sets and markers, to initiate the graph for plotting.
 	//! It copies the axis, gridline, data and marker data into 
 	//! internal structures for plotting.
-	void lock_config();
+	void end_config();
 
 	//! \brief override of Fl_Group handle to allow for zooming and scrolling on axes.
 	//! Mouse actions:-
@@ -535,6 +535,36 @@ public:
 
 	//! \brief Draw the graph - override of Fl_Group draw to draw the components of the graph.
 	void draw() override;
+
+	//! \brief Set the default colour for text and lines for the graph.
+	void textcolor(Fl_Color color) {
+		default_text_colour_ = color;
+	}
+
+	//! \brief Get the default colour for text and lines for the graph.
+	Fl_Color textcolor() const {
+		return default_text_colour_;
+	}
+
+	//! \brief Set the default font for text for the graph.
+	void textfont(Fl_Font font) {
+		default_text_font_ = font;
+	}
+
+	//! \brief Get the default font for text for the graph.
+	Fl_Font textfont() const {
+		return default_text_font_;
+	}
+
+	//! \brief Set the default font size for text for the graph.
+	void textsize(int size) {
+		default_text_size_ = size;
+	}
+
+	//! \brief Get the default font size for text for the graph.
+	Fl_Fontsize textsize() const {
+		return default_text_size_;
+	}
 
 protected:
 
@@ -706,7 +736,13 @@ protected:
 	bool scrollable_ = true;
 
 	//! \brief Default text size
-	Fl_Fontsize default_text_size_ = 12;
+	Fl_Fontsize default_text_size_;
+
+	//! \brief Default text colour
+	Fl_Color default_text_colour_ = FL_BLACK;
+
+	//! \brief Default text font
+	Fl_Font default_text_font_ = FL_HELVETICA;
 
 };
 
