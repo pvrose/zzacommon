@@ -492,6 +492,7 @@ public:
 	//! \param text The text string to display for the label.
 	//! \param style The text style to use for drawing the label.
 	//! \param position The position to draw the label in data coordinates. 
+	//! \param alignment The alignment of the label text relative to the specified position (e.g. centred, above, below, left, right).
 	//! \param opaque Whether to draw an opaque background behind the label text for better visibility.
 	void add_label(
 		int axis_number,
