@@ -530,28 +530,34 @@ void zc_graph_::generate_axis_ticks(int axis_number) {
 		tick_mark.style = zc_line_style({ FL_FOREGROUND_COLOR, 1, FL_SOLID });
 		tick_mark.text = tick.label;
 		tick_mark.text_style = zc_text_style({ FL_FOREGROUND_COLOR, textfont(), default_text_size_});
+		if (custom_tick(axis_number, tick, tick_mark)) {
+			// Custom tick generation - skip the default generation for this tick.
+			int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the ticks along is the other axis
+			plot_data_[plot_number].layer_data[AXES].push_back(tick_mark);
+			continue;
+		}
 		if (axis_number == 0) {
 			auto other_axis_it = axes_data_.find(1);
 			axis_data_t& other_axis_data = other_axis_it->second;
 			// Horizontal axis - generate vertical ticks
 			// Get the pixel coords of the tick mark start.
 			if (axis_data.tick_orientation == TICK_DECREASING) {
-				plot_vertex_t start(tick.value, axis_data.position);
-				plot_vertex_t end(tick.value, axis_data.position - 5 * other_axis_data.inv_scale);
+				plot_vertex_t start(convert_point({tick.value, axis_data.position}));
+				plot_vertex_t end(convert_point({tick.value, axis_data.position - 5 * other_axis_data.inv_scale}));
 				tick_mark.segments.push_back(plot_segment_t(end));
 				tick_mark.segments.push_back(plot_segment_t(start));
 				tick_mark.text_alignment = ALIGN_BELOW;
 			}
 			else if (axis_data.tick_orientation == TICK_INCREASING) {
-				plot_vertex_t start(tick.value, axis_data.position);
-				plot_vertex_t end(tick.value, axis_data.position + 5 * other_axis_data.inv_scale);
+				plot_vertex_t start(convert_point({tick.value, axis_data.position}));
+				plot_vertex_t end(convert_point({tick.value, axis_data.position + 5 * other_axis_data.inv_scale}));
 				tick_mark.segments.push_back(plot_segment_t(end));
 				tick_mark.segments.push_back(plot_segment_t(start));
 				tick_mark.text_alignment = ALIGN_ABOVE;
 			}
 			else {
-				plot_vertex_t start(tick.value, axis_data.position - 2.5 * other_axis_data.inv_scale);
-				plot_vertex_t end(tick.value, axis_data.position + 2.5 * other_axis_data.inv_scale);
+				plot_vertex_t start(convert_point({tick.value, axis_data.position - 2.5 * other_axis_data.inv_scale}));
+				plot_vertex_t end(convert_point({tick.value, axis_data.position + 2.5 * other_axis_data.inv_scale}));
 				tick_mark.segments.push_back(plot_segment_t(end));
 				tick_mark.segments.push_back(plot_segment_t(start));
 				tick_mark.text_alignment = ALIGN_BELOW;
@@ -562,22 +568,22 @@ void zc_graph_::generate_axis_ticks(int axis_number) {
 			axis_data_t& other_axis_data = other_axis_it->second;
 			// Vertical axis - generate horizontal ticks
 			if (axis_data.tick_orientation == TICK_DECREASING) {
-				plot_vertex_t start(axis_data.position, tick.value);
-				plot_vertex_t end(axis_data.position - 5 * other_axis_data.inv_scale, tick.value);
+				plot_vertex_t start(convert_point({axis_data.position, tick.value}));
+				plot_vertex_t end(convert_point({axis_data.position - 5 * other_axis_data.inv_scale, tick.value}));
 				tick_mark.segments.push_back(plot_segment_t(end));
 				tick_mark.segments.push_back(plot_segment_t(start));
 				tick_mark.text_alignment = ALIGN_LEFT;
 			}
 			else if (axis_data.tick_orientation == TICK_INCREASING) {
-				plot_vertex_t start(axis_data.position, tick.value);
-				plot_vertex_t end(axis_data.position + 5 * other_axis_data.inv_scale, tick.value);
+				plot_vertex_t start(convert_point({axis_data.position, tick.value}));
+				plot_vertex_t end(convert_point({axis_data.position + 5 * other_axis_data.inv_scale, tick.value}));
 				tick_mark.segments.push_back(plot_segment_t(end));
 				tick_mark.segments.push_back(plot_segment_t(start));
 				tick_mark.text_alignment = ALIGN_RIGHT;
 			}
 			else {
-				plot_vertex_t start(axis_data.position - 2.5 * other_axis_data.inv_scale, tick.value);
-				plot_vertex_t end(axis_data.position + 2.5 * other_axis_data.inv_scale, tick.value);
+				plot_vertex_t start(convert_point({axis_data.position - 2.5 * other_axis_data.inv_scale, tick.value}));
+				plot_vertex_t end(convert_point({axis_data.position + 2.5 * other_axis_data.inv_scale, tick.value}));
 				tick_mark.segments.push_back(plot_segment_t(end));
 				tick_mark.segments.push_back(plot_segment_t(start));
 				tick_mark.text_alignment = ALIGN_LEFT;
@@ -1385,7 +1391,8 @@ void zc_graph_polar::layout() {
 	int plot_h = h() - 2 * axis_width_;
 	double r_max = axes_data_[0].current_range.max;
 	// data per pixel values
-	double dpp_r = r_max / (std::min(plot_w, plot_h) / 2.0);
+	double radius_pixels = std::min(plot_w, plot_h) / 2.0;
+	double dpp_r = r_max / radius_pixels;
 	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
 	plot_xform_t xform_schema;
 	xform_schema.x_min_ = -(w() * dpp_r / 2.0);
@@ -1405,9 +1412,11 @@ void zc_graph_polar::layout() {
 	axes_data_[0].label_position = { r_max / 2.0F, -axis_width_ * dpp_r * 0.5 };
 	axes_data_[0].label_angle = 0;
 	// Theta axis at rmax 
+	// data per pixel treated the number of degrees per circumferential pixel.
+	double dpp_theta = 180.0 / zc::PI / radius_pixels;
 	axes_data_[1].position = r_max;
 	axes_data_[1].tick_orientation = TICK_INCREASING;
-	axes_data_[1].inv_scale = 0.0; // Theta is not scaled in the same way as R, so we can set the inverse scale to 0 to indicate that it should not be used for scaling.
+	axes_data_[1].inv_scale = dpp_theta;
 	axes_data_[1].label_position = { 0.0, -rmax_y - axis_width_ * dpp_r * 0.5 };
 	axes_data_[1].label_angle = 0;
 }
@@ -1488,4 +1497,61 @@ void zc_graph_polar::generate_value_marker(
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_shape);
 	}
+}
+
+//! \brief Tweak a tick for the polar graph.
+//! 
+//! Axis 0 (R axis): Tick length should be constant, rather than proportional to the value of the tick.
+//! Axis 1 (Theta axis): Ticks labels for degree values need to be aligned away from the annular axis.
+bool zc_graph_polar::custom_tick(
+	int axis_number,
+	const tick_data_t& tick_data,
+	plot_object_t& tick_object
+) {
+	// Implementation for tweaking the tick based on the axis number
+	if (axis_number == 0) {
+		auto other_axis_it = axes_data_.find(1);
+		axis_data_t& other_axis_data = other_axis_it->second;
+		axis_data_t& axis_data = axes_data_[axis_number];
+		// Horizontal axis - generate vertical ticks
+		// Get the pixel coords of the tick mark start.
+		plot_vertex_t start(convert_point({ tick_data.value, axis_data.position }));
+		// Use the radius axis inverse scale to calculate a constant tick length in data units.
+		// Yes, the user may distort the plot by setting a non-square aspect ratio,
+		// but heigh-ho.
+		plot_vertex_t end({ tick_data.value, axis_data.position - 5 * axis_data.inv_scale });
+		tick_object.segments.push_back(plot_segment_t(end));
+		tick_object.segments.push_back(plot_segment_t(start));
+		tick_object.text_alignment = ALIGN_BELOW;
+	}
+	else {
+		auto other_axis_it = axes_data_.find(0);
+		axis_data_t& other_axis_data = other_axis_it->second;
+		axis_data_t& axis_data = axes_data_[axis_number];
+		// Vertical axis - generate horizontal ticks
+		plot_vertex_t start(convert_point({ axis_data.position, tick_data.value }));
+		plot_vertex_t end(convert_point({ axis_data.position + 5 * other_axis_data.inv_scale, tick_data.value }));
+		tick_object.segments.push_back(plot_segment_t(end));
+		tick_object.segments.push_back(plot_segment_t(start));
+		// Set the text alignment to keep the tick labels away from the annular axis.
+		if (tick_data.value == 90) {
+			// For the 90 degree tick, align the label above the annular axis to prevent overlap.
+			tick_object.text_alignment = ALIGN_ABOVE;
+		} else if (tick_data.value == -90) {
+			// For the -90 degree tick, align the label below the annular axis to prevent overlap.
+			tick_object.text_alignment = ALIGN_BELOW;
+		}
+		else if (std::abs(tick_data.value) < 90) {
+			// For ticks on the right half of the plot, align the labels to the right.
+			tick_object.text_alignment = ALIGN_RIGHT;
+		} else {
+			// For ticks on the left half of the plot, align the labels to the left.
+			tick_object.text_alignment = ALIGN_LEFT;
+		}
+		// Avoid the +180 and -180 degree ticks by removing the tick label for -180 degrees.
+		if (tick_data.value == -180) {
+			tick_object.text = "";
+		}
+	}
+	return true; // Return true to indicate that we have handled the tick and no further processing is needed.
 }

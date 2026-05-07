@@ -19,6 +19,7 @@
 
 #include "zc_line_style.h"
 #include "zc_text_style.h"
+#include "zc_utils.h"
 
 #include <FL/Enumerations.H>
 #include <FL/Fl_Widget.H>
@@ -598,10 +599,9 @@ protected:
 			return point;
 		case POLAR: {
 			double r = point.first;
-			// TODO: Decide whether use degrees or radians for theta. For now, assume radians, but may want to add a flag to specify this.
 			double theta = point.second;
-			double x = r * cos(theta);
-			double y = r * sin(theta);
+			double x = r * cos(theta * zc::PI / 180.0);
+			double y = r * sin(theta * zc::PI / 180.0);
 			return { x, y };
 		}
 		default:
@@ -681,6 +681,20 @@ protected:
 		int tick_spacing_pixels,
 		int length_pixels
 	);
+
+	//! \brief Overridable function to generate a tick for specific derived types.
+	//! 
+	//! \param axis_number The number of the axis to generate the tick for (starting from 0).
+	//! \param tick_data The data for the tick to generate.
+	//! \param tick_object The plot object to populate with the data for the tick.
+	virtual bool custom_tick(
+		int axis_number,
+		const tick_data_t& tick_data,
+		plot_object_t& tick_object
+	) {
+		// Default implementation does nothing - override in derived classes as needed.
+        return false;
+	}
 
 	//! \brief Normalise a number and generate the appropriate multiplier.
 	//! For modifier_t values:
@@ -840,5 +854,13 @@ public:
 		layer_t layer,
 		const value_marker_t& marker
 	) override;
+
+protected:
+	virtual bool custom_tick(
+		int axis_number,
+		const tick_data_t& tick_data,
+		plot_object_t& tick_object
+	) override;
+
 };
 
