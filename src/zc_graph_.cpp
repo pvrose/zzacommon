@@ -107,18 +107,19 @@ void zc_graph_::set_axis_ranges(
 		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before setting axis ranges.");
 		return;
 	}
-	// Check that the ranges are valid
-	if (!(inner_range & outer_range).is_valid() ||
-		!(default_range & outer_range).is_valid() ||
-		!(inner_range & default_range).is_valid()) {
-		// Ranges do not overlap, throw an error
-		throw std::invalid_argument("Supplied ranges do not overlap for axis number " + std::to_string(axis_number) + ".");
-		return;
+	// Check that the ranges are valid - ignore if inner_range is empty (i.e. min > max)
+	// as this is used to there is no inner range.
+	if (inner_range.is_valid()) {
+		if (!default_range.contains(inner_range) ||
+			!outer_range.contains(inner_range)) {
+			// Inner range is outside the default or outer range, throw an error
+			throw std::invalid_argument("Inner range must be within the default and outer ranges for axis number " + std::to_string(axis_number) + ".");
+			return;
+		}
 	}
-	// Check that the default and inner ranges are within the outer range
-	if (!outer_range.contains(inner_range) || !outer_range.contains(default_range)) {
-		// Default or inner range is outside the outer range, throw an error
-		throw std::invalid_argument("Inner and default ranges must be within the outer range for axis number " + std::to_string(axis_number) + ".");
+	if (!outer_range.contains(default_range)) {
+		// Default range is outside the outer range, throw an error
+		throw std::invalid_argument("Default range must be within the outer range for axis number " + std::to_string(axis_number) + ".");
 		return;
 	}
 	// Set the ranges for this axis
@@ -656,16 +657,20 @@ void zc_graph_::generate_data_lines(int axis_number) {
 	plot_line.style = data_set.style;
 
 	// Add a vertex for each data point in the data set.
-	// Include the data points in the current ramges for the axes.
+	// Include the data points in the current ranges for the axes.
 	for (const auto& point : *data_set.data) {
-		// Check that the point is within the outer ranges for both axes. If not, skip it.
-		if (!axis_data.outer_range.contains(point.second) ||
-			!axis_0_data.outer_range.contains(point.first)) {
-			continue;
+		//// Check that the point is within the current ranges for both axes. If not, skip it.
+		//if (!axis_data.current_range.contains(point.second) ||
+		//	!axis_0_data.current_range.contains(point.first)) {
+		//	continue;
+		//}
+		// Add the point to the default ranges for both axes, if it's within the outer range for that axis. This ensures that if the point is outside the current range but within the outer range.
+		if (axis_data.outer_range.contains(point.second)) {
+			axis_data.default_range |= point.second;
 		}
-		// Add the point to the default ranges for both axes.
-		axis_data.default_range |= point.second;
-		axis_0_data.default_range |= point.first;
+		if (axis_0_data.outer_range.contains(point.first)) {
+			axis_0_data.default_range |= point.first;
+		}
 		// Now add the point to the plot line as a vertex. Convert to Cartesian coordinates if necessary.
 		plot_vertex_t vertex;
 		vertex = plot_vertex_t(convert_point(point));
@@ -676,9 +681,6 @@ void zc_graph_::generate_data_lines(int axis_number) {
 	// Add the plot line to the plot data for this axis number.
 	plot_data_[plot_number].layer_data[DATA].push_back(plot_line);
 
-	// Update the current ranges for both axes to include the default ranges, if they are not already included.
-	axis_0_data.current_range |= axis_0_data.default_range;
-	axis_data.current_range |= axis_data.default_range;
 }
 
 //! \brief Add a text label to the graph at a specific position.
@@ -792,8 +794,8 @@ int zc_graph_::handle(int event) {
 		layout_area_t under_mouse = get_layout_area(mouse_x, mouse_y);
 
 		if (!under_mouse.is_plot_area) {
-			if (shift_pressed) {
-				// Scroll by 10 pixels per click if shift is pressed, otherwise zoom.
+			if (ctrl_pressed) {
+				// Scroll by 10 pixels per click if ctrl is pressed, otherwise zoom.
 				scroll_axis(under_mouse.axis_number, dy * 10);
 			}
 			else {
@@ -884,6 +886,9 @@ int zc_graph_::handle(int event) {
 
 // Zoom the axis under the mouse by 2^^(delta/10).
 void zc_graph_::zoom_axis(int axis_number, int mouse_x, int mouse_y, int zoom_factor) {
+	if (axis_number == -1) {
+		return;
+	}
 	// Check the axis data already exists for this axis number
 	auto it = axes_data_.find(axis_number);
 	if (it == axes_data_.end()) {
@@ -908,24 +913,30 @@ void zc_graph_::zoom_axis(int axis_number, int mouse_x, int mouse_y, int zoom_fa
 	// Set zoom factor
 	// Zoom change is 2^^(delta/10) - so every 10 units of delta doubles the zoom factor, every -10 units halves it.
 	double zoom_change = pow(2.0, (double)zoom_factor / 10.0);
+	range_t new_range;
 	// Calculate the new range based on the zoom change and mouse position.
 	if (is_axis_horizontal(axis_number)) {
 		double new_min = mouse_position.first - (mouse_position.first - axis_data.current_range.min) * zoom_change;
 		double new_max = mouse_position.first + (axis_data.current_range.max - mouse_position.first) * zoom_change;
-		range_t new_range = axis_data.outer_range &	range_t{ new_min, new_max };
-		axis_data.current_range = new_range;
+		new_range = range_t{ new_min, new_max };
 	}
 	else {
 		double new_min = mouse_position.second - (mouse_position.second - axis_data.current_range.min) * zoom_change;
 		double new_max = mouse_position.second + (axis_data.current_range.max - mouse_position.second) * zoom_change;
-		range_t new_range = axis_data.outer_range &	range_t{ new_min, new_max };
-		axis_data.current_range = new_range;
+		new_range = range_t{ new_min, new_max };
 	}
+	if (axis_data.outer_range.is_valid()) {
+		new_range &= axis_data.outer_range;
+	}
+	if (axis_data.inner_range.is_valid()) {
+		new_range |= axis_data.inner_range;
+	}
+	axis_data.current_range = new_range;
 }
 
 // Scroll the axis under the mouse by the specified offset in pixels.
 void zc_graph_::scroll_axis(int axis_number, int scroll_offset) {
-	if (!scrollable_) {
+	if (!scrollable_ || axis_number == -1) {
 		return;
 	}
 	// Check the axis data already exists for this axis number
@@ -1003,6 +1014,12 @@ void zc_graph_::draw() {
 	fl_rectf(x(), y(), w(), h());
 	// For each of the layers....
 	for (layer_t layer = BACKGROUND; layer <= MASK; ((uint8_t&)layer)++) {
+		bool tighter_clip = false;
+		if (layer == BACKGROUND || layer == FOREGROUND || layer == DATA) {
+			// Set tighter clipping for these layers to prevent drawing outside the plot area.
+			fl_push_clip(plot_x_, plot_y_, plot_w_, plot_h_);
+			tighter_clip = true;
+		}
 		// For each of the data types...
 		for (const auto& data_pair : plot_data_) {
 			// If there is data for this layer and data type, draw it.
@@ -1018,6 +1035,9 @@ void zc_graph_::draw() {
 				draw_plot_object(plot_object);
 			}
 			fl_pop_matrix(); 
+		}
+		if (tighter_clip) {
+			fl_pop_clip();
 		}
 	}
 	fl_pop_clip();
@@ -1212,17 +1232,17 @@ void zc_graph_::draw_plot_object(const plot_object_t& object) {
 void zc_graph_cartesian::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
 	// calculate pixel dimensions for the plot area.
-	int plot_x = x() + v_axis_width_;
-	int plot_y = y();
-	int plot_w = w() - v_axis_width_;
-	int plot_h = h() - axis_width_;
+	plot_x_ = x() + v_axis_width_;
+	plot_y_ = y();
+	plot_w_ = w() - v_axis_width_;
+	plot_h_ = h() - axis_width_;
 	double x_min = axes_data_[0].current_range.min;
 	double x_max = axes_data_[0].current_range.max;
 	double y_min = axes_data_[1].current_range.min;
 	double y_max = axes_data_[1].current_range.max;
 	// data per pixel values
-	double dpp_x = (x_max - x_min) / plot_w;
-	double dpp_y = (y_max - y_min) / plot_h;
+	double dpp_x = (x_max - x_min) / plot_w_;
+	double dpp_y = (y_max - y_min) / plot_h_;
 	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
 	plot_xform_t xform_schema;
 	xform_schema.x_min_ = x_min - v_axis_width_ * dpp_x;
@@ -1250,23 +1270,20 @@ void zc_graph_cartesian::layout() {
 
 // Get the layout area under the mouse based on the current layout of the graph.
 zc_graph_::layout_area_t zc_graph_cartesian::get_layout_area(int mouse_x, int mouse_y) const {
+	layout_area_t result = { false, -1 };
 	// Check if the mouse is over the plot area.
-	int plot_x = x() + v_axis_width_;
-	int plot_y = y();
-	int plot_w = w() - v_axis_width_;
-	int plot_h = h() - axis_width_;
-	if (mouse_x >= plot_x && mouse_x <= plot_x + plot_w &&
-		mouse_y >= plot_y && mouse_y <= plot_y + plot_h) {
-		return { true, -1 };
+	if (mouse_x >= plot_x_ && mouse_x <= plot_x_ + plot_w_ &&
+		mouse_y >= plot_y_ && mouse_y <= plot_y_ + plot_h_) {
+		result = { true, -1 };
 	}
 	// Check if the mouse is over either of the axes.
-	if (mouse_x >= x() && mouse_x < x() + v_axis_width_) {
-		return { false, 0 };
+	else if (mouse_x >= x() && mouse_x < plot_x_) {
+		result = { false, 1 };
 	}
-	else if (mouse_y >= y() && mouse_y < y() + h() - axis_width_) {
-		return { false, 1 };
+	else if (mouse_y >plot_y_ && mouse_y <= plot_y_ + plot_h_) {
+		result = { false, 0 };
 	}
-	return { false, -1 };
+	return result;
 }
 
 // Add a marker for Cartesian graphs
@@ -1340,17 +1357,17 @@ void zc_graph_cartesian::generate_value_marker(
 
 void zc_graph_cartesian_2y::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
-	int plot_x = x() + v_axis_width_;
-	int plot_y = y();
-	int plot_w = w() - 2 * v_axis_width_;
-	int plot_h = h() - axis_width_;
+	plot_x_ = x() + v_axis_width_;
+	plot_y_ = y();
+	plot_w_ = w() - 2 * v_axis_width_;
+	plot_h_ = h() - axis_width_;
 	double x_min = axes_data_[0].current_range.min;
 	double x_max = axes_data_[0].current_range.max;
 	double y_min = axes_data_[1].current_range.min;
 	double y_max = axes_data_[1].current_range.max;
 	// data per pixel values
-	double dpp_x = (x_max - x_min) / plot_w;
-	double dpp_y = (y_max - y_min) / plot_h;
+	double dpp_x = (x_max - x_min) / plot_w_;
+	double dpp_y = (y_max - y_min) / plot_h_;
 	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
 	plot_xform_t xform_schema;
 	xform_schema.x_min_ = x_min - v_axis_width_ * dpp_x;
@@ -1393,26 +1410,24 @@ void zc_graph_cartesian_2y::layout() {
 
 // Get the layout area under the mouse based on the current layout of the graph.
 zc_graph_::layout_area_t zc_graph_cartesian_2y::get_layout_area(int mouse_x, int mouse_y) const {
+	layout_area_t result = { false, -1 };
 	// Check if the mouse is over the plot area.
-	int plot_x = x() + v_axis_width_;
-	int plot_y = y();
-	int plot_w = w() - 2 * v_axis_width_;
-	int plot_h = h() - axis_width_;
-	if (mouse_x >= plot_x && mouse_x <= plot_x + plot_w &&
-		mouse_y >= plot_y && mouse_y <= plot_y + plot_h) {
-		return { true, -1 };
+	if (mouse_x >= plot_x_ && mouse_x <= plot_x_ + plot_w_ &&
+		mouse_y >= plot_y_ && mouse_y <= plot_y_ + plot_h_) {
+		result = { true, -1 };
 	}
 	// Check if the mouse is over either of the axes.
-	if (mouse_x >= x() && mouse_x < x() + v_axis_width_) {
-		return { false, 0 };
+	else if (mouse_x >= x() && mouse_x < plot_x_) {
+		result = { false, 1 };
 	}
-	else if (mouse_y >= y() && mouse_y < y() + h() - axis_width_) {
-		return { false, 1 };
+	// Check if the mouse is over either of the axes.
+	else if (mouse_x >= plot_x_ + plot_w_ && mouse_x < x() + w()) {
+		result = { false, 2 };
 	}
-	else if (mouse_x >= x() + w() - v_axis_width_ && mouse_x < x() + w()) {
-		return { false, 2 };
+	else if (mouse_y > plot_y_ && mouse_y <= y() + h()) {
+		result = { false, 0 };
 	}
-	return { false, -1 };
+	return result;
 }
 
 // Add a marker for Cartesian 2Y graphs
@@ -1487,17 +1502,17 @@ void zc_graph_cartesian_2y::generate_value_marker(
 // Cartesian overlay layout
 void zc_graph_cart_overlay::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
-	int plot_x = x();
-	int plot_y = y();
-	int plot_w = w();
-	int plot_h = h();
+	plot_x_ = x();
+	plot_y_ = y();
+	plot_w_ = w();
+	plot_h_ = h();
 	double x_min = axes_data_[0].current_range.min;
 	double x_max = axes_data_[0].current_range.max;
 	double y_min = axes_data_[1].current_range.min;
 	double y_max = axes_data_[1].current_range.max;
 	// data per pixel values
-	double dpp_x = (x_max - x_min) / plot_w;
-	double dpp_y = (y_max - y_min) / plot_h;
+	double dpp_x = (x_max - x_min) / plot_w_;
+	double dpp_y = (y_max - y_min) / plot_h_;
 	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
 	plot_xform_t xform_schema;
 	xform_schema.x_min_ = x_min;
@@ -1561,23 +1576,10 @@ void zc_graph_cart_overlay::layout() {
 
 // Get the layout area under the mouse based on the current layout of the graph.
 zc_graph_::layout_area_t zc_graph_cart_overlay::get_layout_area(int mouse_x, int mouse_y) const {
-	// Check if the mouse is over the plot area.
-	int plot_x = x();
-	int plot_y = y();
-	int plot_w = w();
-	int plot_h = h();
-	// Check if the mouse is over either of the axes.
-	if (mouse_x >= x() && mouse_x < x() + v_axis_width_) {
-		return { false, 0 };
-	}
-	else if (mouse_y >= y() && mouse_y < y() + h()) {
-		return { false, 1 };
-	}
-	if (mouse_x >= plot_x && mouse_x <= plot_x + plot_w &&
-		mouse_y >= plot_y && mouse_y <= plot_y + plot_h) {
-		return { true, -1 };
-	}
-	return { false, -1 };
+	// Returm that the mouse is over the plot area, since in 
+	// an overlay graph the axes are drawn on top of the plot area
+	// and there are no margins.
+	return layout_area_t{ true, -1 };
 }
 
 // Add a marker for Cartesian overlay graphs
@@ -1652,13 +1654,13 @@ void zc_graph_cart_overlay::generate_value_marker(
 // Polar layout
 void zc_graph_polar::layout() {
 	// For polar coordinates, we will set the transformation schema to map the R and Theta ranges to the plot area dimensions.
-	int plot_x = x() + v_axis_width_;
-	int plot_y = y() + axis_width_;
-	int plot_w = w() - 2 * v_axis_width_;
-	int plot_h = h() - 2 * axis_width_;
+	plot_x_ = x() + v_axis_width_;
+	plot_y_ = y() + axis_width_;
+	plot_w_ = w() - 2 * v_axis_width_;
+	plot_h_ = h() - 2 * axis_width_;
 	double r_max = axes_data_[0].current_range.max;
 	// data per pixel values
-	double radius_pixels = std::min(plot_w, plot_h) / 2.0;
+	double radius_pixels = std::min(plot_w_, plot_h_) / 2.0;
 	double dpp_r = r_max / radius_pixels;
 	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
 	plot_xform_t xform_schema;

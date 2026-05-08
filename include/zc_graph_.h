@@ -536,7 +536,6 @@ public:
 	//! - Drag on the plot with right mouse button to scroll on X and YR axes.
 	//! - Double click on an axis to reset the zoom on that axis to the default range.
 	//! - Double click on the plot to reset the zoom on all axes to the default range.
-	//! \todo Not yet implemented - copy from zc_graph_base_ and adapt as needed.
 	int handle(int event) override;
 
 	//! \brief override of Fl_Group resize to reset scaling factors on resize.
@@ -809,6 +808,13 @@ protected:
 	//! \brief Saved mouse positions for handling dragging to scroll.
 	int last_mouse_x_ = 0;
 	int last_mouse_y_ = 0;
+
+	//! \brief Data plot area in pixel coordinates. 
+	//! Used to limit drawing of data and markers to the plot area.
+	int plot_x_ = 0;
+	int plot_y_ = 0;
+	int plot_w_ = 0;
+	int plot_h_ = 0;
 
 };
 
