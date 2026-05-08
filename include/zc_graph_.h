@@ -391,6 +391,14 @@ public:
 		plot_layer_data_t layer_data; //!< Data to plot, organised by layer.
 	};
 
+	//! \brief Layout area tags for the graph. 
+	//! 
+	//! Used to identify the different areas of the graph for handling zoom and scroll.
+	struct layout_area_t {
+		bool is_plot_area; //!< Whether this area is the plot area (true) or the axis area (false).
+		int axis_number;   //!< If this is an axis area, the number of the axis (starting from 0). Ignored if is_plot_area is true.
+	};
+
 public:
 	//! \brief Constructor
 	//! \param X The X coordinate of the top-left corner of the graph drawing area
@@ -613,6 +621,12 @@ protected:
 	//! \param schema The transformation schema to apply.
 	void apply_transformations(plot_xform_t schema);
 
+	//! \brief Return the data coordinates corresponding to the given pixel coordinates.
+	//! \param axis_number The number of the axis to use for the transformation (starting from 1)
+	//! \param x_pixel The x-coordinate in pixels to convert to data coordinates.
+	//! \param y_pixel The y-coordinate in pixels to convert to data coordinates.
+	data_point_t pixel_to_data(int axis_number,int x_pixel, int y_pixel) const;
+
 	//! \brief Generate axis drawing objects.
 	//! \param axis_number The number of the axis to generate the drawing objects for (starting from 0).
 	void generate_axis_grid(
@@ -713,6 +727,32 @@ protected:
 		const plot_object_t & object 
 	);
 
+	//! \brief Return the layout area for a given set of pixel coordinates.
+	virtual layout_area_t get_layout_area(int x, int y) const = 0;
+
+	//! \brief Return whether given axis is horizontal (true) or vertical (false).
+	virtual bool is_axis_horizontal(int axis_number) const = 0;
+
+	//! \brief Scroll the specified axis by the specified amount in pixels.
+	//! \param axis_number The number of the axis to scroll (starting from 0).
+	//! \param pixels The number of pixels to scroll the axis by.
+	//! This fuction checks the scrollability of the axis and the scroll
+	//! limits based on the inner and outer ranges for the axis.
+	void scroll_axis(int axis_number, int pixels);
+
+	//! \brief Zoom the specified axis by the specified factor, centered on the specified pixel coordinates.
+	//! \param axis_number The number of the axis to zoom (starting from 0).
+	//! \param centre_x The x-coordinate of the zoom centre in pixels.
+	//! \param centre_y The y-coordinate of the zoom centre in pixels.
+	//! \param factor The number of zoom steps by which to zoom the axis.
+	//! This function checks the zoom capability of the axis and the 
+	//! zoom limits based on the inner and outer ranges for the axis.
+	void zoom_axis(int axis_number, int centre_x, int centre_y, int factor);
+
+	//! \brief Reset the zoom for the specified axis to the default range.
+	//! \param axis_number The number of the axis to reset the zoom for (starting from 0).
+	void reset_zoom(int axis_number);
+
 	//! \brief The number of axes supported
 	int num_axes_ = 0;
 
@@ -766,6 +806,10 @@ protected:
 	//! \brief Default text font
 	Fl_Font default_text_font_ = FL_HELVETICA;
 
+	//! \brief Saved mouse positions for handling dragging to scroll.
+	int last_mouse_x_ = 0;
+	int last_mouse_y_ = 0;
+
 };
 
 //! \brief Derived class for Cartesian graphs.
@@ -779,6 +823,8 @@ public:
 		scrollable_ = true; // Allow scrolling on both axes
 	}
 
+protected:
+
 	//! \brief Layout the axes and plot area for a Cartesian graph.
 	void layout() override;
 
@@ -789,6 +835,11 @@ public:
 		const value_marker_t& marker
 	) override;
 
+	virtual layout_area_t get_layout_area(int x, int y) const override;
+
+	virtual bool is_axis_horizontal(int axis_number) const override {
+		return axis_number == 0; // X axis is horizontal, Y axis is vertical
+	}
 };
 
 //! \brief Derived class for Cartesian graphs with a secondary Y axis.
@@ -801,6 +852,8 @@ public:
 		zoom_capability_ = ZOOM_ON_CURSOR; // Allow zooming on both axes centered on the cursor position
 		scrollable_ = true; // Allow scrolling on both axes
 	}
+
+protected:
 	//! \brief Layout the axes and plot area for a Cartesian graph with a secondary Y axis.
 	void layout() override;
 
@@ -811,6 +864,12 @@ public:
 		layer_t layer,
 		const value_marker_t& marker
 	) override;
+
+	virtual layout_area_t get_layout_area(int x, int y) const override;
+
+	virtual bool is_axis_horizontal(int axis_number) const override {
+		return axis_number == 0; // X axis is horizontal, Y axis is vertical
+	}
 };
 
 //! \brief Derived class for Cartesian graphs with overlaid axes.
@@ -823,6 +882,8 @@ public:
 		zoom_capability_ = ZOOM_ON_CURSOR; // Allow zooming on both axes centered on the cursor position
 		scrollable_ = true; // Allow scrolling on both axes
 	}
+
+protected:
 	//! \brief Layout the axes and plot area for a Cartesian graph with overlaid axes.
 	void layout() override;
 
@@ -833,6 +894,12 @@ public:
 		layer_t layer,
 		const value_marker_t& marker
 	) override;
+
+	virtual layout_area_t get_layout_area(int x, int y) const override;
+
+	virtual bool is_axis_horizontal(int axis_number) const override {
+		return axis_number == 0; // X axis is horizontal, Y axis is vertical
+	}
 };
 
 //! \brief Derived class for Polar graphs.
@@ -845,6 +912,9 @@ public:
 		zoom_capability_ = ZOOM_ON_ORIGIN; // Allow zooming centred on the origin (0, 0) for both axes.
 		scrollable_ = false; // Disallow scrolling on both axes
 	}
+
+protected:
+
 	//! \brief Layout the axes and plot area for a Polar graph.
 	void layout() override;
 
@@ -855,12 +925,18 @@ public:
 		const value_marker_t& marker
 	) override;
 
-protected:
+
+	virtual layout_area_t get_layout_area(int x, int y) const override;
+
 	virtual bool custom_tick(
 		int axis_number,
 		const tick_data_t& tick_data,
 		plot_object_t& tick_object
 	) override;
+
+	virtual bool is_axis_horizontal(int axis_number) const override {
+		return axis_number == 0; // X axis is horizontal, Y axis is vertical
+	}
 
 };
 

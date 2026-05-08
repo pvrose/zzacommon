@@ -245,15 +245,8 @@ void zc_graph_::end_config() {
 	}
 	// Clear the plot data for all data types and layers.
 	plot_data_.clear();
-	// Set out the positions of the axes and plot area, set the 
-	// drawing transformation schemata.
-	layout();
-	// Generate the axis lines, ticks, grid lines and labels for each axis based on the current parameters and ranges.
-	for (int i = 0; i < num_axes_; ++i) {
-		generate_axis_grid(i);
-		generate_value_markers(i);
-		generate_point_markers(i);
-	}
+
+	redraw();
 }
 
 //! \brief Normalise the value \p fin to a mantissa and power of 10.
@@ -779,15 +772,10 @@ void zc_graph_::generate_value_markers(
 	}
 }
 
-// Override of handle
+//! \brief override of Fl_Group handle to allow for zooming and scrolling on axes.
 // TODO: Implement and test the major functionality before adding 
 // zooming and scrolling
 int zc_graph_::handle(int event) {
-	return Fl_Widget::handle(event);
-}
-/*
-//! \brief override of Fl_Group handle to allow for zooming and scrolling on axes.
-int zc_graph_base::handle(int event) {
 	// TODO: Using the return value from zoom and scroll is not ideal as
 	// it is not clear whether the event was handled by the axis or not only
 	// that it was completely successful.
@@ -801,36 +789,24 @@ int zc_graph_base::handle(int event) {
 
 		bool handled = false;
 
-		Fl_Widget* below_mouse = get_child_at_position(mouse_x, mouse_y);
-		zc_graph_axis* axis_under_mouse = dynamic_cast<zc_graph_axis*>(below_mouse);
-		zc_graph_plot* plot_under_mouse = dynamic_cast<zc_graph_plot*>(below_mouse);
-		if (axis_under_mouse) {
+		layout_area_t under_mouse = get_layout_area(mouse_x, mouse_y);
+
+		if (!under_mouse.is_plot_area) {
 			if (shift_pressed) {
 				// Scroll by 10 pixels per click if shift is pressed, otherwise zoom.
-				axis_under_mouse->scroll(dy * 10);
+				scroll_axis(under_mouse.axis_number, dy * 10);
 			}
 			else {
-				if (axis_under_mouse->is_horizontal()) {
-					axis_under_mouse->zoom(mouse_x, -dy);
-				}
-				else {
-					axis_under_mouse->zoom(mouse_y, -dy);
-				}
+				zoom_axis(under_mouse.axis_number, mouse_x, mouse_y, dy);
 			}
 			handled = true;
 		}
-		else if (plot_under_mouse) {
+		else {
 			if (!shift_pressed) {
 				// If the mouse wheel event was on the plot and Shift is not pressed, 
 				// zoom on all axes.
-				for (auto& it : data_type_to_axis_) {
-					if (!it.second) continue;
-					if (it.second->is_horizontal()) {
-						it.second->zoom(mouse_x, -dy);
-					}
-					else {
-						it.second->zoom(mouse_y, -dy);
-					}
+				for (auto& it : axes_data_) {
+					zoom_axis(it.first, mouse_x, mouse_y, dy);
 					handled = true;
 				}
 			}
@@ -845,24 +821,22 @@ int zc_graph_base::handle(int event) {
 	// Handle push to enable drag
 	else if (event == FL_PUSH) {
 		// Save the position of the mouse when the button is pressed to calculate the drag distance in FL_DRAG.
-		prev_mouse_x_ = Fl::event_x();
-		prev_mouse_y_ = Fl::event_y();
+		last_mouse_x_ = Fl::event_x();
+		last_mouse_y_ = Fl::event_y();
 		if (Fl::event_clicks()) {
 			// If this is a double-click, reset the axis under the mouse to
 			// the default range.
-			Fl_Widget* below_mouse = get_child_at_position(Fl::event_x(), Fl::event_y());
-			zc_graph_axis* axis_under_mouse = dynamic_cast<zc_graph_axis*>(below_mouse);
-			zc_graph_plot* plot_under_mouse = dynamic_cast<zc_graph_plot*>(below_mouse);
-			if (axis_under_mouse) {
-				axis_under_mouse->reset_range();
+			layout_area_t under_mouse = get_layout_area(Fl::event_x(), Fl::event_y());
+			if (!under_mouse.is_plot_area) {
+				// If the double-click was on an axis, reset that axis to its default range.
+				reset_zoom(under_mouse.axis_number);
 				redraw();
 				return 1;
 			}
-			else if (plot_under_mouse) {
+			else {
 				// If the double-click was on the plot, reset all axes to their default range.
-				for (auto& it : data_type_to_axis_) {
-					if (!it.second) continue;
-					it.second->reset_range();
+				for (auto& it : axes_data_) {
+					reset_zoom(it.first);
 				}
 				redraw();
 				return 1;
@@ -874,84 +848,149 @@ int zc_graph_base::handle(int event) {
 
 	// Handle click and drag on axis to scroll.
 	else if (event == FL_DRAG) {
-		int dx = prev_mouse_x_ - Fl::event_x();
-		int dy = prev_mouse_y_ - Fl::event_y();
-		prev_mouse_x_ = Fl::event_x();
-		prev_mouse_y_ = Fl::event_y();
-		Fl_Widget* below_mouse = get_child_at_position(Fl::event_x(), Fl::event_y());
-		zc_graph_axis* axis_under_mouse = dynamic_cast<zc_graph_axis*>(below_mouse);
-		zc_graph_plot* plot_under_mouse = dynamic_cast<zc_graph_plot*>(below_mouse);
-		if (axis_under_mouse) {
-			if (axis_under_mouse->is_horizontal()) {
-				axis_under_mouse->scroll(dx);
-			}
-			else {
-				axis_under_mouse->scroll(dy);
-			}
+		int dx = last_mouse_x_ - Fl::event_x();
+		int dy = last_mouse_y_ - Fl::event_y();
+		last_mouse_x_ = Fl::event_x();
+		last_mouse_y_ = Fl::event_y();
+		layout_area_t under_mouse = get_layout_area(Fl::event_x(), Fl::event_y());
+		if (!under_mouse.is_plot_area) {
+			// If the mouse is being dragged on an axis, scroll that axis.
+			scroll_axis(under_mouse.axis_number, (Fl::event_state() & FL_SHIFT) ? dy * 10 : dy);
 			redraw();
 			return 1;
-		}
-		else if (plot_under_mouse) {
+		} 
+		else {
 			// If left mouse button is held and the mouse is dragged on the plot,
 			// Scroll on horizontal and leftwards vertical axes.
 			// Other axes will ignore scroll.
 			if (Fl::event_button() == FL_LEFT_MOUSE) {
-				for (auto& it : data_type_to_axis_) {
-					if (!it.second) continue;
-					if (it.second->is_horizontal()) {
-						it.second->scroll(dx);
-					}
-					else if (it.second->get_tick_direction() == zc_graph_axis::LEFTWARDS) {
-						it.second->scroll(dy);
-					}
-				}
+				scroll_axis(0, dx);
+				scroll_axis(1, dy);
 				redraw();
 				return 1;
 			}
 			else if (Fl::event_button() == FL_RIGHT_MOUSE) {
-				// If right mouse button is held and the mouse is dragged on the plot,
-				// Scroll on horizontal and rightwards vertical axes.
-				// Other axes will ignore scroll.
-				for (auto& it : data_type_to_axis_) {
-					if (!it.second) continue;
-					if (it.second->is_horizontal()) {
-						it.second->scroll(dx);
-					}
-					else if (it.second->get_tick_direction() == zc_graph_axis::RIGHTWARDS) {
-						it.second->scroll(dy);
-					}
+				scroll_axis(0, dx);
+				if (axes_data_.find(2) != axes_data_.end()) {
+					scroll_axis(2, dy);
 				}
 				redraw();
 				return 1;
 			}
 		}
 	}
-	return Fl_Group::handle(event);
+	return Fl_Widget::handle(event);
 }
-*/
+
+// Zoom the axis under the mouse by 2^^(delta/10).
+void zc_graph_::zoom_axis(int axis_number, int mouse_x, int mouse_y, int zoom_factor) {
+	// Check the axis data already exists for this axis number
+	auto it = axes_data_.find(axis_number);
+	if (it == axes_data_.end()) {
+		// Axis data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before zooming.");
+		return;
+	}
+	axis_data_t& axis_data = it->second;
+	data_point_t mouse_position;
+	switch (zoom_capability_) {
+	case ZOOM_ON_ORIGIN:
+		// Zoom on the origin - so mouse position is not relevant, use origin.
+		mouse_position = { 0.0F, 0.0F };
+		break;
+	case ZOOM_ON_CURSOR:
+		// Zoom on the cursor - so mouse position is relevant.
+		mouse_position = pixel_to_data(axis_number, mouse_x, mouse_y);
+		break;
+	default:
+		return;
+	}
+	// Set zoom factor
+	// Zoom change is 2^^(delta/10) - so every 10 units of delta doubles the zoom factor, every -10 units halves it.
+	double zoom_change = pow(2.0, (double)zoom_factor / 10.0);
+	// Calculate the new range based on the zoom change and mouse position.
+	if (is_axis_horizontal(axis_number)) {
+		double new_min = mouse_position.first - (mouse_position.first - axis_data.current_range.min) * zoom_change;
+		double new_max = mouse_position.first + (axis_data.current_range.max - mouse_position.first) * zoom_change;
+		range_t new_range = axis_data.outer_range &	range_t{ new_min, new_max };
+		axis_data.current_range = new_range;
+	}
+	else {
+		double new_min = mouse_position.second - (mouse_position.second - axis_data.current_range.min) * zoom_change;
+		double new_max = mouse_position.second + (axis_data.current_range.max - mouse_position.second) * zoom_change;
+		range_t new_range = axis_data.outer_range &	range_t{ new_min, new_max };
+		axis_data.current_range = new_range;
+	}
+}
+
+// Scroll the axis under the mouse by the specified offset in pixels.
+void zc_graph_::scroll_axis(int axis_number, int scroll_offset) {
+	if (!scrollable_) {
+		return;
+	}
+	// Check the axis data already exists for this axis number
+	auto it = axes_data_.find(axis_number);
+	if (it == axes_data_.end()) {
+		// Axis data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before scrolling.");
+		return;
+	}
+	axis_data_t& axis_data = it->second;
+	// Calculate the new range based on the scroll offset and current scale.
+	double scroll_amount = scroll_offset * axis_data.inv_scale;
+	double new_min, new_max;
+	// Limit scroll amount if we are close to the outer limit.
+	if (scroll_amount > 0.0) {
+		if (axis_data.current_range.max + scroll_amount > axis_data.outer_range.max) {
+			scroll_amount = axis_data.outer_range.max - axis_data.current_range.max;
+		}
+	} else {
+		if (axis_data.current_range.min + scroll_amount < axis_data.outer_range.min) {
+			scroll_amount = axis_data.outer_range.min - axis_data.current_range.min;
+		}
+	}
+	new_min = axis_data.current_range.min + scroll_amount;
+	new_max = axis_data.current_range.max + scroll_amount;
+	range_t new_range = axis_data.outer_range & range_t{ new_min, new_max };
+	axis_data.current_range = new_range;
+}
+
+// Reset the zoom for the specified axis number to the default range.
+void zc_graph_::reset_zoom(int axis_number) {
+	// Check the axis data already exists for this axis number
+	auto it = axes_data_.find(axis_number);
+	if (it == axes_data_.end()) {
+		// Axis data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before resetting zoom.");
+		return;
+	}
+	axis_data_t& axis_data = it->second;
+	axis_data.current_range = axis_data.default_range;
+}
 
 // Resize the widget - reset scaling factors
 void zc_graph_::resize(int X, int Y, int W, int H) {
 	// If we have actually resized...
 	if (X != x() || Y != y() || W != w() || H != h()) {
 		Fl_Widget::resize(X, Y, W, H);
-		// Clear the plot data for all data types and layers.
-		plot_data_.clear();
-		// Set out the positions of the axes and plot area, set the 
-		// drawing transformation schemata.
-		layout();
-		// Generate the axis lines, ticks, grid lines and labels for each axis based on the current parameters and ranges.
-		for (int i = 0; i < num_axes_; ++i) {
-			generate_axis_grid(i);
-			generate_value_markers(i);
-			generate_point_markers(i);
-		}
 		redraw();
 	}
 }
 
 // draw the widget
 void zc_graph_::draw() {
+
+	// Clear the plot data for all data types and layers.
+	plot_data_.clear();
+	// Set out the positions of the axes and plot area, set the 
+	// drawing transformation schemata.
+	layout();
+	// Generate the axis lines, ticks, grid lines and labels for each axis based on the current parameters and ranges.
+	for (int i = 0; i < num_axes_; ++i) {
+		generate_axis_grid(i);
+		generate_value_markers(i);
+		generate_point_markers(i);
+	}
 
 	// Regenerate data for each data set.
 	for (auto& data_set_pair : data_sets_) {
@@ -994,6 +1033,25 @@ void zc_graph_::apply_transformations(plot_xform_t schema) {
 	double origin_y = y() + h() - schema.y_min_ * scale_y;
 	fl_translate(origin_x, origin_y);
 	fl_scale(scale_x, scale_y);
+}
+
+//! \brief Convert thw pixel coordinates (x, y) to data coordinates for the specified axis number based on the current transformation schema for that axis.
+zc_graph_::data_point_t zc_graph_::pixel_to_data(int axis_number, int pixel_x, int pixel_y) const {
+	// For axis 0 use axis 1 parameters.
+	int drawing_axis_number = (axis_number == 0) ? 1 : axis_number;
+	// Check the plot data already exists for this axis number
+	auto& plot_data_it = plot_data_.find(drawing_axis_number);
+	if (plot_data_it == plot_data_.end()) {
+		// Plot data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Plot data does not exist for axis number " + std::to_string(drawing_axis_number) + ". Set axis parameters and add data sets before converting pixel to data coordinates.");
+		return { 0.0F, 0.0F };
+	}
+	const plot_xform_t& xform_schema = plot_data_it->second.xform_schema;
+	double inv_scale_x = (xform_schema.x_max_ - xform_schema.x_min_) / w();
+	double inv_scale_y = (xform_schema.y_min_ - xform_schema.y_max_) / h();
+	double data_x = xform_schema.x_min_ + (pixel_x - x()) * inv_scale_x;
+	double data_y = xform_schema.y_max_ + (pixel_y - y()) * inv_scale_y;
+	return { data_x, data_y };
 }
 
 //! \brief Draw a plot object using the FLTK drawing functions based on its shape and style.
@@ -1190,6 +1248,27 @@ void zc_graph_cartesian::layout() {
 	axes_data_[1].label_angle = 90;
 }
 
+// Get the layout area under the mouse based on the current layout of the graph.
+zc_graph_::layout_area_t zc_graph_cartesian::get_layout_area(int mouse_x, int mouse_y) const {
+	// Check if the mouse is over the plot area.
+	int plot_x = x() + v_axis_width_;
+	int plot_y = y();
+	int plot_w = w() - v_axis_width_;
+	int plot_h = h() - axis_width_;
+	if (mouse_x >= plot_x && mouse_x <= plot_x + plot_w &&
+		mouse_y >= plot_y && mouse_y <= plot_y + plot_h) {
+		return { true, -1 };
+	}
+	// Check if the mouse is over either of the axes.
+	if (mouse_x >= x() && mouse_x < x() + v_axis_width_) {
+		return { false, 0 };
+	}
+	else if (mouse_y >= y() && mouse_y < y() + h() - axis_width_) {
+		return { false, 1 };
+	}
+	return { false, -1 };
+}
+
 // Add a marker for Cartesian graphs
 void zc_graph_cartesian::generate_value_marker(
 	int axis_number,
@@ -1310,6 +1389,30 @@ void zc_graph_cartesian_2y::layout() {
 	axes_data_[2].inv_scale = dpp_y2;
 	axes_data_[2].label_position = { x_max + v_axis_width_ * dpp_x * 0.5, y2_min + (y2_max - y2_min) / 2.0F };
 	axes_data_[2].label_angle = 90;
+}
+
+// Get the layout area under the mouse based on the current layout of the graph.
+zc_graph_::layout_area_t zc_graph_cartesian_2y::get_layout_area(int mouse_x, int mouse_y) const {
+	// Check if the mouse is over the plot area.
+	int plot_x = x() + v_axis_width_;
+	int plot_y = y();
+	int plot_w = w() - 2 * v_axis_width_;
+	int plot_h = h() - axis_width_;
+	if (mouse_x >= plot_x && mouse_x <= plot_x + plot_w &&
+		mouse_y >= plot_y && mouse_y <= plot_y + plot_h) {
+		return { true, -1 };
+	}
+	// Check if the mouse is over either of the axes.
+	if (mouse_x >= x() && mouse_x < x() + v_axis_width_) {
+		return { false, 0 };
+	}
+	else if (mouse_y >= y() && mouse_y < y() + h() - axis_width_) {
+		return { false, 1 };
+	}
+	else if (mouse_x >= x() + w() - v_axis_width_ && mouse_x < x() + w()) {
+		return { false, 2 };
+	}
+	return { false, -1 };
 }
 
 // Add a marker for Cartesian 2Y graphs
@@ -1456,6 +1559,27 @@ void zc_graph_cart_overlay::layout() {
 	axes_data_[0].label_angle = 0;
 }
 
+// Get the layout area under the mouse based on the current layout of the graph.
+zc_graph_::layout_area_t zc_graph_cart_overlay::get_layout_area(int mouse_x, int mouse_y) const {
+	// Check if the mouse is over the plot area.
+	int plot_x = x();
+	int plot_y = y();
+	int plot_w = w();
+	int plot_h = h();
+	// Check if the mouse is over either of the axes.
+	if (mouse_x >= x() && mouse_x < x() + v_axis_width_) {
+		return { false, 0 };
+	}
+	else if (mouse_y >= y() && mouse_y < y() + h()) {
+		return { false, 1 };
+	}
+	if (mouse_x >= plot_x && mouse_x <= plot_x + plot_w &&
+		mouse_y >= plot_y && mouse_y <= plot_y + plot_h) {
+		return { true, -1 };
+	}
+	return { false, -1 };
+}
+
 // Add a marker for Cartesian overlay graphs
 void zc_graph_cart_overlay::generate_value_marker(
 	int axis_number,
@@ -1562,6 +1686,12 @@ void zc_graph_polar::layout() {
 	axes_data_[1].inv_scale = dpp_theta;
 	axes_data_[1].label_position = { 0.0, -r_max - axis_width_ * dpp_r * 0.5 };
 	axes_data_[1].label_angle = 0;
+}
+
+// Get the layout area under the mouse based on the current layout of the graph.
+zc_graph_::layout_area_t zc_graph_polar::get_layout_area(int mouse_x, int mouse_y) const {
+	// TODO: Do we need to check the mouse is within the circular plot area, or just return true?
+	return { true, -1 };
 }
 
 // Add a marker for Polar graphs
