@@ -688,7 +688,7 @@ protected:
 	//! \brief Set tick and grid points for the axis
 	//! \param axis_number The number of the axis to generate ticks for (starting from 0).
 	//! \param tick_spacing_pixels The desired spacing between ticks in pixels.
-	//! \param length_pixels The length of the axis in pixels. 
+	//! \param inv_scale The inverse scale factor (delta(data) per pixel) for the axis.
 	void set_ticks(
 		int axis_number,
 		int tick_spacing_pixels,
