@@ -1060,7 +1060,7 @@ zc_graph_::data_point_t zc_graph_::pixel_to_data(int axis_number, int pixel_x, i
 	// For axis 0 use axis 1 parameters.
 	int drawing_axis_number = (axis_number == 0) ? 1 : axis_number;
 	// Check the plot data already exists for this axis number
-	auto& plot_data_it = plot_data_.find(drawing_axis_number);
+	auto plot_data_it = plot_data_.find(drawing_axis_number);
 	if (plot_data_it == plot_data_.end()) {
 		// Plot data does not exist for this axis number, throw an error
 		throw std::invalid_argument("Plot data does not exist for axis number " + std::to_string(drawing_axis_number) + ". Set axis parameters and add data sets before converting pixel to data coordinates.");
@@ -1794,7 +1794,7 @@ bool zc_graph_polar::custom_tick(
 		// Use the radius axis inverse scale to calculate a constant tick length in data units.
 		// Yes, the user may distort the plot by setting a non-square aspect ratio,
 		// but heigh-ho.
-		plot_vertex_t end({ tick_data.value, axis_data.position - 5 * axis_data.inv_scale });
+		plot_vertex_t end(plot_vertex_t{ tick_data.value, axis_data.position - 5 * axis_data.inv_scale });
 		tick_object.segments.push_back(plot_segment_t(end));
 		tick_object.segments.push_back(plot_segment_t(start));
 		tick_object.text_alignment = ALIGN_BELOW;
