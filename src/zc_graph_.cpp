@@ -783,25 +783,166 @@ void zc_graph_::generate_value_markers(
 int zc_graph_::handle(int event) {
 	return Fl_Widget::handle(event);
 }
+/*
+//! \brief override of Fl_Group handle to allow for zooming and scrolling on axes.
+int zc_graph_base::handle(int event) {
+	// TODO: Using the return value from zoom and scroll is not ideal as
+	// it is not clear whether the event was handled by the axis or not only
+	// that it was completely successful.
+	if (event == FL_MOUSEWHEEL) {
+		// Get the mouse wheel delta and position, and the state of the modifier keys.
+		int dy = Fl::event_dy();
+		int mouse_x = Fl::event_x();
+		int mouse_y = Fl::event_y();
+		bool ctrl_pressed = Fl::event_state() & FL_CTRL;
+		bool shift_pressed = Fl::event_state() & FL_SHIFT;
+
+		bool handled = false;
+
+		Fl_Widget* below_mouse = get_child_at_position(mouse_x, mouse_y);
+		zc_graph_axis* axis_under_mouse = dynamic_cast<zc_graph_axis*>(below_mouse);
+		zc_graph_plot* plot_under_mouse = dynamic_cast<zc_graph_plot*>(below_mouse);
+		if (axis_under_mouse) {
+			if (shift_pressed) {
+				// Scroll by 10 pixels per click if shift is pressed, otherwise zoom.
+				axis_under_mouse->scroll(dy * 10);
+			}
+			else {
+				if (axis_under_mouse->is_horizontal()) {
+					axis_under_mouse->zoom(mouse_x, -dy);
+				}
+				else {
+					axis_under_mouse->zoom(mouse_y, -dy);
+				}
+			}
+			handled = true;
+		}
+		else if (plot_under_mouse) {
+			if (!shift_pressed) {
+				// If the mouse wheel event was on the plot and Shift is not pressed, 
+				// zoom on all axes.
+				for (auto& it : data_type_to_axis_) {
+					if (!it.second) continue;
+					if (it.second->is_horizontal()) {
+						it.second->zoom(mouse_x, -dy);
+					}
+					else {
+						it.second->zoom(mouse_y, -dy);
+					}
+					handled = true;
+				}
+			}
+		}
+
+		if (handled) {
+			redraw();
+			return 1;
+		}
+	}
+
+	// Handle push to enable drag
+	else if (event == FL_PUSH) {
+		// Save the position of the mouse when the button is pressed to calculate the drag distance in FL_DRAG.
+		prev_mouse_x_ = Fl::event_x();
+		prev_mouse_y_ = Fl::event_y();
+		if (Fl::event_clicks()) {
+			// If this is a double-click, reset the axis under the mouse to
+			// the default range.
+			Fl_Widget* below_mouse = get_child_at_position(Fl::event_x(), Fl::event_y());
+			zc_graph_axis* axis_under_mouse = dynamic_cast<zc_graph_axis*>(below_mouse);
+			zc_graph_plot* plot_under_mouse = dynamic_cast<zc_graph_plot*>(below_mouse);
+			if (axis_under_mouse) {
+				axis_under_mouse->reset_range();
+				redraw();
+				return 1;
+			}
+			else if (plot_under_mouse) {
+				// If the double-click was on the plot, reset all axes to their default range.
+				for (auto& it : data_type_to_axis_) {
+					if (!it.second) continue;
+					it.second->reset_range();
+				}
+				redraw();
+				return 1;
+			}
+		}
+		// If this is not a double-click, we will handle dragging in FL_DRAG.
+		return 1;
+	}
+
+	// Handle click and drag on axis to scroll.
+	else if (event == FL_DRAG) {
+		int dx = prev_mouse_x_ - Fl::event_x();
+		int dy = prev_mouse_y_ - Fl::event_y();
+		prev_mouse_x_ = Fl::event_x();
+		prev_mouse_y_ = Fl::event_y();
+		Fl_Widget* below_mouse = get_child_at_position(Fl::event_x(), Fl::event_y());
+		zc_graph_axis* axis_under_mouse = dynamic_cast<zc_graph_axis*>(below_mouse);
+		zc_graph_plot* plot_under_mouse = dynamic_cast<zc_graph_plot*>(below_mouse);
+		if (axis_under_mouse) {
+			if (axis_under_mouse->is_horizontal()) {
+				axis_under_mouse->scroll(dx);
+			}
+			else {
+				axis_under_mouse->scroll(dy);
+			}
+			redraw();
+			return 1;
+		}
+		else if (plot_under_mouse) {
+			// If left mouse button is held and the mouse is dragged on the plot,
+			// Scroll on horizontal and leftwards vertical axes.
+			// Other axes will ignore scroll.
+			if (Fl::event_button() == FL_LEFT_MOUSE) {
+				for (auto& it : data_type_to_axis_) {
+					if (!it.second) continue;
+					if (it.second->is_horizontal()) {
+						it.second->scroll(dx);
+					}
+					else if (it.second->get_tick_direction() == zc_graph_axis::LEFTWARDS) {
+						it.second->scroll(dy);
+					}
+				}
+				redraw();
+				return 1;
+			}
+			else if (Fl::event_button() == FL_RIGHT_MOUSE) {
+				// If right mouse button is held and the mouse is dragged on the plot,
+				// Scroll on horizontal and rightwards vertical axes.
+				// Other axes will ignore scroll.
+				for (auto& it : data_type_to_axis_) {
+					if (!it.second) continue;
+					if (it.second->is_horizontal()) {
+						it.second->scroll(dx);
+					}
+					else if (it.second->get_tick_direction() == zc_graph_axis::RIGHTWARDS) {
+						it.second->scroll(dy);
+					}
+				}
+				redraw();
+				return 1;
+			}
+		}
+	}
+	return Fl_Group::handle(event);
+}
+*/
 
 // Resize the widget - reset scaling factors
 void zc_graph_::resize(int X, int Y, int W, int H) {
 	// If we have actually resized...
 	if (X != x() || Y != y() || W != w() || H != h()) {
 		Fl_Widget::resize(X, Y, W, H);
-		// Delete any existing axis line, ticks, grid lines and label for this axis number from the plot data.
-		for (auto& plot_pair : plot_data_) {
-			plot_layer_data_t& layer_data = plot_pair.second.layer_data;
-			if (layer_data.find(AXES) != layer_data.end()) {
-				layer_data.at(AXES).clear();
-			}
-			if (layer_data.find(GRID_LINES) != layer_data.end()) {
-				layer_data.at(GRID_LINES).clear();
-			}
-		}
-		// For each axis , recalculate the scaling factors based on the new size and the current ranges for that axis.
-		for (auto& axis_pair : axes_data_) {
-			generate_axis_grid(axis_pair.first);
+		// Clear the plot data for all data types and layers.
+		plot_data_.clear();
+		// Set out the positions of the axes and plot area, set the 
+		// drawing transformation schemata.
+		layout();
+		// Generate the axis lines, ticks, grid lines and labels for each axis based on the current parameters and ranges.
+		for (int i = 0; i < num_axes_; ++i) {
+			generate_axis_grid(i);
+			generate_value_markers(i);
+			generate_point_markers(i);
 		}
 		redraw();
 	}
@@ -1400,10 +1541,10 @@ void zc_graph_polar::layout() {
 	xform_schema.y_min_ = -(h() * dpp_r / 2.0);
 	xform_schema.y_max_ = (h() * dpp_r / 2.0);
 	plot_data_[1].xform_schema = xform_schema;
-	double rmax_x = plot_w * dpp_r / 2.0;
-	double rmax_y = plot_h * dpp_r / 2.0;
-	plot_data_[1].data_area.display_min = { -rmax_x, -rmax_y };
-	plot_data_[1].data_area.display_max = { rmax_x, rmax_y };
+	//double rmax_x = plot_w * dpp_r / 2.0;
+	//double rmax_y = plot_h * dpp_r / 2.0;
+	plot_data_[1].data_area.display_min = { -r_max, -r_max };
+	plot_data_[1].data_area.display_max = { r_max, r_max };
 	// Set the axis sizes and positions for the axes. For polar coordinates, we will set the R axis along the horizontal and the Theta axis along the vertical.
 	// Radius axis at "Y" = 0;
 	axes_data_[0].position = 0.0;
@@ -1417,7 +1558,7 @@ void zc_graph_polar::layout() {
 	axes_data_[1].position = r_max;
 	axes_data_[1].tick_orientation = TICK_INCREASING;
 	axes_data_[1].inv_scale = dpp_theta;
-	axes_data_[1].label_position = { 0.0, -rmax_y - axis_width_ * dpp_r * 0.5 };
+	axes_data_[1].label_position = { 0.0, -r_max - axis_width_ * dpp_r * 0.5 };
 	axes_data_[1].label_angle = 0;
 }
 
