@@ -352,7 +352,10 @@ void zc_graph_::generate_grid_lines(int axis_number) {
 }
 
 // Generate ticks
-void zc_graph_::set_ticks(int axis_number, int tick_spacing_pixels, int length_pixels) {
+void zc_graph_::set_ticks(
+	int axis_number, 
+	int tick_spacing_pixels, 
+	double inv_scale) {
 	// Check the axis data already exists for this axis number
 	auto it = axes_data_.find(axis_number);
 	if (it == axes_data_.end()) {
@@ -369,8 +372,7 @@ void zc_graph_::set_ticks(int axis_number, int tick_spacing_pixels, int length_p
 	axis_data_t& axis_data = it->second;
 	axis_data.ticks.clear();
 	// Calculate the tick spacing in data coordinates based on the desired spacing in pixels and the current
-	double scale = (axis_data.current_range.max - axis_data.current_range.min) / length_pixels;
-	double tick_spacing = std::abs(tick_spacing_pixels * scale);
+	double tick_spacing = std::abs(tick_spacing_pixels * inv_scale);
 	double tick_mantissa;
 	double tick_power10;
 	double grid_spacing_units = tick_spacing;
@@ -522,7 +524,7 @@ void zc_graph_::generate_axis_ticks(int axis_number) {
 		return;
 	}
 
-	set_ticks(axis_number, axes_data_[axis_number].tick_spacing_pixels, (axis_number == 0) ? w() : h());
+	set_ticks(axis_number, axis_data.tick_spacing_pixels, axis_data.inv_scale);
 
 	for (const auto& tick : axis_data.ticks) {
 		plot_object_t tick_mark;

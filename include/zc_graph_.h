@@ -679,7 +679,7 @@ protected:
 	void set_ticks(
 		int axis_number,
 		int tick_spacing_pixels,
-		int length_pixels
+		double inv_scale
 	);
 
 	//! \brief Overridable function to generate a tick for specific derived types.
