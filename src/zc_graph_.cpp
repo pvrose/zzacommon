@@ -160,9 +160,8 @@ void zc_graph_::add_data_set(
 		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a data set.");
 		return;
 	}
-	data_set_t& data_set = data_sets_[axis_number];
-	data_set.data = data;
-	data_set.style = style;
+	data_set_t data_set = { data, style };
+	data_sets_[axis_number].push_back(data_set);
 };
 
 //! \brief Add a value marker to the graph for a specific axis number.
@@ -647,39 +646,39 @@ void zc_graph_::generate_data_lines(int axis_number) {
 	int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the data along is the other axis
 	plot_data_[plot_number].layer_data[DATA].clear();
 
-	data_set_t& data_set = data_sets_[axis_number];
-	axis_data_t& axis_data = it->second;
-	axis_data_t& axis_0_data = axis_0_it->second;
-	// Add the data set to the plot data for this axis number
-	// Create a new plot line for this data set.
-	plot_object_t plot_line;
-	plot_line.shape = LINE_STRIP;
-	plot_line.style = data_set.style;
+	for (const auto& data_set : data_sets_[axis_number]) {
+		axis_data_t& axis_data = it->second;
+		axis_data_t& axis_0_data = axis_0_it->second;
+		// Add the data set to the plot data for this axis number
+		// Create a new plot line for this data set.
+		plot_object_t plot_line;
+		plot_line.shape = LINE_STRIP;
+		plot_line.style = data_set.style;
 
-	// Add a vertex for each data point in the data set.
-	// Include the data points in the current ranges for the axes.
-	for (const auto& point : *data_set.data) {
-		//// Check that the point is within the current ranges for both axes. If not, skip it.
-		//if (!axis_data.current_range.contains(point.second) ||
-		//	!axis_0_data.current_range.contains(point.first)) {
-		//	continue;
-		//}
-		// Add the point to the default ranges for both axes, if it's within the outer range for that axis. This ensures that if the point is outside the current range but within the outer range.
-		if (axis_data.outer_range.contains(point.second)) {
-			axis_data.default_range |= point.second;
+		// Add a vertex for each data point in the data set.
+		// Include the data points in the current ranges for the axes.
+		for (const auto& point : *data_set.data) {
+			//// Check that the point is within the current ranges for both axes. If not, skip it.
+			//if (!axis_data.current_range.contains(point.second) ||
+			//	!axis_0_data.current_range.contains(point.first)) {
+			//	continue;
+			//}
+			// Add the point to the default ranges for both axes, if it's within the outer range for that axis. This ensures that if the point is outside the current range but within the outer range.
+			if (axis_data.outer_range.contains(point.second)) {
+				axis_data.default_range |= point.second;
+			}
+			if (axis_0_data.outer_range.contains(point.first)) {
+				axis_0_data.default_range |= point.first;
+			}
+			// Now add the point to the plot line as a vertex. Convert to Cartesian coordinates if necessary.
+			plot_vertex_t vertex;
+			vertex = plot_vertex_t(convert_point(point));
+			plot_segment_t segment(vertex);
+			plot_line.segments.push_back(segment);
 		}
-		if (axis_0_data.outer_range.contains(point.first)) {
-			axis_0_data.default_range |= point.first;
-		}
-		// Now add the point to the plot line as a vertex. Convert to Cartesian coordinates if necessary.
-		plot_vertex_t vertex;
-		vertex = plot_vertex_t(convert_point(point));
-		plot_segment_t segment(vertex);
-		plot_line.segments.push_back(segment);
-
+		// Add the plot line to the plot data for this axis number.
+		plot_data_[plot_number].layer_data[DATA].push_back(plot_line);
 	}
-	// Add the plot line to the plot data for this axis number.
-	plot_data_[plot_number].layer_data[DATA].push_back(plot_line);
 
 }
 

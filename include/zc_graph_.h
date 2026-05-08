@@ -526,6 +526,11 @@ public:
 	//! internal structures for plotting.
 	void end_config();
 
+	//! \brief Clear all data sets from the grid.
+	void clear_data_sets() {
+		data_sets_.clear();
+	}
+
 	//! \brief override of Fl_Group handle to allow for zooming and scrolling on axes.
 	//! Mouse actions:-
 	//! - Mouse wheel scroll on an axis to zoom in/out on that axis.
@@ -758,7 +763,7 @@ protected:
 	//! \brief The data for the graph. Pointers to application data.
 	//! 
 	//! This data will be applied to the DATA layer.
-	std::map<int, data_set_t> data_sets_;
+	std::map<int, std::vector< data_set_t> > data_sets_;
 
 	//! \brief The graph_type for the graph, which defines the layout of the axes and plot area.
 	graph_type_t graph_type_ = NO_DATA;
