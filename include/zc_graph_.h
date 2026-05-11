@@ -77,6 +77,7 @@ public:
 		CARTESIAN_2Y,  //!< Cartesian coordinates with a secondary Y axis (x, y1) and (x, y2)
 		CART_OVERLAY,   //!< Cartesian coordinates with X and Y axes overlaid on the same plot area (x, y).
 		POLAR,        //!< Polar coordinates (r, theta)
+		SMITH,        //!< Smith chart.
 	};
 
 	//! \brief Text alignment wrt the specified position for text labels and text boxes.
@@ -694,7 +695,7 @@ protected:
 	//! \param axis_number The number of the axis to generate ticks for (starting from 0).
 	//! \param tick_spacing_pixels The desired spacing between ticks in pixels.
 	//! \param inv_scale The inverse scale factor (delta(data) per pixel) for the axis.
-	void set_ticks(
+	virtual void set_ticks(
 		int axis_number,
 		int tick_spacing_pixels,
 		double inv_scale
@@ -824,6 +825,10 @@ protected:
 };
 
 //! \brief Derived class for Cartesian graphs.
+//! 
+//! This is a standard X-Y graph with a horizontal X axis and a vertical Y axis.
+//! The axes are drawn on the left and bottom of the plot area, 
+//! and the data is plotted in the remaining area above and to the right of the axes.
 class zc_graph_cartesian : public zc_graph_ {
 public:
 	//! \brief Constructor
@@ -854,6 +859,11 @@ protected:
 };
 
 //! \brief Derived class for Cartesian graphs with a secondary Y axis.
+//! 
+//! This is a Cartesian graph with a horizontal X axis and two vertical Y axes, 
+//! one on the left and one on the right of the plot area. The two Y axes can 
+//! have different scales, allowing for plotting of different data types 
+//! on the same graph (e.g. resistance and reactance on an impedance plot).
 class zc_graph_cartesian_2y : public zc_graph_ {
 public:
 	//! \brief Constructor
@@ -869,7 +879,6 @@ protected:
 	void layout() override;
 
 	//! \brief Add a marker to the graph at a specific value or range of values.
-	//! \brief Add a marker to the graph at a specific value or range of values.
 	virtual void generate_value_marker(
 		int axis_number,
 		layer_t layer,
@@ -884,6 +893,10 @@ protected:
 };
 
 //! \brief Derived class for Cartesian graphs with overlaid axes.
+//! 
+//! This is a Cartesian graph with a horizontal X axis and a vertical Y axis, 
+//! but the axes are overlaid on the plot area rather than being drawn 
+//! on the left and bottom.
 class zc_graph_cart_overlay : public zc_graph_ {
 public:
 	//! \brief Constructor
@@ -914,6 +927,11 @@ protected:
 };
 
 //! \brief Derived class for Polar graphs.
+//! 
+//! This is a graph with polar coordinates, where the X axis represents the 
+//! radius and the Y axis represents the angle (theta). The x axis is drawn 
+//! as a radial axis from the origin, and the y axis is drawn as a circular
+//! axis around the origin. 
 class zc_graph_polar : public zc_graph_ {
 public:
 	//! \brief Constructor
@@ -951,3 +969,82 @@ protected:
 
 };
 
+//! \brief Derived class for Smith charts.
+//! 
+//! This is a graph with Smith chart representation. The data is defined as
+//! the real and imaginary components of the reflection coefficient. The axes
+//! are overlaid on the plot area, with the horizontal axis representing the real
+//! component on the normalised impedance (from 0 to +infinity) and the 
+//! circumferential axis representing the imaginary component of the normalised impedance 
+//! (from -infinity to +infinity).
+class zc_graph_smith : public zc_graph_ {
+public:
+	//! \brief Constructor
+	zc_graph_smith(int X, int Y, int W, int H, const char* L = nullptr) : zc_graph_(X, Y, W, H, L) {
+		set_type(SMITH);
+		set_num_axes(2); // Real and Imaginary axes, but overlaid on the same plot area
+		zoom_capability_ = NO_ZOOM; // Disallow zooming on both axes
+		scrollable_ = false; // Disallow scrolling on both axes
+	}
+
+protected:
+	//! \brief Layout the axes and plot area for a Smith chart.
+	//! 
+	//! For now copy polar.
+	void layout() override;
+
+	//! \brief Add a marker to the graph at a specific value or range of values.
+	//! 
+	//! Markers for the Smith chart will typically be constant resistance 
+	//! and reactance circles.
+	//! A line of constant resistance R will be a circle with centre 
+	//! at (R/(R+1), 0) and radius 1/(R+1).
+	//! A line of constant reactance X will be an arc with centre 
+	//! at (1, 1/X) and radius 1/X. The arc will be above the real 
+	//! axis for positive X and below the real axis for negative X.
+	//! The angle at which the arc intersects the circle for R=0 is
+	//! derived from coordinates of that point and the centre of the arc.
+	virtual void generate_value_marker(
+		int axis_number,
+		layer_t layer,
+		const value_marker_t& marker
+	) override;
+
+	//! \brief Return the layout area for a given set of pixel coordinates.
+	//! 
+	//! This defaults to the plot area as zooming and scrolling are inhibited.
+	virtual layout_area_t get_layout_area(int x, int y) const override;
+
+	//! \brief Return whether given axis is horizontal (true) or vertical (false).
+	virtual bool is_axis_horizontal(int axis_number) const override {
+		return axis_number == 0; // Real axis is horizontal, Imaginary axis is vertical
+	}
+
+	//! \brief Custom tick generation for Smith chart to generate the constant resistance and reactance circles.
+	//!
+	//! Not sure about this.
+	virtual bool custom_tick(
+		int axis_number,
+		const tick_data_t& tick_data,
+		plot_object_t& tick_object
+	) override;
+
+	//! \brief Set the tick and grid points for the Smith chart to generate the appropriate constant resistance and reactance circles.
+	//!
+	//! This needs to generate a set of tick points that are sort of equally spaced
+	//! between 0 and infinity for R, and +/- infinity for X.
+	//! mark all tick points as major so that grid lines will be drawn for each.
+	virtual void set_ticks(
+		int axis_number,
+		int tick_spacing_pixels,
+		double inv_scale
+	) override;
+
+	//! \brief Generate the S11 parameter value for the given R+jX values.
+	//! 
+	//! \param value_r The resistance value for the point.
+	//! \param value_x The reactance value for the point.
+	//! \return The data point corresponding to the S11 parameter.
+	data_point_t gamma(double value_r, double value_x) const;
+
+};

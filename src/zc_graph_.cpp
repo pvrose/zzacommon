@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <complex>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -1828,4 +1829,272 @@ bool zc_graph_polar::custom_tick(
 		}
 	}
 	return true; // Return true to indicate that we have handled the tick and no further processing is needed.
+}
+
+// Smith chart layout
+void zc_graph_smith::layout() {
+	// For Smith chart the data is plotted in real and imaginary coordinates,
+	// with limits of +/- 1.0. This layout will force the plot area to be square
+	// and override the current_data values to set the display range to -1.0 to 1.0.
+	// Axes and grid-lines will be drawn at the lines of constant resistance
+	// and reactance.
+	plot_x_ = x() + v_axis_width_;
+	plot_y_ = y() + axis_width_;
+	plot_w_ = w() - 2 * v_axis_width_;
+	plot_h_ = h() - 2 * axis_width_;
+	double s11_max = 1.0; // The maximum value for the S11 parameter in the Smith chart is 1.0, which corresponds to total reflection.
+	// data per pixel values
+	double radius_pixels = std::min(plot_w_, plot_h_) / 2.0;
+	double dpp_r = s11_max / radius_pixels;
+	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
+	plot_xform_t xform_schema;
+	xform_schema.x_min_ = -(w() * dpp_r / 2.0);
+	xform_schema.x_max_ = (w() * dpp_r / 2.0);
+	xform_schema.y_min_ = -(h() * dpp_r / 2.0);
+	xform_schema.y_max_ = (h() * dpp_r / 2.0);
+	plot_data_[1].xform_schema = xform_schema;
+	//double rmax_x = plot_w * dpp_r / 2.0;
+	//double rmax_y = plot_h * dpp_r / 2.0;
+	plot_data_[1].data_area.display_min = { -s11_max, -s11_max };
+	plot_data_[1].data_area.display_max = { s11_max, s11_max };
+	// Set the axis sizes and positions for the axes. For Smith chart, 
+	// we will set the Resistance axis along the horizontal and the
+	// Reactance axis along the circumferennce.
+	// Resistance axis at "Y" = 0;
+	axes_data_[0].position = 0.0;
+	axes_data_[0].tick_orientation = TICK_DECREASING;
+	axes_data_[0].inv_scale = dpp_r;
+	axes_data_[0].label_position = { 0.0, -axis_width_ * dpp_r * 0.5 };
+	axes_data_[0].label_angle = 0;
+	// Theta axis at rmax 
+	// data per pixel treated the number of degrees per circumferential pixel.
+	double dpp_theta = 180.0 / zc::PI / radius_pixels;
+	axes_data_[1].position = 0.0;
+	axes_data_[1].tick_orientation = TICK_INCREASING;
+	axes_data_[1].inv_scale = dpp_theta;
+	axes_data_[1].label_position = { 0.0, -s11_max - axis_width_ * dpp_r * 0.5 };
+	axes_data_[1].label_angle = 0;
+}
+
+// Get the layout area under the mouse based on the current layout of the graph.
+zc_graph_::layout_area_t zc_graph_smith::get_layout_area(
+	int mouse_x, 
+	int mouse_y) const {
+	// TODO: Do we need to check the mouse is within the circular plot area, or just return true?
+	return { true, -1 };
+}
+
+// Markers for the Smith chart will typically be constant resistance 
+// and reactance circles.
+// A line of constant resistance R will be a circle with centre 
+// at (R/(R+1), 0) and radius 1/(R+1).
+// A line of constant reactance X will be an arc with centre 
+// at (1, 1/X) and radius 1/X. The arc will be above the real 
+// axis for positive X and below the real axis for negative X.
+// The angle at which the arc intersects the circle for R=0 is
+// derived from coordinates of that point and the centre of the arc.
+void zc_graph_smith::generate_value_marker(
+	int axis_number,
+	layer_t layer,
+	const value_marker_t& marker
+) {
+	// Check the axis data already exists for this axis number
+	auto it = axes_data_.find(axis_number);
+	if (it == axes_data_.end()) {
+		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a marker.");
+		return;
+	}
+	// Do not support shaded area markers for the Smith chart, so check the values are the same.
+	if (marker.value_1 != marker.value_2) {
+		throw std::invalid_argument("Smith chart does not support shaded area markers. Value 1 and Value 2 must be the same.");
+		return;
+	}
+	// Lines of constant resistance are circles centred on the real axis.
+	if (axis_number == 0) {
+		plot_object_t marker_line;
+		marker_line.shape = LINE_STRIP;
+		marker_line.style = marker.style;
+		double R = marker.value_1;
+		double center_x = R / (R + 1);
+		double center_y = 0.0;
+		double radius = 1.0 / (R + 1);
+		plot_arc_t arc = { center_x, center_y, radius, 0, 360 };
+		marker_line.segments.push_back(plot_segment_t(arc));
+		plot_data_[1].layer_data[layer].push_back(marker_line);
+	}
+	else {
+		// Lines of constant reactance are arcs centred on the point (1, 1/X).
+		if (marker.value_1 == 0) {
+			// For a reactance of 0, the line is the real axis, so we can just draw a horizontal line at Y=0.
+			plot_object_t marker_line;
+			marker_line.shape = LINE_STRIP;
+			marker_line.style = marker.style;
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(-1.0, 0.0)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(1.0, 0.0)));
+			plot_data_[1].layer_data[layer].push_back(marker_line);
+			return;
+		}
+		plot_object_t marker_line;
+		marker_line.shape = LINE_STRIP;
+		marker_line.style = marker.style;
+		double X = marker.value_1;
+		double center_x = 1.0;
+		double center_y = 1.0 / X;
+		double radius = std::abs(1.0 / X);
+		data_point_t intersection_point = gamma(0.0, X);
+		double start_angle;
+		double end_angle;
+		double dx = intersection_point.first - center_x;
+		double dy = intersection_point.second - center_y;
+		// Arcs are drawn counter-clockwise.
+		// For positive X, the arc is above the real axis and starts at 
+		// the intersection with the R=0 circle and ends at the intersection
+		// with the R=inf circle. For negative X, the arc is below the real
+		// axis and starts at the intersection with the R=inf circle
+		// and ends at the intersection with the R=0 circle.
+		// The R=inf circle is a single dot at the point (1, 0) so is
+		// directly above or below the centre of the arc, and the angle 
+		// to that point is either 90 or 270 degrees.
+		if (X < 0) {
+			start_angle = std::atan2(dy, dx) * 180.0 / zc::PI;
+			if (start_angle < 0) {
+				start_angle += 360.0;
+			}
+			end_angle = 270.0;
+		}
+		else {
+			return; // DEBUG - avoid drawing arcs for negative reactance for now to avoid clutter.
+			start_angle = 90.0;
+			end_angle = std::atan2(dy, dx) * 180.0 / zc::PI;
+			if (end_angle < 0) {
+				end_angle += 360.0;
+			}
+		}
+		plot_arc_t arc = { center_x, center_y, radius, start_angle, end_angle };
+		marker_line.segments.push_back(plot_segment_t(arc));
+		plot_data_[1].layer_data[layer].push_back(marker_line);
+	}
+	return;
+}
+
+//! This needs to generate a set of tick points that are sort of equally spaced
+//! between 0 and infinity for R, and +/- infinity for X.
+//! mark all tick points as major so that grid lines will be drawn for each.
+void zc_graph_smith::set_ticks(
+	int axis_number,
+	int tick_spacing_pixels,
+	double inv_scale
+) {
+	// Implementation for setting ticks on the Smith chart
+	// TODO:
+	// The nanovna-saver has fixed tick values for the Smith chart, at
+	// R = 0, 0.2, 0.5, 1, 2, 3 and 5, and X = +/- 0.2, 0.5, 1, 2, 3 and 5.
+	// I want to be able to calculate tick values based on the tick spacing in pixels.
+	// For now use the same fixed tick values as nanovna-saver.
+	// Check the axis data already exists for this axis number
+	auto it = axes_data_.find(axis_number);
+	if (it == axes_data_.end()) {
+		// Axis data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before setting ticks.");
+		return;
+	}
+	// Check the current range is valid
+	if (!it->second.current_range.is_valid()) {
+		// Current range is not valid, throw an error
+		throw std::invalid_argument("Current range is not valid for axis number " + std::to_string(axis_number) + ". Set axis ranges before setting ticks.");
+		return;
+	}
+	axis_data_t& axis_data = it->second;
+	if (axis_number == 0) {
+		// Resistance axis - ticks at R = 0, 0.2, 0.5, 1, 2, 3 and 5.
+		std::vector<double> tick_values = { 0.0, 0.2, 0.5, 1.0, 2.0, 3.0, 5.0 };
+		for (double tick_value : tick_values) {
+			// Format the tick label based on the modifier.
+			char label[20];
+			snprintf(label, sizeof(label), "%g", tick_value);
+			// Calculate the pixel position of the tick and add it to the list of ticks.
+			axis_data.ticks.push_back({ tick_value, std::string(label), true });
+		}
+	}
+	else {
+		// Reactance axis - ticks at X = +/- 0.2, 0.5, 1, 2, 3 and 5.
+		std::vector<double> tick_values = { -5.0, -3.0, -2.0, -1.0, -0.5, -0.2, 
+											   0.2, 0.5, 1.0, 2.0, 3.0, 5.0 };
+		for (double tick_value : tick_values) {
+			// Format the tick label based on the modifier.
+			char label[20];
+			snprintf(label, sizeof(label), "%g", tick_value);
+			// Calculate the pixel position of the tick and add it to the list of ticks.
+			axis_data.ticks.push_back({ tick_value, std::string(label), true });
+		}
+	}
+}
+
+bool zc_graph_smith::custom_tick(
+	int axis_number,
+	const tick_data_t& tick_data,
+	plot_object_t& tick_object
+) {
+	// Implementation for tweaking the tick based on the axis number
+	if (axis_number == 0) {
+		auto other_axis_it = axes_data_.find(1);
+		axis_data_t& other_axis_data = other_axis_it->second;
+		axis_data_t& axis_data = axes_data_[axis_number];
+		// Horizontal axis - generate vertical ticks
+		// Get the pixel coords of the tick mark start.
+
+		plot_vertex_t start(gamma(tick_data.value, axis_data.position));
+		// Use the radius axis inverse scale to calculate a constant tick length in data units.
+		// Yes, the user may distort the plot by setting a non-square aspect ratio,
+		// but heigh-ho.
+		plot_vertex_t end(gamma(tick_data.value, axis_data.position - 5 * axis_data.inv_scale ));
+		tick_object.segments.push_back(plot_segment_t(end));
+		tick_object.segments.push_back(plot_segment_t(start));
+		tick_object.text_alignment = ALIGN_BELOW;
+	}
+	else {
+		auto other_axis_it = axes_data_.find(0);
+		axis_data_t& other_axis_data = other_axis_it->second;
+		axis_data_t& axis_data = axes_data_[axis_number];
+		// Vertical axis - generate horizontal ticks
+		plot_vertex_t start(gamma(axis_data.position, tick_data.value));
+		plot_vertex_t end(gamma(axis_data.position + 5 * other_axis_data.inv_scale, tick_data.value));
+		tick_object.segments.push_back(plot_segment_t(end));
+		tick_object.segments.push_back(plot_segment_t(start));
+		// Set the text alignment to keep the tick labels away from the annular axis.
+		if (tick_data.value == 1.0) {
+			// For the 90 degree tick, align the label above the annular axis to prevent overlap.
+			tick_object.text_alignment = ALIGN_ABOVE;
+		}
+		else if (tick_data.value == -1.0) {
+			// For the -90 degree tick, align the label below the annular axis to prevent overlap.
+			tick_object.text_alignment = ALIGN_BELOW;
+		}
+		else if (std::abs(tick_data.value) > 1.0) {
+			// For ticks on the right half of the plot, align the labels to the right.
+			tick_object.text_alignment = ALIGN_RIGHT;
+		}
+		else {
+			// For ticks on the left half of the plot, align the labels to the left.
+			tick_object.text_alignment = ALIGN_LEFT;
+		}
+	}
+	return true; // Return true to indicate that we have handled the tick and no further processing is needed.
+}
+
+
+// Calculate the S11 parameter for a given resistance and reactance, for use in 
+// generating the constant resistance and reactance markers on the Smith chart.
+zc_graph_::data_point_t zc_graph_smith::gamma(double value_r, double value_x) const {
+	// The following code is LLM generated. It may save some CPU cycles to
+	// avoid translating into a complex number and back. But this is clearer 
+	// and less error-prone.
+
+	// The S11 parameter is calculated from the resistance and reactance using the formula:
+	// S11 = (Z - Z0) / (Z + Z0)
+	// where Z is the complex impedance given by R + jX, and Z0 is the characteristic impedance, which we will assume to be 1.0 for a normalized Smith chart.
+	std::complex<double> z(value_r, value_x);
+	std::complex<double> one(1.0, 0.0);
+	std::complex<double> result = (z - one) / (z + one);
+	return { result.real(), result.imag() };
 }
