@@ -72,20 +72,17 @@ projects.
 This class provides a simple X/Y line graph. 
 This is deprecated in favour of zc_graph_xy and zc_graph_x2y, but is retained 
 for backward compatibility with older projects.
-- zc_graph_base
+- zc_graph_
 This is the base class for all graph types.
-See \ref zc_graph_base. It has the following components and derived classes.
-  - zc_graph_axis
-This class provides a graph axis with automatic scaling and labelling for 
-use in zc_graph_base and its derived classes.
-  - zc_graph_plot
-This class provides the plot area for a graph and is used in zc_graph_base and its
-derived classes.
-  - zc_graph_xy
-This class provides an X/Y line graph with a single Y axis and is derived
-from zc_graph_base.
-  - zc_graph_x2y
-This class provides an X/Y line graph with two Y axes and is derived from zc_graph_xy.
+See \ref zc_graph_. It has the following derived classes.
+  - zc_graph_cartesian
+This class provides a Cartesian line graph and is derived from zc_graph_base.
+  - zc_graph_cartesian_2y
+This class provides a Cartesian line graph with two Y axes and is derived from zc_graph_cartesian.
+  - zc_graph_polar
+This class provides a polar line graph and is derived from zc_graph_base.
+  - zc_graph_smith
+This class provides a Smith chart and is derived from zc_graph_base.
 - zc_input_hierch
 This is an extension of Fl_Input_Choice that uses a hierarchic menu for use where
 there are a large number of menu options. The supplied options are split into
