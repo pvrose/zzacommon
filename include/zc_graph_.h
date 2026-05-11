@@ -345,6 +345,8 @@ public:
 		std::string text;                    //!< Text string to plot (only used if shape is TEXT, TICK or TEXT_BOX)
 		int text_angle = 0;                   //!< Angle to draw text at in degrees (only used if shape is TEXT or TEXT_BOX)
 		text_alignment_t text_alignment = ALIGN_CENTRE; //!< Alignment of text with respect to the specified position (only used if shape is TICK, TEXT or TEXT_BOX)
+		int tick_angle = 0;                   //!< Angle to draw tick mark at in degrees (only used if shape is TICK)
+		int tick_length = 5;                  //!< Length of tick mark in pixels (only used if shape is TICK)
 	};
 
 	//! \brief Transformation schema for the plot data. 
@@ -609,6 +611,7 @@ protected:
 		case CARTESIAN:
 		case CARTESIAN_2Y:
 		case CART_OVERLAY:
+		case SMITH:
 			return point;
 		case POLAR: {
 			double r = point.first;
@@ -620,6 +623,11 @@ protected:
 		default:
 			return point;
 		}
+	}
+
+	//! \brief Version of convert_point for axes.
+	const virtual data_point_t convert_axis_point(const data_point_t& point) const {
+		return convert_point(point);
 	}
 
 	//! \brief Apply the transformation schema to the data points for plotting.
@@ -701,19 +709,15 @@ protected:
 		double inv_scale
 	);
 
-	//! \brief Overridable function to generate a tick for specific derived types.
-	//! 
-	//! \param axis_number The number of the axis to generate the tick for (starting from 0).
-	//! \param tick_data The data for the tick to generate.
-	//! \param tick_object The plot object to populate with the data for the tick.
-	virtual bool custom_tick(
+	//! \brief Get tick angle for the specified axis number.
+	//! \param axis_number The number of the axis to get the tick angle for (starting from 0).
+	//! \param tick_orientation The orientation of the ticks for this axis (e.g. in direction of increasing or decreasing values of the other axis).
+	//! \param value The value of the tick in data coordinates along the axis.
+	virtual int get_tick_angle(
 		int axis_number,
-		const tick_data_t& tick_data,
-		plot_object_t& tick_object
-	) {
-		// Default implementation does nothing - override in derived classes as needed.
-        return false;
-	}
+		tick_orientation_t tick_orientation,
+		double value
+	);
 
 	//! \brief Normalise a number and generate the appropriate multiplier.
 	//! For modifier_t values:
@@ -957,10 +961,10 @@ protected:
 
 	virtual layout_area_t get_layout_area(int x, int y) const override;
 
-	virtual bool custom_tick(
+	virtual int get_tick_angle(
 		int axis_number,
-		const tick_data_t& tick_data,
-		plot_object_t& tick_object
+		tick_orientation_t tick_orientation,
+		double value
 	) override;
 
 	virtual bool is_axis_horizontal(int axis_number) const override {
@@ -1020,13 +1024,10 @@ protected:
 		return axis_number == 0; // Real axis is horizontal, Imaginary axis is vertical
 	}
 
-	//! \brief Custom tick generation for Smith chart to generate the constant resistance and reactance circles.
-	//!
-	//! Not sure about this.
-	virtual bool custom_tick(
+	virtual int get_tick_angle(
 		int axis_number,
-		const tick_data_t& tick_data,
-		plot_object_t& tick_object
+		tick_orientation_t tick_orientation,
+		double value
 	) override;
 
 	//! \brief Set the tick and grid points for the Smith chart to generate the appropriate constant resistance and reactance circles.
@@ -1046,5 +1047,11 @@ protected:
 	//! \param value_x The reactance value for the point.
 	//! \return The data point corresponding to the S11 parameter.
 	data_point_t gamma(double value_r, double value_x) const;
+
+	//! \brief Version of convert_point for axes.
+	const virtual data_point_t convert_axis_point(const data_point_t& point) const override {
+		return gamma(point.first, point.second);
+	}
+
 
 };
