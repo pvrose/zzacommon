@@ -360,7 +360,7 @@ void zc_graph_::set_ticks(
 	// Check the current range is valid
 	if (!it->second.current_range.is_valid()) {
 		// Current range is not valid, throw an error
-//		throw std::invalid_argument("Current range is not valid for axis number " + std::to_string(axis_number) + ". Set axis ranges before setting ticks.");
+		throw std::invalid_argument("Current range is not valid for axis number " + std::to_string(axis_number) + ". Set axis ranges before setting ticks.");
 		return;
 	}
 	axis_data_t& axis_data = it->second;
