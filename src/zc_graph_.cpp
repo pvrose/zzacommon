@@ -1204,13 +1204,26 @@ void zc_graph_::draw_plot_object(const plot_object_t& object) {
 		      ty + half_tw * sin_a - half_th * cos_a }
 		};
 		if (object.shape == TEXT_BOX) {
+			half_tw += 2;
+			half_th += 2;
+			double box_corners[4][2] = {
+				{ tx - half_tw * cos_a + half_th * sin_a,
+				  ty + half_tw * sin_a + half_th * cos_a },
+				{ tx + half_tw * cos_a + half_th * sin_a,
+				  ty - half_tw * sin_a + half_th * cos_a },
+				{ tx + half_tw * cos_a - half_th * sin_a,
+				  ty - half_tw * sin_a - half_th * cos_a },
+				{ tx - half_tw * cos_a - half_th * sin_a,
+				  ty + half_tw * sin_a - half_th * cos_a }
+			};
+
 			// Draw a box around the text using the rotated corners.
 			fl_color(color());
 			fl_begin_polygon();
 			for (int i = 0; i < 4; ++i) {
-				fl_transformed_vertex(corners[i][0], corners[i][1]);
+				fl_transformed_vertex(box_corners[i][0], box_corners[i][1]);
 			}
-			fl_transformed_vertex(corners[0][0], corners[0][1]);
+			fl_transformed_vertex(box_corners[0][0], box_corners[0][1]);
 			fl_end_polygon();
 		}
 
