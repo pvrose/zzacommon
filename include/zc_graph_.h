@@ -118,6 +118,12 @@ public:
 		bool opaque = false;   //!< Whether to draw an opaque background behind the label text for better visibility
 	};
 
+	//! \brief Data required for a point lozenge marker
+	struct lozenge_marker_t {
+		data_point_t position; //!< Data coordinates of the point to mark
+		zc_line_style style;    //!< Line style to use for the lozenge marker
+	};
+
 	//! \brief Minimum and maximum values for data coordinates for an
 	//! individual coordinate.
 	//! 
@@ -334,6 +340,7 @@ public:
 		TEXT,			//!< Text label defined by a position and string.
 		TICK,			//!< Tick mark defined by a position and direction. Includes a text label.
 		TEXT_BOX,       //!< Text box with opaque background defined by a position, string, and inclination.
+		LOZENGE,         //!< A single point defined by a single position. A lozenge or similar marker will be drawn at this position, rather than a pixel.
 	};
 
 	//! \brief Type of data to plot for one object.
@@ -496,6 +503,18 @@ public:
 		zc_line_style style,
 		double value_1,
 		double value_2
+	);
+
+	//! \brief Add a marker to the graph at a specific point.
+	//! \param axis_number The number of the axis to add the marker for (starting from 0).
+	//! \param layer The layer to draw the marker on (e.g. foreground, background).
+	//! \param style The line style to use for drawing the marker.
+	//! \param position The position of the marker in data coordinates.
+	void add_marker(
+		int axis_number,
+		layer_t layer,
+		zc_line_style style,
+		data_point_t position
 	);
 
 	//! \brief Add a text label to the graph at a specific position.
@@ -707,6 +726,11 @@ protected:
 		int axis_number
 	);
 
+	//! \brief Generate all the lozenge markers for the specified axis number.
+	void generate_lozenge_markers(
+		int axis_number
+	);
+
 	//! \brief Set tick and grid points for the axis
 	//! \param axis_number The number of the axis to generate ticks for (starting from 0).
 	//! \param tick_spacing_pixels The desired spacing between ticks in pixels.
@@ -800,6 +824,11 @@ protected:
 	//! This data will be applied to either the BACKGROUND or FOREGROUND layer, as required
 	//! by the application.
 	std::map<int, std::map<layer_t, std::vector<point_marker_t>>> point_markers_;
+
+	//! \brief The lozenge markers for the graph, keyed by axis number (starting from 0).
+	//! 
+	//! This data may be applied on any layer, but typically with DATA or FOREGROUND layer.
+	std::map<int, std::map<layer_t, std::vector<lozenge_marker_t>>> lozenge_markers_;
 
 	//! \brief The data for plotting.
 	//! 

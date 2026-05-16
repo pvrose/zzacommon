@@ -188,6 +188,27 @@ void zc_graph_::add_marker(
 	value_markers_[axis_number][layer].push_back(marker);
 };
 
+//! \brief Add a point lozenge marker to the graph for a specific axis number.
+void zc_graph_::add_marker(
+	int axis_number,
+	layer_t layer,
+	zc_line_style style,
+	data_point_t position
+) {
+	// Check the axis data already exists for this axis number
+	auto it = axes_data_.find(axis_number);
+	if (it == axes_data_.end()) {
+		// Axis data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a point marker.");
+		return;
+	}
+	// Create the marker object
+	lozenge_marker_t marker;
+	marker.style = style;
+	marker.position = position;
+	lozenge_markers_[axis_number][layer].push_back(marker);
+};
+
 //! \brief Add a text label to the graph at a specific position.
 void zc_graph_::add_label(
 	int axis_number,
@@ -751,7 +772,46 @@ void zc_graph_::generate_value_markers(
 		layer_t layer = axis_marker.first;
 		auto& layer_markers = axis_marker.second;
 		for (const auto& value_datum : layer_markers) {
-			generate_value_marker(axis_number, layer, value_datum);
+			generate_value_marker(
+				axis_number,
+				layer,
+				value_datum
+			);
+		}
+	}
+}
+
+// Generate lozenge markers for a specific axis number.
+void zc_graph_::generate_lozenge_markers(
+	int axis_number
+) {
+	// Check the axis data already exists for this axis number
+	auto it = axes_data_.find(axis_number);
+	if (it == axes_data_.end()) {
+		// Axis data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a label.");
+		return;
+	}
+	// Get the other axis number: If axis 0 then the primary axis.
+	int other_axis_number = (axis_number == 0) ? 1 : 0;
+	// Check the other axis data already exists for the other axis number
+	auto other_axis_it = axes_data_.find(other_axis_number);
+	if (other_axis_it == axes_data_.end()) {
+		// Other axis data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Other axis number " + std::to_string(other_axis_number) + " does not exist. Set axis parameters for both axes before adding a label.");
+		return;
+	}
+	for (auto& lozenge_marker : lozenge_markers_[axis_number]) {
+		layer_t layer = lozenge_marker.first;
+		auto& marker_data = lozenge_marker.second;
+		for (const auto& value_datum : marker_data) {
+			plot_object_t marker;
+			marker.shape = LOZENGE;
+			marker.style = value_datum.style;
+			plot_vertex_t vertex = convert_point(value_datum.position);
+			plot_segment_t segment(vertex);
+			marker.segments.push_back(segment);
+			plot_data_[axis_number].layer_data[layer].push_back(marker);
 		}
 	}
 }
@@ -1021,6 +1081,11 @@ void zc_graph_::draw() {
 		generate_data_lines(data_set_pair.first);
 	}
 
+	// Generate the data lozenge markers for each axis.
+	for (int i = 0; i < num_axes_; ++i) {
+		generate_lozenge_markers(i);
+	}
+
 	// Clear the drawing area
 	fl_push_clip(x(), y(), w(), h());
 	fl_color(color());
@@ -1166,6 +1231,23 @@ void zc_graph_::draw_plot_object(const plot_object_t& object) {
 		fl_end_complex_polygon();
 		fl_line_style(0); // reset to default line style
 		break;
+	case LOZENGE:
+		// Draw a diamond at twice the pixel size of the line width
+	{
+		int lx = fl_transform_x(object.segments[0].v.x, object.segments[0].v.y);
+		int ly = fl_transform_y(object.segments[0].v.x, object.segments[0].v.y);
+		int size = object.style.width * 2;
+		fl_color(object.style.colour);
+		fl_begin_polygon();
+		fl_transformed_vertex(lx, ly - size);
+		fl_transformed_vertex(lx + size, ly);
+		fl_transformed_vertex(lx, ly + size);
+		fl_transformed_vertex(lx - size, ly);
+		fl_transformed_vertex(lx, ly - size);
+		fl_end_polygon();
+		fl_line_style(0); // reset to default line style
+		break;
+	}
 	case TICK:
 	case TEXT:
 	case TEXT_BOX:
