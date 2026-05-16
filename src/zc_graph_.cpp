@@ -824,22 +824,30 @@ int zc_graph_::handle(int event) {
 		last_mouse_x_ = Fl::event_x();
 		last_mouse_y_ = Fl::event_y();
 		if (Fl::event_clicks()) {
-			// If this is a double-click, reset the axis under the mouse to
-			// the default range.
-			layout_area_t under_mouse = get_layout_area(Fl::event_x(), Fl::event_y());
-			if (!under_mouse.is_plot_area) {
-				// If the double-click was on an axis, reset that axis to its default range.
-				reset_zoom(under_mouse.axis_number);
+			if (Fl::event_button() == FL_LEFT_MOUSE) {
+				set_click_value(Fl::event_x(), Fl::event_y());
+				do_callback();
 				redraw();
 				return 1;
 			}
-			else {
-				// If the double-click was on the plot, reset all axes to their default range.
-				for (auto& it : axes_data_) {
-					reset_zoom(it.first);
+			else if (Fl::event_button() == FL_RIGHT_MOUSE) {
+				// If this is a double-click, reset the axis under the mouse to
+				// the default range.
+				layout_area_t under_mouse = get_layout_area(Fl::event_x(), Fl::event_y());
+				if (!under_mouse.is_plot_area) {
+					// If the double-click was on an axis, reset that axis to its default range.
+					reset_zoom(under_mouse.axis_number);
+					redraw();
+					return 1;
 				}
-				redraw();
-				return 1;
+				else {
+					// If the double-click was on the plot, reset all axes to their default range.
+					for (auto& it : axes_data_) {
+						reset_zoom(it.first);
+					}
+					redraw();
+					return 1;
+				}
 			}
 		}
 		// If this is not a double-click, we will handle dragging in FL_DRAG.
@@ -1375,6 +1383,14 @@ void zc_graph_cartesian::generate_value_marker(
 	}
 }
 
+void zc_graph_cartesian::set_click_value(int mouse_x, int mouse_y) {
+	// Convert the mouse coordinates to data coordinates
+	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - x()) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / w();
+	double cy = plot_data_[1].xform_schema.y_max_ + (y() - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / h();
+	// Store the click values
+	value_ = { cx, cy };
+}
+
 void zc_graph_cartesian_2y::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
 	plot_x_ = x() + v_axis_width_;
@@ -1518,6 +1534,14 @@ void zc_graph_cartesian_2y::generate_value_marker(
 		plot_data_[plot_number].layer_data[layer].push_back(marker_shape);
 	}
 }
+
+void zc_graph_cartesian_2y::set_click_value(int mouse_x, int mouse_y) {
+	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - x()) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / w();
+	double cy = plot_data_[1].xform_schema.y_max_ + (y() - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / h();
+	// Store the click values
+	value_ = { cx, cy };
+}
+
 
 // Cartesian overlay layout
 void zc_graph_cart_overlay::layout() {
@@ -1671,6 +1695,14 @@ void zc_graph_cart_overlay::generate_value_marker(
 	}
 }
 
+void zc_graph_cart_overlay::set_click_value(int mouse_x, int mouse_y) {
+	// Convert the mouse coordinates to data coordinates
+	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - x()) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / w();
+	double cy = plot_data_[1].xform_schema.y_max_ + (y() - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / h();
+	// Store the click values
+	value_ = { cx, cy };
+}
+
 // Polar layout
 void zc_graph_polar::layout() {
 	// For polar coordinates, we will set the transformation schema to map the R and Theta ranges to the plot area dimensions.
@@ -1820,6 +1852,17 @@ int zc_graph_polar::get_tick_angle(
 		return result < 0 ? result + 360 : (result >= 360 ? result - 360 : result); // Normalize the angle to be between 0 and 360 degrees
 	}
 }
+
+void zc_graph_polar::set_click_value(int mouse_x, int mouse_y) {
+	// Convert the mouse coordinates to cartesian coordinates
+	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - x()) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / w();
+	double cy = plot_data_[1].xform_schema.y_max_ + (y() - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / h();
+	// Convert the cartesian coordinates to polar coordinates
+	double r = std::sqrt(cx * cx + cy * cy);
+	double theta = std::atan2(cy, cx) * 180.0 / zc::PI; // Convert to degrees
+	value_ = { r, theta };
+}
+
 // Smith chart layout
 void zc_graph_smith::layout() {
 	// For Smith chart the data is plotted in real and imaginary coordinates,
@@ -2066,4 +2109,12 @@ zc_graph_::data_point_t zc_graph_smith::gamma(double value_r, double value_x) co
 	std::complex<double> one(1.0, 0.0);
 	std::complex<double> result = (z - one) / (z + one);
 	return { result.real(), result.imag() };
+}
+
+void zc_graph_smith::set_click_value(int mouse_x, int mouse_y) {
+	// Convert the mouse coordinates to data coordinates
+	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - x()) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / w();
+	double cy = plot_data_[1].xform_schema.y_max_ + (y() - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / h();
+	// Store the click values
+	value_ = { cx, cy };
 }

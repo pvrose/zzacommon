@@ -542,8 +542,10 @@ public:
 	//! - Drag on an axis to scroll on that axis.
 	//! - Drag on the plot with left mouse button to scroll on X and YL axes.
 	//! - Drag on the plot with right mouse button to scroll on X and YR axes.
-	//! - Double click on an axis to reset the zoom on that axis to the default range.
-	//! - Double click on the plot to reset the zoom on all axes to the default range.
+	//! - Double left click on the plot sets the value_ to the data coordinates of the click position, 
+	//!   and sends the callback.
+	//! - Double right click on an axis to reset the zoom on that axis to the default range.
+	//! - Double right click on the plot to reset the zoom on all axes to the default range.
 	int handle(int event) override;
 
 	//! \brief override of Fl_Group resize to reset scaling factors on resize.
@@ -582,6 +584,12 @@ public:
 	//! \brief Set the default font size for text for the graph.
 	void textsize(int size) {
 		default_text_size_ = size;
+	}
+
+	//! \brief Get the current "value" for the graph. Returns the 
+	//! last point clicked on the graph.
+	data_point_t value() const {
+		return value_;
 	}
 
 	//! \brief Get the default font size for text for the graph.
@@ -762,6 +770,9 @@ protected:
 	//! \param axis_number The number of the axis to reset the zoom for (starting from 0).
 	void reset_zoom(int axis_number);
 
+	//! \brief Set the current click value for the graph.
+	virtual void set_click_value(int x, int y) = 0;
+
 	//! \brief The number of axes supported
 	int num_axes_ = 0;
 
@@ -805,6 +816,9 @@ protected:
 
 	//! \brief Scrollability for the axes.
 	bool scrollable_ = true;
+
+	//! \brief Last clicked data point in data coordinates, used in value() callback for getting the data coordinates of mouse clicks.
+	data_point_t value_;
 
 	//! \brief Default text size
 	Fl_Fontsize default_text_size_;
@@ -860,6 +874,8 @@ protected:
 	virtual bool is_axis_horizontal(int axis_number) const override {
 		return axis_number == 0; // X axis is horizontal, Y axis is vertical
 	}
+
+	virtual void set_click_value(int x, int y) override;
 };
 
 //! \brief Derived class for Cartesian graphs with a secondary Y axis.
@@ -894,6 +910,8 @@ protected:
 	virtual bool is_axis_horizontal(int axis_number) const override {
 		return axis_number == 0; // X axis is horizontal, Y axis is vertical
 	}
+
+	virtual void set_click_value(int x, int y) override;
 };
 
 //! \brief Derived class for Cartesian graphs with overlaid axes.
@@ -928,6 +946,8 @@ protected:
 	virtual bool is_axis_horizontal(int axis_number) const override {
 		return axis_number == 0; // X axis is horizontal, Y axis is vertical
 	}
+
+	virtual void set_click_value(int x, int y) override;
 };
 
 //! \brief Derived class for Polar graphs.
@@ -971,6 +991,7 @@ protected:
 		return axis_number == 0; // X axis is horizontal, Y axis is vertical
 	}
 
+	virtual void set_click_value(int x, int y) override;	
 };
 
 //! \brief Derived class for Smith charts.
@@ -1053,5 +1074,5 @@ protected:
 		return gamma(point.first, point.second);
 	}
 
-
+	virtual void set_click_value(int x, int y) override;
 };
