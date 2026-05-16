@@ -855,7 +855,14 @@ int zc_graph_::handle(int event) {
 		layout_area_t under_mouse = get_layout_area(Fl::event_x(), Fl::event_y());
 		if (!under_mouse.is_plot_area) {
 			// If the mouse is being dragged on an axis, scroll that axis.
-			scroll_axis(under_mouse.axis_number, (Fl::event_state() & FL_SHIFT) ? dy * 10 : dy);
+			if (under_mouse.axis_number == 0) {
+				// If dragging on the horizontal axis, scroll horizontally by dx.
+				scroll_axis(under_mouse.axis_number, (Fl::event_state() & FL_SHIFT) ? dx * 10 : dx);
+			}
+			// If dragging on a vertical axis, scroll vertically by -dy.
+			else {
+				scroll_axis(under_mouse.axis_number, (Fl::event_state() & FL_SHIFT) ? -dy * 10 : -dy);
+			}
 			redraw();
 			return 1;
 		} 
@@ -865,14 +872,14 @@ int zc_graph_::handle(int event) {
 			// Other axes will ignore scroll.
 			if (Fl::event_button() == FL_LEFT_MOUSE) {
 				scroll_axis(0, dx);
-				scroll_axis(1, dy);
+				scroll_axis(1, -dy);
 				redraw();
 				return 1;
 			}
 			else if (Fl::event_button() == FL_RIGHT_MOUSE) {
 				scroll_axis(0, dx);
 				if (axes_data_.find(2) != axes_data_.end()) {
-					scroll_axis(2, dy);
+					scroll_axis(2, -dy);
 				}
 				redraw();
 				return 1;
