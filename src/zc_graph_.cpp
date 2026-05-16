@@ -718,7 +718,8 @@ void zc_graph_::generate_point_markers(
 		for (const auto& point_datum : point_data) {
 			// Add a point marker at the specified position
 			plot_object_t marker;
-			marker.shape = TEXT;
+			if (point_datum.opaque) marker.shape = TEXT_BOX;
+			else marker.shape = TEXT;
 			marker.text = point_datum.text;
 			marker.text_style = point_datum.style;
 			marker.text_alignment = point_datum.alignment;
