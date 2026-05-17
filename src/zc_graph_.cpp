@@ -272,7 +272,7 @@ void zc_graph_::end_config() {
 }
 
 //! \brief Normalise the value \p fin to a mantissa and power of 10.
-void zc_graph_::normalise(double fin, modifier_t modifier, double& mantissa, double& power10, uint32_t& si_prefix_exponent) const {
+void zc_graph_::normalise(double fin, modifier_t modifier, double& mantissa, double& power10, uint32_t& si_prefix_exponent) {
 	power10 = 1.0F;
 	mantissa = fabs(fin);
 	double step = 10.0F;

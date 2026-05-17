@@ -616,6 +616,17 @@ public:
 		return default_text_size_;
 	}
 
+	//! \brief Normalise a number and generate the appropriate multiplier.
+	//! For modifier_t values:
+	//! - SI_PREFIX: normalise to a value between 0.1 and 100 and generate the appropriate SI prefix (e.g. k for kilo, M for mega).
+	//! - POWER_OF_10: normalise to a value between 1 and 10 and generate the appropriate power of 10 multiplier (e.g. x10^4).
+	//! \param fin Input number
+	//! \param modifier The type of modifier to apply for normalisation.
+	//! \param norm Normalised result (mantissa)
+	//! \param exp10 Exponent (power of 10)
+	//! \param si_prefix SI Prefix (if appropriate) - UTF-8 character
+	static void normalise(double fin, modifier_t modifier, double& norm, double& exp10, uint32_t& si_prefix);
+
 protected:
 
 	//! \brief Place the axes and plot areas. Define transformation schemata.
@@ -750,17 +761,6 @@ protected:
 		tick_orientation_t tick_orientation,
 		double value
 	);
-
-	//! \brief Normalise a number and generate the appropriate multiplier.
-	//! For modifier_t values:
-	//! - SI_PREFIX: normalise to a value between 0.1 and 100 and generate the appropriate SI prefix (e.g. k for kilo, M for mega).
-	//! - POWER_OF_10: normalise to a value between 1 and 10 and generate the appropriate power of 10 multiplier (e.g. x10^4).
-	//! \param fin Input number
-	//! \param modifier The type of modifier to apply for normalisation.
-	//! \param norm Normalised result (mantissa)
-	//! \param exp10 Exponent (power of 10)
-	//! \param si_prefix SI Prefix (if appropriate) - UTF-8 character
-	void normalise(double fin, modifier_t modifier, double& norm, double& exp10, uint32_t& si_prefix) const;
 
 	//! \brief Draw an individual object on the plot.
 	//! \param object The object to draw, including its shape, style and segments.
