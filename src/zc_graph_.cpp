@@ -255,6 +255,8 @@ void zc_graph_::start_config() {
 	value_markers_.clear();
 	// Clear the point markers for all axes and layers
 	point_markers_.clear();
+	// Clear the point lozenge markers for all axes and layers
+	lozenge_markers_.clear();
 }
 
 // Initiaite the plot data
