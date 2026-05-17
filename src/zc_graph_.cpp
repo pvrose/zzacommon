@@ -161,6 +161,21 @@ void zc_graph_::add_data_set(
 		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a data set.");
 		return;
 	}
+	// Add the data points to the default range for this axis and axis 0.
+	auto it0 = axes_data_.find(0);
+	if (it0 == axes_data_.end()) {
+		// Axis data does not exist for axis 0, throw an error
+		throw std::invalid_argument("Axis number 0 does not exist. Set axis parameters for axis 0 before adding a data set.");
+		return;
+	}
+	for (const data_point_t& point : *data) {
+		if (it->second.outer_range.contains(point.second)) {
+			it->second.current_range |= point.second;
+		} 
+		if (it0->second.outer_range.contains(point.first)) {
+			it0->second.current_range |= point.first;
+		}
+	}
 	data_set_t data_set = { data, style };
 	data_sets_[axis_number].push_back(data_set);
 };
@@ -670,12 +685,12 @@ void zc_graph_::generate_data_lines(int axis_number) {
 			//	continue;
 			//}
 			// Add the point to the default ranges for both axes, if it's within the outer range for that axis. This ensures that if the point is outside the current range but within the outer range.
-			if (axis_data.outer_range.contains(point.second)) {
-				axis_data.default_range |= point.second;
-			}
-			if (axis_0_data.outer_range.contains(point.first)) {
-				axis_0_data.default_range |= point.first;
-			}
+			//if (axis_data.outer_range.contains(point.second)) {
+			//	axis_data.default_range |= point.second;
+			//}
+			//if (axis_0_data.outer_range.contains(point.first)) {
+			//	axis_0_data.default_range |= point.first;
+			//}
 			// Now add the point to the plot line as a vertex. Convert to Cartesian coordinates if necessary.
 			plot_vertex_t vertex;
 			vertex = plot_vertex_t(convert_point(point));
@@ -901,7 +916,8 @@ int zc_graph_::handle(int event) {
 					// If the double-click was on an axis, reset that axis to its default range.
 					reset_zoom(under_mouse.axis_number);
 					redraw();
-					return 1;
+					// Return 0 to indicate we do not want a drag event.
+					return 0;
 				}
 				else {
 					// If the double-click was on the plot, reset all axes to their default range.
@@ -909,7 +925,8 @@ int zc_graph_::handle(int event) {
 						reset_zoom(it.first);
 					}
 					redraw();
-					return 1;
+					// Return 0 to indicate we do not want a drag event.
+					return 0;
 				}
 			}
 		}
