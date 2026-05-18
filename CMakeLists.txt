@@ -188,8 +188,13 @@ set(ZZACOMMON_HPPFILES
 
 # Component-based build system
 # Define which components to build (default: all components for top-level and subproject usage)
-if(NOT DEFINED ZZACOMMON_COMPONENTS OR "${ZZACOMMON_COMPONENTS}" STREQUAL "")
-  set(ZZACOMMON_COMPONENTS "zzaf;zzab;zzax;zzam;zzafb;zzad;zzap" CACHE STRING "Semicolon-separated list of components to build" FORCE)
+if(NOT DEFINED ZZACOMMON_BUILD_COMPONENTS OR "${ZZACOMMON_BUILD_COMPONENTS}" STREQUAL "")
+  if(DEFINED ZZACOMMON_COMPONENTS AND NOT "${ZZACOMMON_COMPONENTS}" STREQUAL "")
+    message(DEPRECATION "ZZACOMMON_COMPONENTS as a build input is deprecated; use ZZACOMMON_BUILD_COMPONENTS instead.")
+    set(ZZACOMMON_BUILD_COMPONENTS "${ZZACOMMON_COMPONENTS}" CACHE STRING "Semicolon-separated list of components to build" FORCE)
+  else()
+    set(ZZACOMMON_BUILD_COMPONENTS "zzaf;zzab;zzax;zzam;zzafb;zzad;zzap" CACHE STRING "Semicolon-separated list of components to build" FORCE)
+  endif()
 endif()
 
 if(PROJECT_IS_TOP_LEVEL)
@@ -198,7 +203,7 @@ else()
   message(STATUS "ZZACOMMON build mode: subproject (included via FetchContent or add_subdirectory)")
 endif()
 
-message(STATUS "Building ZZACOMMON components: ${ZZACOMMON_COMPONENTS}")
+message(STATUS "Building ZZACOMMON components: ${ZZACOMMON_BUILD_COMPONENTS}")
 
 # When used as a subproject (e.g. via FetchContent), avoid building all
 # component libraries by default. Targets remain available and will be built
@@ -219,13 +224,13 @@ include(vcpkg_helper)
 include(zzacommon_runtime_helpers)
 
 # Check if a component is requested
-list(FIND ZZACOMMON_COMPONENTS "zzaf" ZZAF_INDEX)
-list(FIND ZZACOMMON_COMPONENTS "zzab" ZZAB_INDEX)
-list(FIND ZZACOMMON_COMPONENTS "zzax" ZZAX_INDEX)
-list(FIND ZZACOMMON_COMPONENTS "zzam" ZZAM_INDEX)
-list(FIND ZZACOMMON_COMPONENTS "zzafb" ZZAFB_INDEX)
-list(FIND ZZACOMMON_COMPONENTS "zzad" ZZAD_INDEX)
-list(FIND ZZACOMMON_COMPONENTS "zzap" ZZAP_INDEX)
+list(FIND ZZACOMMON_BUILD_COMPONENTS "zzaf" ZZAF_INDEX)
+list(FIND ZZACOMMON_BUILD_COMPONENTS "zzab" ZZAB_INDEX)
+list(FIND ZZACOMMON_BUILD_COMPONENTS "zzax" ZZAX_INDEX)
+list(FIND ZZACOMMON_BUILD_COMPONENTS "zzam" ZZAM_INDEX)
+list(FIND ZZACOMMON_BUILD_COMPONENTS "zzafb" ZZAFB_INDEX)
+list(FIND ZZACOMMON_BUILD_COMPONENTS "zzad" ZZAD_INDEX)
+list(FIND ZZACOMMON_BUILD_COMPONENTS "zzap" ZZAP_INDEX)
 
 # Find dependencies only for requested components
 
@@ -658,7 +663,7 @@ if(NOT ZZAP_INDEX EQUAL -1)
   if(NOT ZZAM_INDEX EQUAL -1)
     target_link_libraries(zzap PUBLIC zzam)
   else()
-    message(FATAL_ERROR "zzap component requires zzam component (for zc_settings). Please add zzam to ZZACOMMON_COMPONENTS.")
+    message(FATAL_ERROR "zzap component requires zzam component (for zc_settings). Please add zzam to ZZACOMMON_BUILD_COMPONENTS.")
   endif()
 
   # zzap optionally depends on zzaf for status_ global pointer
@@ -745,7 +750,8 @@ if (NOT PROJECT_IS_TOP_LEVEL)
   set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_INCLUDE_DIR} PARENT_SCOPE)
   set(ZZACOMMON_HPPFILES ${ZZACOMMON_HPPFILES} PARENT_SCOPE)
   set(ZZACOMMON_VERSION ${ZZACOMMON_VERSION} PARENT_SCOPE)
-  set(ZZACOMMON_COMPONENTS ${ZZACOMMON_COMPONENTS} PARENT_SCOPE)
+  set(ZZACOMMON_BUILD_COMPONENTS ${ZZACOMMON_BUILD_COMPONENTS} PARENT_SCOPE)
+  set(ZZACOMMON_COMPONENTS ${ZZACOMMON_BUILD_COMPONENTS} PARENT_SCOPE)
 
   # Export component library names that were built
   set(ZZACOMMON_LIBRARIES "" PARENT_SCOPE)

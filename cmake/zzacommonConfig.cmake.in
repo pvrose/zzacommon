@@ -36,7 +36,7 @@
 #   zzacommon_VERSION        - Version of zzacommon
 #   ZZACOMMON_INCLUDE_DIR    - Include directory for zzacommon
 #   ZZACOMMON_LIBRARIES      - List of component libraries found
-#   ZZACOMMON_COMPONENTS     - List of components found
+#   ZZACOMMON_COMPONENTS     - List of components found (output variable, not a build input)
 #   FLTK_INCLUDE_DIR         - FLTK include directory (if zzaf or zzax used)
 #
 # Imported targets:
