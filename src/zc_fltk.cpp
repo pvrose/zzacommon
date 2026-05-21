@@ -121,6 +121,7 @@ void zc::customise_fltk() {
 	Fl::set_font(FL_SCREEN, " Lucida Console");
 	Fl::set_font(FL_SCREEN_BOLD, "BLucida Console");
 #endif
+#ifdef _DEBUG
 	for (int i = 0; i < 16; i++) {
 		int dummy;
 		const char* name = Fl::get_font_name(i, &dummy);
@@ -128,6 +129,7 @@ void zc::customise_fltk() {
 		int num_sizes = Fl::get_font_sizes(i, sizes);
 		printf("Font %d: %s (%d) %d sizes\n", i, name, dummy, num_sizes);
 	}
+#endif
 	// Default message properties
 	fl_message_size_ = FL_NORMAL_SIZE;
 	fl_message_font_ = 0;

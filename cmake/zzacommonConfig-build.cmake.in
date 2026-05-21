@@ -33,11 +33,11 @@ set(ZZACOMMON_INCLUDE_DIR "@ZZACOMMON_INCLUDE_DIR@")
 set(ZZACOMMON_CMAKE_DIR "@CMAKE_CURRENT_SOURCE_DIR@/cmake")
 
 # API documentation directory (from build tree)
-set(ZZACOMMON_API_HTML_DIR "@ZZACOMMON_API_HTML_DIR@")
+set(ZZACOMMON_API_HTML_DIR "@ZZACOMMON_API_HTML_DIR@" CACHE INTERNAL "zzacommon API documentation directory")
 if(ZZACOMMON_API_HTML_DIR AND EXISTS "${ZZACOMMON_API_HTML_DIR}")
     message(STATUS "zzacommon: API documentation available at ${ZZACOMMON_API_HTML_DIR}")
 else()
-    set(ZZACOMMON_API_HTML_DIR "")
+    set(ZZACOMMON_API_HTML_DIR "" CACHE INTERNAL "zzacommon API documentation directory")
 endif()
 
 # PortAudio include directory (from build tree, for zzap component)
