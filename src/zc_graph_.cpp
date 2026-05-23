@@ -171,9 +171,11 @@ void zc_graph_::add_data_set(
 	for (const data_point_t& point : *data) {
 		if (it->second.outer_range.contains(point.second)) {
 			it->second.current_range |= point.second;
-		} 
+			it->second.default_range |= point.second;
+		}
 		if (it0->second.outer_range.contains(point.first)) {
 			it0->second.current_range |= point.first;
+			it0->second.default_range |= point.first;
 		}
 	}
 	data_set_t data_set = { data, style };
