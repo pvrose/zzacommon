@@ -111,7 +111,7 @@ void zc_graph_::set_axis_ranges(
 	// Check that the ranges are valid - ignore if inner_range is empty (i.e. min > max)
 	// as this is used to there is no inner range.
 	if (inner_range.is_valid()) {
-		if (!default_range.contains(inner_range) ||
+		if ((default_range.is_valid() && !default_range.contains(inner_range)) ||
 			!outer_range.contains(inner_range)) {
 			// Inner range is outside the default or outer range, throw an error
 			throw std::invalid_argument("Inner range must be within the default and outer ranges for axis number " + std::to_string(axis_number) + ".");
@@ -400,7 +400,7 @@ void zc_graph_::set_ticks(
 	// Check the current range is valid
 	if (!it->second.current_range.is_valid()) {
 		// Current range is not valid, throw an error
-		throw std::invalid_argument("Current range is not valid for axis number " + std::to_string(axis_number) + ". Set axis ranges before setting ticks.");
+//		throw std::invalid_argument("Current range is not valid for axis number " + std::to_string(axis_number) + ". Set axis ranges before setting ticks.");
 		return;
 	}
 	axis_data_t& axis_data = it->second;
