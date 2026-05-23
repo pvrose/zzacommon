@@ -908,7 +908,8 @@ int zc_graph_::handle(int event) {
 				set_click_value(Fl::event_x(), Fl::event_y());
 				do_callback();
 				redraw();
-				return 1;
+				// Return 0 to indicate we do not want a drag event, as this is a click event.
+				return 0;
 			}
 			else if (Fl::event_button() == FL_RIGHT_MOUSE) {
 				// If this is a double-click, reset the axis under the mouse to
