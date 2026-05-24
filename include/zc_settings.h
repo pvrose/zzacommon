@@ -19,6 +19,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <cstdint>
+#include <ios>
 #include <string>
 
 using json = nlohmann::json;
@@ -129,4 +131,30 @@ public:
 
 
 };
+
+// Template specializations for std::streampos (file position type)
+// std::streampos is not directly serializable by nlohmann::json, so we convert to/from uint64_t
+
+//! \brief Get std::streampos from settings.
+//! \param name The name of the setting.
+//! \param value Reference to where the data will be stored.
+//! \param def Default value if the setting doesn't exist.
+//! \return Returns true if item existed.
+template <>
+inline bool zc_settings::get<std::streampos>(std::string name, std::streampos& value, const std::streampos& def) {
+	uint64_t temp = 0;
+	uint64_t def_as_uint = static_cast<uint64_t>(static_cast<std::streamoff>(def));
+	bool exists = get(name, temp, def_as_uint);
+	value = static_cast<std::streampos>(static_cast<std::streamoff>(temp));
+	return exists;
+}
+
+//! \brief Set std::streampos in settings.
+//! \param name The name of the setting.
+//! \param value The file position value to be written.
+template <>
+inline void zc_settings::set<std::streampos>(std::string name, const std::streampos& value) {
+	uint64_t temp = static_cast<uint64_t>(static_cast<std::streamoff>(value));
+	set(name, temp);
+}
 
