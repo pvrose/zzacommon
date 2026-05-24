@@ -132,8 +132,8 @@ public:
 
 };
 
-// Template specializations for std::streampos (file position type)
-// std::streampos is not directly serializable by nlohmann::json, so we convert to/from uint64_t
+// Template specialisations for std::streampos (file position type)
+// std::streampos is not directly serialisable by nlohmann::json, so we convert to/from uint64_t
 
 //! \brief Get std::streampos from settings.
 //! \param name The name of the setting.
