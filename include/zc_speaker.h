@@ -6,6 +6,7 @@
 // PortAudio
 #include "portaudio.h"
 
+#include "zc_async_queue.h"
 #include "zc_audio_data.h"
 
 #include <atomic>
@@ -25,8 +26,8 @@ class zc_speaker {
 
 public:
     //! \brief Constructor.
-    //! \param speech synthesised audio data queue
-    zc_speaker(std::queue<zc_audio_data>* speech);
+    //! \param app_audio generated audio data queue
+    zc_speaker(zc_async_queue<zc_audio_data>* app_audio);
 
     //! Destructor
     ~zc_speaker();
@@ -123,7 +124,7 @@ protected:
     float v2x(float v);
 
     //! Speech audio stream
-    std::queue<zc_audio_data>* speech_ = nullptr;
+    zc_async_queue<zc_audio_data>* app_audio_ = nullptr;
 
     //! Audio output stream
     PaStream* stream_ = nullptr;

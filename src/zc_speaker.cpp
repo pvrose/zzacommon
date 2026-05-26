@@ -1,7 +1,8 @@
 #include "zc_speaker.h"
 
-#include "zc_settings.h"
+#include "zc_async_queue.h"
 #include "zc_audio_data.h"
+#include "zc_settings.h"
 #include "zc_status.h"
 
 #include "portaudio.h"
@@ -20,9 +21,9 @@ constexpr float DEFAULT_SAMPLE_RATE = 22050.0F;  //!< Default audio sample rate
 const int BUFFER_DEPTH = 1024;  //!< Default buffer size
 
 //! \brief Constructor.
-//! \param speech synthesised audio data
-zc_speaker::zc_speaker(std::queue<zc_audio_data>* speech) {
-    speech_ = speech;
+//! \param app_audio generated audio data queue
+zc_speaker::zc_speaker(zc_async_queue<zc_audio_data>* app_audio) {
+    app_audio_ = app_audio;
     idle_ = true;
     enabled_ = false;
     ready_ = false;
@@ -158,7 +159,7 @@ int zc_speaker::pa_stream(const void* input,
             samples_sent_++;
             samples_to_send--;
         } 
-        else if (speech_->empty()) {
+        else if (app_audio_->empty()) {
             // If no data in input queue send silence
             samples_sent_ = 0;
             *(out++) = 0.0;
@@ -174,13 +175,14 @@ int zc_speaker::pa_stream(const void* input,
             // Otherwise get next audio chunk from the input queue and check again.
             samples_sent_ = 0;
             idle_ = false;
-            *next_buffer_ = speech_->front();
+			while (!app_audio_->try_pop(*next_buffer_)) {
+				std::this_thread::yield();
+			}
             // Add the text to the output display window and wake up the GUI.
             if (text_callback_) {
                 text_callback_(next_buffer_->metadata);
             }
             Fl::awake();
-            speech_->pop();
         }
      }
     return paContinue;    
