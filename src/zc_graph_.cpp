@@ -1575,9 +1575,10 @@ void zc_graph_::draw_plot_object(const plot_object_t& object) {
 		break;
 	}
 	case BITMAP: {
-		// Temporarily add a null transform so that the bitmap is drawn in pixel coordinates, 
+		// Temporarily add the identity transform so that the bitmap is drawn in pixel coordinates, 
 		// then pop it after drawing.
 		fl_push_matrix();
+		fl_load_identity();
 		int bx = object.segments[0].b.x;
 		int by = object.segments[0].b.y;
 		int bw = object.segments[0].b.w;
