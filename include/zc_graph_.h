@@ -30,6 +30,7 @@
 #include <cfloat>
 #include <map>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -70,6 +71,10 @@ public:
 	//! It represents a pair of coordinates, the meaning depending on the graph type.
 	typedef std::pair<double, double> data_point_t;
 
+	//! \brief Type for a 3D data point, used for density plots.
+	//! 
+	typedef std::tuple<double, double, double> data_point_3d_t;
+
 	//! \brief Type of coordinates that a data_point_t represents.
 	enum graph_type_t : uint8_t {
 		NO_DATA,     //!< No data
@@ -78,6 +83,7 @@ public:
 		CART_OVERLAY,   //!< Cartesian coordinates with X and Y axes overlaid on the same plot area (x, y).
 		POLAR,        //!< Polar coordinates (r, theta)
 		SMITH,        //!< Smith chart.
+		DENSITY,       //!< Density plot (x, y, z) with a colour representing the z value at each (x, y) point.
 	};
 
 	//! \brief Text alignment wrt the specified position for text labels and text boxes.
@@ -97,6 +103,9 @@ public:
 		std::vector<data_point_t>* data; //!< Pointer to a vector of data points to be plotted
 		zc_line_style style; //!< Line style to use for plotting this data set
 	};
+
+	//! \brief Structure to represent a set of 3D data points for a density plot.
+	typedef std::vector<data_point_3d_t>* data_set_3d_t;
 
 	//! \brief Overlay markers for the plot, such as vertical lines to indicate specific X values.
 	//! Markers can be added to any data type, and comprise either a single value
@@ -278,6 +287,17 @@ public:
 		double a2 = 0;       //!< Ending angle of arc in degrees (0 is to the right - 3 o'clock, positive is counter-clockwise)
 	};
 
+	//! \brief Structure to represent an image bitmap in the plot. 
+	//! This maps onto the parameters of the FLTK function fl_draw_image() when plotting a bitmap.
+	//! The bitmap data and coordinates are still pixel data.
+	struct plot_bitmap_t {
+		int x = 0;        //!< X-coordinate of bottom-left corner of bitmap in pixel coordinates
+		int y = 0;        //!< Y-coordinate of bottom-left corner of bitmap in pixel coordinates
+		int w = 0;        //!< Width of bitmap in pixel coordinates
+		int h = 0;        //!< Height of bitmap in pixel coordinates
+		unsigned char* data = nullptr; //!< Pointer to bitmap pixel data (in format expected by fl_draw_image)
+	};
+
 	//! \brief Structure to represent either a vertex or an arc segment in the plot.
 	//! This allows a single data structure to represent both types of plot segments.
 	struct plot_segment_t {
@@ -285,12 +305,14 @@ public:
 		enum segment_type_t :uint8_t {
 			VERTEX,          //!< A single vertex (point) defined by X and Y coordinates.
 			ARC,             //!< Arc segment defined by center, radius, and angles.
-			GAP              //!< Gap in the line strip, used when constructing complex shapes with holes (e.g. FLTK Complex polygon).
+			GAP,             //!< Gap in the line strip, used when constructing complex shapes with holes (e.g. FLTK Complex polygon).
+			IMAGE,           //!< Bitmap image defined by position, size and pixel data.
 		} type;
 		//! The data for the segment.
 		union {
 			plot_vertex_t v; //!< Vertex for line segment
 			plot_arc_t a;    //!< Arc for arc segment
+			plot_bitmap_t b; //!< Bitmap for image segment
 		};
 		//! Default constructor initializes to a vertex at (0, 0).
 		plot_segment_t() : type(VERTEX), v{ 0.0, 0.0 } {}
@@ -300,6 +322,8 @@ public:
 		plot_segment_t(const plot_arc_t& arc) : type(ARC), a(arc) {}
 		//! Constructor for gap segment.
 		plot_segment_t(bool is_gap) : type(GAP) {}
+		//! Constructor for bitmap segment.
+		plot_segment_t(const plot_bitmap_t& bitmap) : type(IMAGE), b(bitmap) {}
 
 		//! Copy constructor
 		plot_segment_t(const plot_segment_t& other) : type(other.type) {
@@ -308,6 +332,9 @@ public:
 			}
 			else if (type == ARC) {
 				a = other.a;
+			}
+			else if (type == IMAGE) {
+				b = other.b;
 			}
 		}
 
@@ -320,6 +347,9 @@ public:
 				}
 				else if (type == ARC) {
 					a = other.a;
+				}
+				else if (type == IMAGE) {
+					b = other.b;
 				}
 			}
 			return *this;
@@ -341,6 +371,9 @@ public:
 		TICK,			//!< Tick mark defined by a position and direction. Includes a text label.
 		TEXT_BOX,       //!< Text box with opaque background defined by a position, string, and inclination.
 		LOZENGE,         //!< A single point defined by a single position. A lozenge or similar marker will be drawn at this position, rather than a pixel.
+		BITMAP,         //!< Bitmap defined by a position, size and pixel data. 
+		                //!< The bitmap will be drawn with the bottom-left corner at the specified position.
+						//!< \note The bitmap data is *pixel* data, not data coordinates. Position and size are in data coordinates.
 	};
 
 	//! \brief Type of data to plot for one object.
@@ -474,6 +507,14 @@ public:
 		int axis_number,
 		std::vector<data_point_t>* data,
 		zc_line_style style = zc_line_style()
+	);
+
+	//! \brief Add a data set of 3D points for a density plot.
+	//! \param axis_number The number of the data set to add (starting from 0). Should be 2, plotted against X and Y axes.
+	//! \param data The 3D data points to plot for this data set. A pointer is used to allow updating the data without needing to re-add the data set.
+	void add_data_set(
+		int axis_number,
+		std::vector<data_point_3d_t>* data
 	);
 
 	//! \brief Add a marker to the graph at a specific value or range of values.
@@ -627,6 +668,14 @@ public:
 	//! \param si_prefix SI Prefix (if appropriate) - UTF-8 character
 	static void normalise(double fin, modifier_t modifier, double& norm, double& exp10, uint32_t& si_prefix);
 
+	//! \brief Set the colour mapping for the graph. This is used to map data values to colours for density plots.
+	//! \param colour_map The colour map to use for mapping data values to colours. 
+	//! This should be a vector of N FLTK colour values, where 0 is the colour for the minimum data value and N-1 
+	//! is the colour for the maximum data value (as set in the Z-axis data).
+	void set_colour_mapping(const std::vector<Fl_Color>& colour_map) {
+		colour_map_ = colour_map;
+	}
+
 protected:
 
 	//! \brief Place the axes and plot areas. Define transformation schemata.
@@ -714,6 +763,11 @@ protected:
 		int axis_number
 	);
 
+	//! \brief Generate image for density plot for the 3D data set associated with the specified axis number.
+	void generate_density_plot(
+		int axis_number
+	);
+
 	//! \brief Generate the specfied value marker for the specified axis number.
 	//! \param axis_number The number of the axis to generate the marker for (starting from 0).
 	//! \param layer The layer to draw the marker on (e.g. foreground, background).
@@ -797,6 +851,9 @@ protected:
 	//! \brief Set the current click value for the graph.
 	virtual void set_click_value(int x, int y) = 0;
 
+	//! \brief Convert Z-value to a colour for the density plot.
+	Fl_Color density_colour(double z_value) const;
+
 	//! \brief The number of axes supported
 	int num_axes_ = 0;
 
@@ -804,6 +861,11 @@ protected:
 	//! 
 	//! This data will be applied to the DATA layer.
 	std::map<int, std::vector< data_set_t> > data_sets_;
+
+	//! \brief The data for 3D density plots for the graph. Pointers to application data.
+	//!
+	//! This data will be applied to the DATA layer.
+	data_set_3d_t density_data_set_;
 
 	//! \brief The graph_type for the graph, which defines the layout of the axes and plot area.
 	graph_type_t graph_type_ = NO_DATA;
@@ -868,6 +930,9 @@ protected:
 	int plot_y_ = 0;
 	int plot_w_ = 0;
 	int plot_h_ = 0;
+
+	//! \brief Z-value colour map.
+	std::vector<Fl_Color> colour_map_;
 
 };
 
@@ -1104,4 +1169,19 @@ protected:
 	}
 
 	virtual void set_click_value(int x, int y) override;
+};
+
+//! \brief Create a density plot for 3D data. X and Y axes are cartesian with the Z axis
+//! represented by colour.
+class zc_graph_density : public zc_graph_cartesian {
+
+public:
+	//! \brief Constructor
+	zc_graph_density(int X, int Y, int W, int H, const char* L = nullptr) : zc_graph_cartesian(X, Y, W, H, L) {
+		set_type(DENSITY);
+		set_num_axes(3); // X, Y, and Z axes
+		zoom_capability_ = ZOOM_ON_CURSOR; // Allow zooming on both axes centered on the cursor position
+		scrollable_ = true; // Allow scrolling on both axes
+	}
+
 };

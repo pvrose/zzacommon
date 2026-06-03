@@ -23,19 +23,24 @@
 #include "zc_utils.h"
 
 #include <FL/Enumerations.H>
+#include <FL/Fl.H>
 #include <FL/fl_draw.H>
 #include <FL/fl_utf8.h>
 #include <FL/Fl_Widget.H>
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include <complex>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <map>
 #include <stdexcept>
 #include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 //! Multiplier to prefix map
@@ -180,6 +185,45 @@ void zc_graph_::add_data_set(
 	}
 	data_set_t data_set = { data, style };
 	data_sets_[axis_number].push_back(data_set);
+};
+
+//! \brief Add a 3D data set to the graph for a specific set of coordinates.
+//! This is only valid for 3D graphs and will throw an error if called on a 2D graph.
+//! It also requires that the axis parameters for axes 0, 1 and 2 have been set up before calling this method.
+void zc_graph_::add_data_set(
+	int axis_number,                    //!< Axis number to add the data set for (should be ignored for 3D graphs as the data set will always be added to axes 0, 1 and 2)
+	std::vector<data_point_3d_t>* data     //!< Reference to a vector of 3D data points to be plotted
+) {
+	// Check that axis number is 2 (Z-axis)
+	if (axis_number != 2) {
+		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " is invalid for a 3D data set. The data set will always be added to axes 0, 1 and 2.");
+		return;
+	}
+	// Check the axis data already exists for axes 0, 1 and 2
+	auto it0 = axes_data_.find(0);
+	auto it1 = axes_data_.find(1);
+	auto it2 = axes_data_.find(2);
+	if (it0 == axes_data_.end() || it1 == axes_data_.end() || it2 == axes_data_.end()) {
+		// Axis data does not exist for one or more of the required axes, throw an error
+		throw std::invalid_argument("Axis parameters for axes 0, 1 and 2 must be set before adding a 3D data set.");
+		return;
+	}
+	// Add the data points to the default range for each axis.
+	for (const data_point_3d_t& point : *data) {
+		if (it0->second.outer_range.contains(std::get<0>(point))) {
+			it0->second.current_range |= std::get<0>(point);
+			it0->second.default_range |= std::get<0>(point);
+		}
+		if (it1->second.outer_range.contains(std::get<1>(point))) {
+			it1->second.current_range |= std::get<1>(point);
+			it1->second.default_range |= std::get<1>(point);
+		}
+		if (it2->second.outer_range.contains(std::get<2>(point))) {
+			it2->second.current_range |= std::get<2>(point);
+			it2->second.default_range |= std::get<2>(point);
+		}
+	}
+	data_set_3d_t data_set = data;
 };
 
 //! \brief Add a value marker to the graph for a specific axis number.
@@ -705,6 +749,175 @@ void zc_graph_::generate_data_lines(int axis_number) {
 
 }
 
+//! \brief Generate a bit map reperesenting the Z-value at each point in the current range for the X and Y axes.
+void zc_graph_::generate_density_plot(
+    int axis_number) {
+	// Check this is axis number 2 (the Z axis).
+	if (axis_number != 2) {
+		throw std::invalid_argument("Density plot can only be generated for axis number 2 (the Z axis).");
+		return;
+	}
+	// Check the axis data already exists for this axis number
+	auto it = axes_data_.find(axis_number);
+	if (it == axes_data_.end()) {
+		// Axis data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before generating a density plot.");
+		return;
+	}
+	// Check that axis 0 and axis 1 exist.
+	auto axis_0_it = axes_data_.find(0);
+	if (axis_0_it == axes_data_.end()) {
+		// Axis 0 does not exist, throw an error
+		throw std::invalid_argument("Axis number 0 does not exist. Set axis parameters for axis 0 before generating a density plot.");
+		return;
+	}
+	auto axis_1_it = axes_data_.find(1);
+	if (axis_1_it == axes_data_.end()) {
+		// Axis 1 does not exist, throw an error
+		throw std::invalid_argument("Axis number 1 does not exist. Set axis parameters for axis 1 before generating a density plot.");
+		return;
+	}
+	// Generate the density plot for this axis number based 
+	// on the current ranges for the X and Y axes and the Z values in the data sets for this axis number.
+	// We need to create a bit map representing the Z values at each pixel in the current range for the X and Y axes, 
+	// then convert this to a plot object and add it to the plot data for this axis number.
+	plot_object_t density_plot;
+	density_plot.shape = BITMAP;
+	axis_data_t& x_axis_data = axis_0_it->second;
+	axis_data_t& y_axis_data = axis_1_it->second;
+	axis_data_t& z_axis_data = it->second;
+	// NB bitmap coordinates are in pixels so use the plot area dimensions in pixels 
+	// for the bitmap size, not the current ranges for the axes.
+	plot_bitmap_t bitmap;
+	bitmap.x = plot_x_;
+	bitmap.y = plot_y_;
+	bitmap.w = plot_w_;
+	bitmap.h = plot_h_;
+	// Create a bitmap with the same dimensions as the plot area. 
+	size_t bitmap_size = plot_w_ * plot_h_ * 4; // 4 bytes per pixel for RGBA
+	bitmap.data = new unsigned char[bitmap_size](); // RGBA bitmap
+	// Clear the bitmap to transparent black.
+	std::memset(bitmap.data, 0, bitmap_size);
+	plot_segment_t segment(bitmap);
+	density_plot.segments.push_back(segment);
+	// For each pixel in the bitmap, calculate the corresponding X and Y values based on the current ranges for the X and Y axes,
+	// then calculate the Z value at that point based on the data sets for this axis number, and set the pixel colour based on the Z value.
+	int index = 0;
+	for (int y = 0; y < plot_h_; y++) {
+		for (int x = 0; x < plot_w_; x++) {
+			data_point_t point = pixel_to_data(1, x, y);
+			double z_value = 0.0;
+			// Calculate the Z value at this point based on the data sets for this axis number.
+			// Use bilinear interpolation between the four nearest data points in the data sets for this axis number to calculate the Z value at this point.
+			// density_data_set_ is a pointer to a vector of data_point_3d_t (tuples of x, y, z values)
+
+			if (density_data_set_ != nullptr && !density_data_set_->empty()) {
+				// Find the bounding box indices for the current point
+				// We need to find the four points (x0,y0), (x1,y0), (x0,y1), (x1,y1) that surround point(x,y)
+
+				// First, build sorted unique x and y coordinates from the data set
+				std::vector<double> x_coords;
+				std::vector<double> y_coords;
+				std::map<std::pair<double, double>, double> data_map;
+
+				for (const auto& data_point : *density_data_set_) {
+					double px = std::get<0>(data_point);
+					double py = std::get<1>(data_point);
+					double pz = std::get<2>(data_point);
+
+					// Build coordinate lists
+					if (std::find(x_coords.begin(), x_coords.end(), px) == x_coords.end()) {
+						x_coords.push_back(px);
+					}
+					if (std::find(y_coords.begin(), y_coords.end(), py) == y_coords.end()) {
+						y_coords.push_back(py);
+					}
+
+					// Store z value for (x,y) lookup
+					data_map[{px, py}] = pz;
+				}
+
+				// Sort coordinates
+				std::sort(x_coords.begin(), x_coords.end());
+				std::sort(y_coords.begin(), y_coords.end());
+
+				// Find the surrounding x coordinates
+				size_t x_idx = 0;
+				for (size_t i = 0; i < x_coords.size(); ++i) {
+					if (x_coords[i] >= point.first) {
+						x_idx = (i > 0) ? i - 1 : 0;
+						break;
+					}
+					x_idx = i;
+				}
+
+				// Find the surrounding y coordinates
+				size_t y_idx = 0;
+				for (size_t i = 0; i < y_coords.size(); ++i) {
+					if (y_coords[i] >= point.second) {
+						y_idx = (i > 0) ? i - 1 : 0;
+						break;
+					}
+					y_idx = i;
+				}
+
+				// Get the four corner coordinates
+				double x0 = x_coords[x_idx];
+				double x1 = (x_idx + 1 < x_coords.size()) ? x_coords[x_idx + 1] : x0;
+				double y0 = y_coords[y_idx];
+				double y1 = (y_idx + 1 < y_coords.size()) ? y_coords[y_idx + 1] : y0;
+
+				// Get z values at the four corners (with fallback for missing data)
+				double z00 = data_map.count({x0, y0}) ? data_map[{x0, y0}] : 0.0;
+				double z10 = data_map.count({x1, y0}) ? data_map[{x1, y0}] : z00;
+				double z01 = data_map.count({x0, y1}) ? data_map[{x0, y1}] : z00;
+				double z11 = data_map.count({x1, y1}) ? data_map[{x1, y1}] : z00;
+
+				// Perform bilinear interpolation
+				if (x1 != x0 && y1 != y0) {
+					// Calculate normalized position within the cell
+					double fx = (point.first - x0) / (x1 - x0);
+					double fy = (point.second - y0) / (y1 - y0);
+
+					// Clamp to [0,1] range
+					fx = std::clamp(fx, 0.0, 1.0);
+					fy = std::clamp(fy, 0.0, 1.0);
+
+					// Bilinear interpolation formula
+					z_value = (1.0 - fx) * (1.0 - fy) * z00 +
+							  fx         * (1.0 - fy) * z10 +
+							  (1.0 - fx) * fy         * z01 +
+							  fx         * fy         * z11;
+				}
+				else if (x1 == x0 && y1 != y0) {
+					// Linear interpolation in y direction only
+					double fy = (point.second - y0) / (y1 - y0);
+					fy = std::clamp(fy, 0.0, 1.0);
+					z_value = (1.0 - fy) * z00 + fy * z01;
+				}
+				else if (y1 == y0 && x1 != x0) {
+					// Linear interpolation in x direction only
+					double fx = (point.first - x0) / (x1 - x0);
+					fx = std::clamp(fx, 0.0, 1.0);
+					z_value = (1.0 - fx) * z00 + fx * z10;
+				}
+				else {
+					// Point exactly on a data point
+					z_value = z00;
+				}
+			}
+
+
+			// Set the pixel colour based on the Z value.
+			Fl_Color colour = density_colour(z_value);
+			// Set the pixel colour in the bitmap. The bitmap is in RGBA format, so we need to set the red, green, blue and alpha values for this pixel.
+			Fl::get_color(colour, bitmap.data[index + 0], bitmap.data[index + 1], bitmap.data[index + 2]);
+			bitmap.data[index + 3] = 255; // A
+			index += 4;
+		}
+	}
+}
+
 //! \brief Add a text label to the graph at a specific position.
 void zc_graph_::generate_point_markers(
 	int axis_number
@@ -1104,6 +1317,9 @@ void zc_graph_::draw() {
 		generate_data_lines(data_set_pair.first);
 	}
 
+	// Regenerate data for each 3D data set.
+	generate_density_plot(2);
+
 	// Generate the data lozenge markers for each axis.
 	for (int i = 0; i < num_axes_; ++i) {
 		generate_lozenge_markers(i);
@@ -1358,7 +1574,43 @@ void zc_graph_::draw_plot_object(const plot_object_t& object) {
 		fl_font(old_font, old_size);
 		break;
 	}
+	case BITMAP: {
+		// Temporarily add a null transform so that the bitmap is drawn in pixel coordinates, 
+		// then pop it after drawing.
+		fl_push_matrix();
+		int bx = object.segments[0].b.x;
+		int by = object.segments[0].b.y;
+		int bw = object.segments[0].b.w;
+		int bh = object.segments[0].b.h;
+		const unsigned char* data = object.segments[0].b.data;
+		// Draw the bitmap using FLTK's fl_draw_image function.
+		if (data) {
+			fl_draw_image(data, bx, by, bw, bh, 4); // Assuming 4 bytes per pixel (RGBA)
+		}
+		fl_pop_matrix();
 	}
+	}
+}
+
+// Look up Z-value in colour map and return corresponding colour.
+Fl_Color zc_graph_::density_colour(double z_value) const {
+	if (colour_map_.empty()) {
+		return FL_BLACK; // Default to black if no colour map is defined.
+	}
+	// Find the first colour map entry with a z_value greater than the input z_value.
+	// Normalise Z between 0 and 1 within the current range of axis 2
+	double z_min = axes_data_.at(2).current_range.min;
+	double z_max = axes_data_.at(2).current_range.max;
+	if (z_max > z_min) {
+		z_value = (z_value - z_min) / (z_max - z_min);
+	}
+	else {
+		z_value = 0.0; // If the range is invalid, default to 0.
+	}
+	// Z = 0 select first entry, Z = 1 select last entry, select linearly between them.
+	size_t num_entries = colour_map_.size();
+	size_t index = static_cast<size_t>(z_value * (num_entries - 1));
+	return colour_map_[index];
 }
 
 // Layout cartesian 2-axis graph
