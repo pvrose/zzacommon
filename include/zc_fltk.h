@@ -25,6 +25,7 @@
 #include <string>
 
 //! Default sizes
+extern const int DEFAULT_DEFAULT_SIZE;    //!< Default base size - used to restore default sizes
 extern int DEFAULT_SIZE;            //!< Default base size - also used to calculate other sizes
 extern Fl_Fontsize FONT_SIZE;       //!< Default font size 
 extern Fl_Font FONT;                //!< Default font
