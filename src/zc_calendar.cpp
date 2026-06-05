@@ -24,21 +24,21 @@ zc_calendar::zc_calendar(int X, int Y) :
 	const int WSMALLBN = HBUTTON * 3 / 2;
 	const int ROWHEIGHT = HBUTTON;
 	const int COLWIDTH = WSMALLBN;
-	const int R0 = EDGE;
+	const int R0 = GAP;
 	const int H0 = HBUTTON;
 	const int R1 = R0 + GAP + H0;
 	const int H1 = 6 * ROWHEIGHT;
 	const int R2 = R1 + GAP + H1;
 	const int H2 = HBUTTON;
-	const int HALL = R2 + H2 + EDGE;
-	const int C0 = EDGE;
+	const int HALL = R2 + H2 + GAP;
+	const int C0 = GAP;
 	const int C1 = C0 + COLWIDTH;
 	const int C2 = C1 + COLWIDTH;
 	const int W2 = 2 * COLWIDTH;
 	const int C3 = C2 + W2;
 	const int C4 = C3 + COLWIDTH;
 	const int C5 = C4 + COLWIDTH;
-	const int WALL = C5 + COLWIDTH + EDGE;
+	const int WALL = C5 + COLWIDTH + GAP;
 	const int WTABLE = 7 * COLWIDTH;
 
 	// Remove standard window border and delineate the window

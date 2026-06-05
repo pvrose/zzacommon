@@ -15,7 +15,13 @@
 	If not, see <https://www.gnu.org/licenses/>.
 
 */
+
+//! \file zc_fltk.cpp
+//! This file provides a number of common utility methods for use with the FLTK GUI library.
+
 #include "zc_fltk.h"
+
+#include "zc_drawing.h"
 
 #include <FL/Enumerations.H>
 #include <FL/fl_ask.H>
@@ -29,8 +35,34 @@
 
 extern std::string APP_NAME;
 
-//! \file zc_fltk.cpp
-//! This file provides a number of common utility methods for use with the FLTK GUI library.
+// Global variables for default sizes - defined in zc_fltk.h
+const int DEFAULT_DEFAULT_SIZE = 12;           //!< Default base size - also used to calculate other sizes
+int DEFAULT_SIZE = DEFAULT_DEFAULT_SIZE; //!< Default font size
+int MIN_SIZE = 8;                        //!< Minimum font size
+int MAX_SIZE = 16;                       //!< Maximum font size
+Fl_Fontsize FONT_SIZE = DEFAULT_SIZE;    //!< Default font size
+Fl_Font FONT = FL_HELVETICA;             //!< Default font
+
+int MENU_HEIGHT = 3 * DEFAULT_SIZE;   //!< Height of menu bar
+int TOOL_HEIGHT = 2 * DEFAULT_SIZE;   //!< Height of tool bar
+int FOOT_HEIGHT = DEFAULT_SIZE;       //!< Height of fotter - used for copyright statements in windows.
+int TOOL_GAP = DEFAULT_SIZE / 2;      //!< Gap between groups of toolbar items
+int BORDER_SIZE = 5;                  //!< Width of window borders
+int TAB_HEIGHT = 2 * DEFAULT_SIZE;    //!< Height of tab bar in tabbed views
+
+int HBUTTON = 2 * DEFAULT_SIZE;                //!< Height of a normal button
+int WBUTTON = 6 * DEFAULT_SIZE;                //!< Width of a normal button
+int GAP = DEFAULT_SIZE;                        //!< Gap between non-related widgets
+int HTEXT = 2 * DEFAULT_SIZE;                  //!< Gap to leave for text
+int WRADIO = DEFAULT_SIZE + 5;                 //!< Width of a box-less rado button
+int HRADIO = WRADIO;                           //!< Height of a boxless button
+int WLABEL = 5 * DEFAULT_SIZE;                 //!< gap for a label outwith widget
+int WLLABEL = 10 * DEFAULT_SIZE;               //!< gap for a large label outwith widget
+int HMLIN = 3 * HTEXT;                         //!< Height of a multi-line text box
+int WEDIT = 3 * WBUTTON;                       //!< Width of a text edit box
+int WSMEDIT = 2 * WBUTTON;                     //!< Width of a small text edit box
+int ROW_HEIGHT = DEFAULT_SIZE + 4;             //!< Default height for table rows
+
 
 // Create a tip window - tip text, position(root_x, root_y)
 Fl_Window* zc::tip_window(const std::string& tip, int x_root, int y_root) {
@@ -91,9 +123,8 @@ std::string zc::to_lower(const std::string& data) {
 }
 
 // Customise FLTK feature
-void zc::customise_fltk() {
-	// Set default font size for all widgets
-	FL_NORMAL_SIZE = 10;
+void zc::customise_fltk(int base_size) {
+	set_base_size(base_size);
 	// FLTK 1.4 default contrast algorithm
 	fl_contrast_mode(FL_CONTRAST_CIELAB);
 #ifndef _WIN32
@@ -136,4 +167,53 @@ void zc::customise_fltk() {
 	fl_message_title_default(APP_NAME.c_str());
 	// Default scrollbar
 	Fl::scrollbar_size(10);
+}
+
+bool zc::change_base_size(bool increase, bool update) {
+	int delta = increase ? 2 : -2;
+	int current_size = DEFAULT_SIZE;
+	DEFAULT_SIZE += delta;
+	if (DEFAULT_SIZE < MIN_SIZE) DEFAULT_SIZE = MIN_SIZE;
+	if (DEFAULT_SIZE > MAX_SIZE) DEFAULT_SIZE = MAX_SIZE;
+	if (current_size != DEFAULT_SIZE || update) {
+		update_sizes();
+		return true;
+	}
+	return false;
+}
+
+bool zc::set_base_size(int new_size, bool update) {
+	if (new_size < MIN_SIZE) new_size = MIN_SIZE;
+	if (new_size > MAX_SIZE) new_size = MAX_SIZE;
+	int current_size = DEFAULT_SIZE;
+	DEFAULT_SIZE = new_size;
+	if (current_size != DEFAULT_SIZE || update) {
+		update_sizes();
+		return true;
+	}
+	return false;
+}
+
+// Update all the sizes based on the current base size.
+void zc::update_sizes() {
+	FONT_SIZE = DEFAULT_SIZE;
+	MENU_HEIGHT = 3 * DEFAULT_SIZE;
+	TOOL_HEIGHT = 2 * DEFAULT_SIZE;
+	FOOT_HEIGHT = DEFAULT_SIZE;
+	TOOL_GAP = DEFAULT_SIZE / 2;
+	TAB_HEIGHT = 2 * DEFAULT_SIZE;
+	HBUTTON = 2 * DEFAULT_SIZE;
+	WBUTTON = 6 * DEFAULT_SIZE;
+	GAP = DEFAULT_SIZE;
+	HTEXT = 2 * DEFAULT_SIZE;
+	WRADIO = DEFAULT_SIZE + 5;
+	HRADIO = WRADIO;
+	WLABEL = 5 * DEFAULT_SIZE;
+	WLLABEL = 10 * DEFAULT_SIZE;
+	HMLIN = 3 * HTEXT;
+	WEDIT = 3 * WBUTTON;
+	WSMEDIT = 2 * WBUTTON;
+	ROW_HEIGHT = DEFAULT_SIZE + 4;
+	// Update the normal size for FLTK
+	FL_NORMAL_SIZE = FONT_SIZE;
 }
