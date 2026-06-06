@@ -21,7 +21,7 @@ if(NOT MSVC)
 endif()
 
 ## Library zzacommon. 
-project(ZZACOMMON VERSION 1.2.3.0)
+project(ZZACOMMON VERSION 1.2.4)
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
 
 # Language requirememnts
