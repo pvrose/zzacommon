@@ -170,7 +170,7 @@ void zc::customise_fltk(int base_size) {
 }
 
 bool zc::change_base_size(bool increase, bool update) {
-	int delta = increase ? 2 : -2;
+	int delta = increase ? 1 : -1;
 	int current_size = DEFAULT_SIZE;
 	DEFAULT_SIZE += delta;
 	if (DEFAULT_SIZE < MIN_SIZE) DEFAULT_SIZE = MIN_SIZE;
