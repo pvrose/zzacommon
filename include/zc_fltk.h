@@ -75,7 +75,7 @@ namespace zc {
 	std::string to_lower(const std::string& data);
 
 	//! Customise the look and feel of GM3ZZA's FLTK applications.
-	void customise_fltk(int base_size = DEFAULT_SIZE);
+	void customise_fltk(int base_size = DEFAULT_DEFAULT_SIZE);
 
 	//! Returns the widget of class \p WIDGET that encloses \p w.
 	template <class WIDGET>

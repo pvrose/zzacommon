@@ -854,6 +854,11 @@ protected:
 	//! \brief Convert Z-value to a colour for the density plot.
 	Fl_Color density_colour(double z_value) const;
 
+	//! \brief Return true if 3-D plots are supported for the graph type.
+	bool supports_3d_plots() const {
+		return graph_type_ == DENSITY;
+	}
+
 	//! \brief The number of axes supported
 	int num_axes_ = 0;
 

@@ -171,19 +171,29 @@ int zc_speaker::pa_stream(const void* input,
                 idle_ = true;
             }
         }
-        else {
-            // Otherwise get next audio chunk from the input queue and check again.
-            samples_sent_ = 0;
-            idle_ = false;
-			while (!app_audio_->try_pop(*next_buffer_)) {
-				std::this_thread::yield();
+		else {
+			// Otherwise try to get next audio chunk from the input queue
+			samples_sent_ = 0;
+			if (app_audio_->try_pop(*next_buffer_)) {
+				// Successfully got data, mark as not idle
+				idle_ = false;
+				// Add the text to the output display window and wake up the GUI.
+				if (text_callback_) {
+					text_callback_(next_buffer_->metadata);
+				}
+				Fl::awake();
+			} else {
+				// Queue was empty, send silence for this sample
+				*(out++) = 0.0;
+				if (audio_callback_) {
+					audio_callback_(0.0F);
+				}
+				samples_to_send--;
+				if (!idle_ && !samples_to_send) {
+					idle_ = true;
+				}
 			}
-            // Add the text to the output display window and wake up the GUI.
-            if (text_callback_) {
-                text_callback_(next_buffer_->metadata);
-            }
-            Fl::awake();
-        }
+		}
      }
     return paContinue;    
 }

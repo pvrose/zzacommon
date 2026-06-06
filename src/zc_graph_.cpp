@@ -1318,7 +1318,9 @@ void zc_graph_::draw() {
 	}
 
 	// Regenerate data for each 3D data set.
-	generate_density_plot(2);
+	if (supports_3d_plots()) {
+		generate_density_plot(2);
+	}
 
 	// Generate the data lozenge markers for each axis.
 	for (int i = 0; i < num_axes_; ++i) {
