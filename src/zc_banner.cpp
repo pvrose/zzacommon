@@ -434,6 +434,9 @@ void zc_banner::update_display() {
 
 // Set closing
 void zc_banner::close() {
+	op_app_title_->copy_label("CLOSING!");
+	op_app_title_->labelsize(FL_NORMAL_SIZE * 2);
+	op_app_title_->labelcolor(FL_RED);
 	closing_ = true;
 }
 
