@@ -71,10 +71,6 @@ public:
 	//! It represents a pair of coordinates, the meaning depending on the graph type.
 	typedef std::pair<double, double> data_point_t;
 
-	//! \brief Type for a 3D data point, used for density plots.
-	//! 
-	typedef std::tuple<double, double, double> data_point_3d_t;
-
 	//! \brief Type of coordinates that a data_point_t represents.
 	enum graph_type_t : uint8_t {
 		NO_DATA,     //!< No data
@@ -105,7 +101,12 @@ public:
 	};
 
 	//! \brief Structure to represent a set of 3D data points for a density plot.
-	typedef std::vector<data_point_3d_t>* data_set_3d_t;
+	//! 
+	struct data_set_dens_t {
+		std::vector<double> x_values;     //!< Vector of X values for the data points
+		std::vector<double> y_values;     //!< Vector of Y values for the data points
+		std::vector<double> z_values;     //!< Vector of Z values for the data points (row-column order corresponds to Y and X values)
+	};
 
 	//! \brief Overlay markers for the plot, such as vertical lines to indicate specific X values.
 	//! Markers can be added to any data type, and comprise either a single value
@@ -389,6 +390,19 @@ public:
 		int tick_length = 5;                  //!< Length of tick mark in pixels (only used if shape is TICK)
 	};
 
+	//! \brief Transformation for density data.
+	//! 
+	//! For each pixel coordinate in the plot area, this defines the contribution of each data point 
+	//! to the value at that pixel.
+	struct density_contribution_t {
+		size_t x_index;               //! Index into x_values
+		size_t y_index;               //! Index into y_values
+		double contribution;          //! How much this data point contributes to this pixel.
+	};
+	//! Outer vector in row-column order corresponding to y and x values respectively. 
+	//! Each element is a list of contributions from data points to that pixel.
+	typedef std::vector<std::list<density_contribution_t> > density_xform_t;
+
 	//! \brief Transformation schema for the plot data. 
 	//! 
 	//! Currently this is a simple linear transformation defined by the cartesian
@@ -404,6 +418,7 @@ public:
 		double y_min_ = 0;    //!< Minimum Y-coordinate of the plot in pixels. Maps onto y() + h() of the widget (i.e. Y increases upwards).
 		double x_max_ = 1;     //!< Maximum X-coordinate of the plot in pixels. Maps onto x() + w() of the widget.
 		double y_max_ = 1;     //!< Maximum Y-coordinate of the plot in pixels. Maps onto y() of the widget.
+		density_xform_t z_xform;     //!< Density transformation matrix.
 	};
 
 	//! \brief Drawing layers. Lower number will be drawn first then
@@ -514,7 +529,7 @@ public:
 	//! \param data The 3D data points to plot for this data set. A pointer is used to allow updating the data without needing to re-add the data set.
 	void add_data_set(
 		int axis_number,
-		std::vector<data_point_3d_t>* data
+		data_set_dens_t* data
 	);
 
 	//! \brief Add a marker to the graph at a specific value or range of values.
@@ -870,7 +885,7 @@ protected:
 	//! \brief The data for 3D density plots for the graph. Pointers to application data.
 	//!
 	//! This data will be applied to the DATA layer.
-	data_set_3d_t density_data_set_;
+	data_set_dens_t* density_data_set_ = nullptr;
 
 	//! \brief The graph_type for the graph, which defines the layout of the axes and plot area.
 	graph_type_t graph_type_ = NO_DATA;
@@ -938,6 +953,16 @@ protected:
 
 	//! \brief Z-value colour map.
 	std::vector<Fl_Color> colour_map_;
+
+	//! \brief Layout dirty flag - true if layout needs recalculation.
+	//! Set to true when widget dimensions, axis ranges, or axis parameters change.
+	bool layout_dirty_ = true;
+
+	//! \brief Invalidate the current layout, forcing recalculation on next draw.
+	//! Call this when any layout-affecting parameter changes (dimensions, ranges, parameters).
+	void invalidate_layout() {
+		layout_dirty_ = true;
+	}
 
 };
 
@@ -1188,5 +1213,10 @@ public:
 		zoom_capability_ = ZOOM_ON_CURSOR; // Allow zooming on both axes centered on the cursor position
 		scrollable_ = true; // Allow scrolling on both axes
 	}
+
+	//! \brief Layout the axes and plot area for a Density plot.
+	//! 
+	//! Will be the same as Cartesian, but in addition, sets the density transformation schema for the Z axis.
+	void layout() override;
 
 };

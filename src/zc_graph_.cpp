@@ -37,6 +37,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <map>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <tuple>
@@ -97,6 +98,7 @@ void zc_graph_::set_axis_params(
 	axis_data.unit = unit;
 	axis_data.label = label;
 	axis_data.tick_spacing_pixels = tick_spacing_pixels;
+	invalidate_layout();
 }
 
 // Set the ranges for the axes for a data type.
@@ -133,6 +135,7 @@ void zc_graph_::set_axis_ranges(
 	axis_data.inner_range = inner_range;
 	axis_data.outer_range = outer_range;
 	axis_data.default_range = default_range;
+	invalidate_layout();
 }
 
 // Get axis current range for a specific axis number.
@@ -192,7 +195,7 @@ void zc_graph_::add_data_set(
 //! It also requires that the axis parameters for axes 0, 1 and 2 have been set up before calling this method.
 void zc_graph_::add_data_set(
 	int axis_number,                    //!< Axis number to add the data set for (should be ignored for 3D graphs as the data set will always be added to axes 0, 1 and 2)
-	std::vector<data_point_3d_t>* data     //!< Reference to a vector of 3D data points to be plotted
+	data_set_dens_t* data     //!< Reference to a vector of 3D data points to be plotted
 ) {
 	// Check that axis number is 2 (Z-axis)
 	if (axis_number != 2) {
@@ -208,22 +211,31 @@ void zc_graph_::add_data_set(
 		throw std::invalid_argument("Axis parameters for axes 0, 1 and 2 must be set before adding a 3D data set.");
 		return;
 	}
-	// Add the data points to the default range for each axis.
-	for (const data_point_3d_t& point : *data) {
-		if (it0->second.outer_range.contains(std::get<0>(point))) {
-			it0->second.current_range |= std::get<0>(point);
-			it0->second.default_range |= std::get<0>(point);
-		}
-		if (it1->second.outer_range.contains(std::get<1>(point))) {
-			it1->second.current_range |= std::get<1>(point);
-			it1->second.default_range |= std::get<1>(point);
-		}
-		if (it2->second.outer_range.contains(std::get<2>(point))) {
-			it2->second.current_range |= std::get<2>(point);
-			it2->second.default_range |= std::get<2>(point);
+	// Check that the data set is consistent: number of z values = number of x values * number of y values
+	if (data->z_values.size() != data->x_values.size() * data->y_values.size()) {
+		throw std::invalid_argument("Inconsistent 3D data set: number of z values does not match number of x values * number of y values.");
+		return;
+	}
+	// Add the data points to the default range for each axis.for (const data_point_dens_t& point : *data) {
+	for (const auto& x_value : data->x_values) {
+		if (it0->second.outer_range.contains(x_value)) {
+			it0->second.current_range |= x_value;
+			it0->second.default_range |= x_value;
 		}
 	}
-	data_set_3d_t data_set = data;
+	for (const auto& y_value : data->y_values) {
+		if (it1->second.outer_range.contains(y_value)) {
+			it1->second.current_range |= y_value;
+			it1->second.default_range |= y_value;
+		}
+	}
+	for (const auto& z_value : data->z_values) {
+		if (it2->second.outer_range.contains(z_value)) {
+			it2->second.current_range |= z_value;
+			it2->second.default_range |= z_value;
+		}
+	}
+	density_data_set_ = data;
 };
 
 //! \brief Add a value marker to the graph for a specific axis number.
@@ -331,6 +343,7 @@ void zc_graph_::end_config() {
 	// Clear the plot data for all data types and layers.
 	plot_data_.clear();
 
+	invalidate_layout();
 	redraw();
 }
 
@@ -800,119 +813,41 @@ void zc_graph_::generate_density_plot(
 	std::memset(bitmap.data, 0, bitmap_size);
 	plot_segment_t segment(bitmap);
 	density_plot.segments.push_back(segment);
+
+	// Pre-build sorted unique x and y coordinates from the data set ONCE, outside the pixel loops
+	std::vector<double> x_coords;
+	std::vector<double> y_coords;
+	std::map<std::pair<double, double>, double> data_map;
+
+	if (density_data_set_ == nullptr) {
+		return;
+	}
+
 	// For each pixel in the bitmap, calculate the corresponding X and Y values based on the current ranges for the X and Y axes,
 	// then calculate the Z value at that point based on the data sets for this axis number, and set the pixel colour based on the Z value.
 	int index = 0;
+	auto& z_xform = plot_data_[axis_number].xform_schema.z_xform;
+	size_t data_row_size = density_data_set_->y_values.size();
 	for (int y = 0; y < plot_h_; y++) {
 		for (int x = 0; x < plot_w_; x++) {
-			data_point_t point = pixel_to_data(1, x, y);
+			data_point_t point = pixel_to_data(1, plot_x_ + x, plot_y_ + y);
 			double z_value = 0.0;
 			// Calculate the Z value at this point based on the data sets for this axis number.
+			// Interpolation coefficients will have been set in layout().
+			
 			// Use bilinear interpolation between the four nearest data points in the data sets for this axis number to calculate the Z value at this point.
 			// density_data_set_ is a pointer to a vector of data_point_3d_t (tuples of x, y, z values)
-
-			if (density_data_set_ != nullptr && !density_data_set_->empty()) {
-				// Find the bounding box indices for the current point
-				// We need to find the four points (x0,y0), (x1,y0), (x0,y1), (x1,y1) that surround point(x,y)
-
-				// First, build sorted unique x and y coordinates from the data set
-				std::vector<double> x_coords;
-				std::vector<double> y_coords;
-				std::map<std::pair<double, double>, double> data_map;
-
-				for (const auto& data_point : *density_data_set_) {
-					double px = std::get<0>(data_point);
-					double py = std::get<1>(data_point);
-					double pz = std::get<2>(data_point);
-
-					// Build coordinate lists
-					if (std::find(x_coords.begin(), x_coords.end(), px) == x_coords.end()) {
-						x_coords.push_back(px);
-					}
-					if (std::find(y_coords.begin(), y_coords.end(), py) == y_coords.end()) {
-						y_coords.push_back(py);
-					}
-
-					// Store z value for (x,y) lookup
-					data_map[{px, py}] = pz;
-				}
-
-				// Sort coordinates
-				std::sort(x_coords.begin(), x_coords.end());
-				std::sort(y_coords.begin(), y_coords.end());
-
-				// Find the surrounding x coordinates
-				size_t x_idx = 0;
-				for (size_t i = 0; i < x_coords.size(); ++i) {
-					if (x_coords[i] >= point.first) {
-						x_idx = (i > 0) ? i - 1 : 0;
-						break;
-					}
-					x_idx = i;
-				}
-
-				// Find the surrounding y coordinates
-				size_t y_idx = 0;
-				for (size_t i = 0; i < y_coords.size(); ++i) {
-					if (y_coords[i] >= point.second) {
-						y_idx = (i > 0) ? i - 1 : 0;
-						break;
-					}
-					y_idx = i;
-				}
-
-				// Get the four corner coordinates
-				double x0 = x_coords[x_idx];
-				double x1 = (x_idx + 1 < x_coords.size()) ? x_coords[x_idx + 1] : x0;
-				double y0 = y_coords[y_idx];
-				double y1 = (y_idx + 1 < y_coords.size()) ? y_coords[y_idx + 1] : y0;
-
-				// Get z values at the four corners (with fallback for missing data)
-				double z00 = data_map.count({x0, y0}) ? data_map[{x0, y0}] : 0.0;
-				double z10 = data_map.count({x1, y0}) ? data_map[{x1, y0}] : z00;
-				double z01 = data_map.count({x0, y1}) ? data_map[{x0, y1}] : z00;
-				double z11 = data_map.count({x1, y1}) ? data_map[{x1, y1}] : z00;
-
-				// Perform bilinear interpolation
-				if (x1 != x0 && y1 != y0) {
-					// Calculate normalized position within the cell
-					double fx = (point.first - x0) / (x1 - x0);
-					double fy = (point.second - y0) / (y1 - y0);
-
-					// Clamp to [0,1] range
-					fx = std::clamp(fx, 0.0, 1.0);
-					fy = std::clamp(fy, 0.0, 1.0);
-
-					// Bilinear interpolation formula
-					z_value = (1.0 - fx) * (1.0 - fy) * z00 +
-							  fx         * (1.0 - fy) * z10 +
-							  (1.0 - fx) * fy         * z01 +
-							  fx         * fy         * z11;
-				}
-				else if (x1 == x0 && y1 != y0) {
-					// Linear interpolation in y direction only
-					double fy = (point.second - y0) / (y1 - y0);
-					fy = std::clamp(fy, 0.0, 1.0);
-					z_value = (1.0 - fy) * z00 + fy * z01;
-				}
-				else if (y1 == y0 && x1 != x0) {
-					// Linear interpolation in x direction only
-					double fx = (point.first - x0) / (x1 - x0);
-					fx = std::clamp(fx, 0.0, 1.0);
-					z_value = (1.0 - fx) * z00 + fx * z10;
-				}
-				else {
-					// Point exactly on a data point
-					z_value = z00;
-				}
+			auto& z_xform_pt = z_xform[y * plot_w_ + x];
+			for (auto& it : z_xform_pt) {
+				size_t data_set_index = it.y_index * data_row_size + it.x_index;
+				z_value += density_data_set_->z_values[data_set_index] * it.contribution;
 			}
-
 
 			// Set the pixel colour based on the Z value.
 			Fl_Color colour = density_colour(z_value);
 			// Set the pixel colour in the bitmap. The bitmap is in RGBA format, so we need to set the red, green, blue and alpha values for this pixel.
 			Fl::get_color(colour, bitmap.data[index + 0], bitmap.data[index + 1], bitmap.data[index + 2]);
-			bitmap.data[index + 3] = 255; // A
+			bitmap.data[index + 3] = 0; // A
 			index += 4;
 		}
 	}
@@ -1241,6 +1176,7 @@ void zc_graph_::zoom_axis(int axis_number, int mouse_x, int mouse_y, int zoom_fa
 		new_range |= axis_data.inner_range;
 	}
 	axis_data.current_range = new_range;
+	invalidate_layout();
 }
 
 // Scroll the axis under the mouse by the specified offset in pixels.
@@ -1273,6 +1209,7 @@ void zc_graph_::scroll_axis(int axis_number, int scroll_offset) {
 	new_max = axis_data.current_range.max + scroll_amount;
 	range_t new_range = axis_data.outer_range & range_t{ new_min, new_max };
 	axis_data.current_range = new_range;
+	invalidate_layout();
 }
 
 // Reset the zoom for the specified axis number to the default range.
@@ -1286,6 +1223,7 @@ void zc_graph_::reset_zoom(int axis_number) {
 	}
 	axis_data_t& axis_data = it->second;
 	axis_data.current_range = axis_data.default_range;
+	invalidate_layout();
 }
 
 // Resize the widget - reset scaling factors
@@ -1293,6 +1231,7 @@ void zc_graph_::resize(int X, int Y, int W, int H) {
 	// If we have actually resized...
 	if (X != x() || Y != y() || W != w() || H != h()) {
 		Fl_Widget::resize(X, Y, W, H);
+		invalidate_layout();
 		redraw();
 	}
 }
@@ -1300,11 +1239,19 @@ void zc_graph_::resize(int X, int Y, int W, int H) {
 // draw the widget
 void zc_graph_::draw() {
 
-	// Clear the plot data for all data types and layers.
-	plot_data_.clear();
+	// Clear the plot layer data for all data types and layers.
+	for (auto& data_pair : plot_data_) {
+		for (auto& layer_pair : data_pair.second.layer_data) {
+			layer_pair.second.clear();
+		}
+	}
 	// Set out the positions of the axes and plot area, set the 
 	// drawing transformation schemata.
-	layout();
+	// Only recalculate layout if it's been invalidated.
+	if (layout_dirty_) {
+		layout();
+		layout_dirty_ = false;
+	}
 	// Generate the axis lines, ticks, grid lines and labels for each axis based on the current parameters and ranges.
 	for (int i = 0; i < num_axes_; ++i) {
 		generate_axis_grid(i);
@@ -2477,4 +2424,88 @@ void zc_graph_smith::set_click_value(int mouse_x, int mouse_y) {
 	double cy = plot_data_[1].xform_schema.y_max_ + (y() - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / h();
 	// Store the click values
 	value_ = { cx, cy };
+}
+
+void zc_graph_density::layout() {
+	zc_graph_cartesian::layout();
+	// Copy plot data for axis 1 to axis 2, which is used for density plots. We will use the same transformation schema for axis 2 as axis 1, but we will calculate the Z values for each pixel based on the data sets for this axis number and store them in the xform_schema for axis 2.
+	plot_data_[2] = plot_data_[1];
+	// For density plots, we add the density contribution for each coordinate.
+	// For each pixel in the bitmap, calculate the corresponding X and Y values based on the current ranges for the X and Y axes,
+	// then calculate the Z value at that point based on the data sets for this axis number, and set the pixel colour based on the Z value.
+	int index = 0;
+	density_xform_t& z_xform = plot_data_[2].xform_schema.z_xform;
+	auto data_copy = *density_data_set_; // Make a copy of the data set for this axis number.
+	z_xform.resize(plot_w_ * plot_h_);
+	// We can assume that the data sets for this axis number are sorted by X and Y values.
+	for (int y = 0; y < plot_h_; y++) {
+		for (int x = 0; x < plot_w_; x++) {
+			int pixel_index = y * plot_w_ + x;
+			auto& z_xform_pt = z_xform[pixel_index];
+			data_point_t point = pixel_to_data(2, plot_x_ + x, plot_y_ + y);
+			double z_value = 0.0;
+			// Calculate the Z value at this point based on the data sets for this axis number.
+			// Use bilinear interpolation between the four nearest data points in the data sets for this axis number to calculate the Z value at this point.
+			// density_data_set_ is a pointer to a vector of data_point_3d_t (tuples of x, y, z values)
+
+			if (!data_copy.x_values.empty() && !data_copy.y_values.empty()) {
+				// Find the bounding box indices for the current point
+				// We need to find the four points (x0,y0), (x1,y0), (x0,y1), (x1,y1) that surround point(x,y)
+
+				// Use binary search (O(log n)) instead of linear search (O(n))
+				auto x_it = std::lower_bound(data_copy.x_values.begin(), data_copy.x_values.end(), point.first);
+				size_t x_idx = 0;
+				if (x_it != data_copy.x_values.begin()) {
+					x_idx = std::distance(data_copy.x_values.begin(), x_it) - 1;
+				}
+
+				auto y_it = std::lower_bound(data_copy.y_values.begin(), data_copy.y_values.end(), point.second);
+				size_t y_idx = 0;
+				if (y_it != data_copy.y_values.begin()) {
+					y_idx = std::distance(data_copy.y_values.begin(), y_it) - 1;
+				}
+
+				// Get the four corner coordinates
+				double x0 = data_copy.x_values[x_idx];
+				double x1 = (x_idx + 1 < data_copy.x_values.size()) ? data_copy.x_values[x_idx + 1] : x0;
+				double y0 = data_copy.y_values[y_idx];
+				double y1 = (y_idx + 1 < data_copy.y_values.size()) ? data_copy.y_values[y_idx + 1] : y0;
+
+				// Perform bilinear interpolation
+				if (x1 != x0 && y1 != y0) {
+					// Calculate normalized position within the cell
+					double fx = (point.first - x0) / (x1 - x0);
+					double fy = (point.second - y0) / (y1 - y0);
+
+					// Clamp to [0,1] range
+					fx = std::clamp(fx, 0.0, 1.0);
+					fy = std::clamp(fy, 0.0, 1.0);
+
+
+					z_xform_pt.push_back({ x_idx, y_idx, (1.0 - fx) * (1.0 - fy) });
+					z_xform_pt.push_back({ x_idx + 1, y_idx, fx * (1.0 - fy) });
+					z_xform_pt.push_back({ x_idx, y_idx + 1, (1.0 - fx) * fy });
+					z_xform_pt.push_back({ x_idx + 1, y_idx + 1, fx * fy });
+				}
+				else if (x1 == x0 && y1 != y0) {
+					// Linear interpolation in y direction only
+					double fy = (point.second - y0) / (y1 - y0);
+					fy = std::clamp(fy, 0.0, 1.0);
+					z_xform_pt.push_back({ x_idx, y_idx, (1.0 - fy) });
+					z_xform_pt.push_back({ x_idx, y_idx + 1, fy });
+				}
+				else if (y1 == y0 && x1 != x0) {
+					// Linear interpolation in x direction only
+					double fx = (point.first - x0) / (x1 - x0);
+					fx = std::clamp(fx, 0.0, 1.0);
+					z_xform_pt.push_back({ x_idx, y_idx, (1.0 - fx) });
+					z_xform_pt.push_back({ x_idx + 1, y_idx, fx });
+				}
+				else {
+					// Point exactly on a data point
+					z_xform_pt.push_back({ x_idx, y_idx, 1.0 });
+				}
+			}
+		}
+	}
 }
