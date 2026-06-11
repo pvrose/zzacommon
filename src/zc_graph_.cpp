@@ -807,8 +807,8 @@ void zc_graph_::generate_density_plot(
 	bitmap.w = plot_w_;
 	bitmap.h = plot_h_;
 	// Create a bitmap with the same dimensions as the plot area. 
-	size_t bitmap_size = plot_w_ * plot_h_ * 4; // 4 bytes per pixel for RGBA
-	bitmap.data = new unsigned char[bitmap_size](); // RGBA bitmap
+	size_t bitmap_size = plot_w_ * plot_h_ * 3; // 4 bytes per pixel for RGB
+	bitmap.data = new unsigned char[bitmap_size](); // RGB bitmap
 	// Clear the bitmap to transparent black.
 	std::memset(bitmap.data, 0, bitmap_size);
 	plot_segment_t segment(bitmap);
@@ -847,8 +847,7 @@ void zc_graph_::generate_density_plot(
 			Fl_Color colour = density_colour(z_value);
 			// Set the pixel colour in the bitmap. The bitmap is in RGBA format, so we need to set the red, green, blue and alpha values for this pixel.
 			Fl::get_color(colour, bitmap.data[index + 0], bitmap.data[index + 1], bitmap.data[index + 2]);
-			bitmap.data[index + 3] = 0; // A
-			index += 4;
+			index += 3;
 		}
 	}
 }
@@ -1535,7 +1534,7 @@ void zc_graph_::draw_plot_object(const plot_object_t& object) {
 		const unsigned char* data = object.segments[0].b.data;
 		// Draw the bitmap using FLTK's fl_draw_image function.
 		if (data) {
-			fl_draw_image(data, bx, by, bw, bh, 4); // Assuming 4 bytes per pixel (RGBA)
+			fl_draw_image(data, bx, by, bw, bh, 3); // Assuming 3 bytes per pixel (RGB)
 		}
 		fl_pop_matrix();
 	}
