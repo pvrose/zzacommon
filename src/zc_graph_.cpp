@@ -109,8 +109,7 @@ void zc_graph_::set_axis_ranges(
 	const range_t& default_range             //!< Default range for this axis in the absence of data
 ) {
 	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
+	if (axis_number >= static_cast<int>(axes_data_.size())) {
 		// Axis data does not exist for this axis number, throw an error
 		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before setting axis ranges.");
 		return;
@@ -131,7 +130,7 @@ void zc_graph_::set_axis_ranges(
 		return;
 	}
 	// Set the ranges for this axis
-	axis_data_t& axis_data = it->second;
+	axis_data_t& axis_data = axes_data_[axis_number];
 	axis_data.inner_range = inner_range;
 	axis_data.outer_range = outer_range;
 	axis_data.default_range = default_range;
@@ -141,13 +140,12 @@ void zc_graph_::set_axis_ranges(
 // Get axis current range for a specific axis number.
 zc_graph_::range_t zc_graph_::get_axis_range(int axis_number) const {
 	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
+	if (axis_number >= static_cast<int>(axes_data_.size())) {
 		// Axis data does not exist for this axis number, throw an error
 		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before getting axis range.");
 		return range_t();
 	}
-	const axis_data_t& axis_data = it->second;
+	const axis_data_t& axis_data = axes_data_[axis_number];
 	return axis_data.current_range;
 }
 
@@ -162,28 +160,15 @@ void zc_graph_::add_data_set(
 		throw std::invalid_argument("Cannot add a data set to axis number 0. This axis is reserved for the primary coordinate (e.g. X or R axis).");
 		return;
 	}
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		// Axis data does not exist for this axis number, throw an error
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a data set.");
-		return;
-	}
-	// Add the data points to the default range for this axis and axis 0.
-	auto it0 = axes_data_.find(0);
-	if (it0 == axes_data_.end()) {
-		// Axis data does not exist for axis 0, throw an error
-		throw std::invalid_argument("Axis number 0 does not exist. Set axis parameters for axis 0 before adding a data set.");
-		return;
-	}
+	// Extend the ranges to include the data.
 	for (const data_point_t& point : *data) {
-		if (it->second.outer_range.contains(point.second)) {
-			it->second.current_range |= point.second;
-			it->second.default_range |= point.second;
+		if (axes_data_[axis_number].outer_range.contains(point.second)) {
+			axes_data_[axis_number].current_range |= point.second;
+			axes_data_[axis_number].default_range |= point.second;
 		}
-		if (it0->second.outer_range.contains(point.first)) {
-			it0->second.current_range |= point.first;
-			it0->second.default_range |= point.first;
+		if (axes_data_[0].outer_range.contains(point.first)) {
+			axes_data_[0].current_range |= point.first;
+			axes_data_[0].default_range |= point.first;
 		}
 	}
 	data_set_t data_set = { data, style };
@@ -195,20 +180,12 @@ void zc_graph_::add_data_set(
 //! It also requires that the axis parameters for axes 0, 1 and 2 have been set up before calling this method.
 void zc_graph_::add_data_set(
 	int axis_number,                    //!< Axis number to add the data set for (should be ignored for 3D graphs as the data set will always be added to axes 0, 1 and 2)
-	data_set_dens_t* data     //!< Reference to a vector of 3D data points to be plotted
+	data_set_dens_t* data,     //!< Reference to a vector of 3D data points to be plotted
+	std::vector<Fl_Color> colour_map
 ) {
 	// Check that axis number is 2 (Z-axis)
 	if (axis_number != 2) {
 		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " is invalid for a 3D data set. The data set will always be added to axes 0, 1 and 2.");
-		return;
-	}
-	// Check the axis data already exists for axes 0, 1 and 2
-	auto it0 = axes_data_.find(0);
-	auto it1 = axes_data_.find(1);
-	auto it2 = axes_data_.find(2);
-	if (it0 == axes_data_.end() || it1 == axes_data_.end() || it2 == axes_data_.end()) {
-		// Axis data does not exist for one or more of the required axes, throw an error
-		throw std::invalid_argument("Axis parameters for axes 0, 1 and 2 must be set before adding a 3D data set.");
 		return;
 	}
 	// Check that the data set is consistent: number of z values = number of x values * number of y values
@@ -218,24 +195,25 @@ void zc_graph_::add_data_set(
 	}
 	// Add the data points to the default range for each axis.for (const data_point_dens_t& point : *data) {
 	for (const auto& x_value : data->x_values) {
-		if (it0->second.outer_range.contains(x_value)) {
-			it0->second.current_range |= x_value;
-			it0->second.default_range |= x_value;
+		if (axes_data_[0].outer_range.contains(x_value)) {
+			axes_data_[0].current_range |= x_value;
+			axes_data_[0].default_range |= x_value;
 		}
 	}
 	for (const auto& y_value : data->y_values) {
-		if (it1->second.outer_range.contains(y_value)) {
-			it1->second.current_range |= y_value;
-			it1->second.default_range |= y_value;
+		if (axes_data_[1].outer_range.contains(y_value)) {
+			axes_data_[1].current_range |= y_value;
+			axes_data_[1].default_range |= y_value;
 		}
 	}
 	for (const auto& z_value : data->z_values) {
-		if (it2->second.outer_range.contains(z_value)) {
-			it2->second.current_range |= z_value;
-			it2->second.default_range |= z_value;
+		if (axes_data_[2].outer_range.contains(z_value)) {
+			axes_data_[2].current_range |= z_value;
+			axes_data_[2].default_range |= z_value;
 		}
 	}
 	density_data_set_ = data;
+	colour_map_ = colour_map;
 };
 
 //! \brief Add a value marker to the graph for a specific axis number.
@@ -246,13 +224,6 @@ void zc_graph_::add_marker(
 	double value_1,
 	double value_2
 ) {
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		// Axis data does not exist for this axis number, throw an error
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a value marker.");
-		return;
-	}
 	// Create the marker object
 	value_marker_t marker;
 	marker.style = style;
@@ -268,13 +239,6 @@ void zc_graph_::add_marker(
 	zc_line_style style,
 	data_point_t position
 ) {
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		// Axis data does not exist for this axis number, throw an error
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a point marker.");
-		return;
-	}
 	// Create the marker object
 	lozenge_marker_t marker;
 	marker.style = style;
@@ -292,22 +256,6 @@ void zc_graph_::add_label(
 	text_alignment_t alignment,
 	bool opaque
 ) {
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		// Axis data does not exist for this axis number, throw an error
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a label.");
-		return;
-	}
-	// Get the other axis number: If axis 0 then the primary axis.
-	int other_axis_number = (axis_number == 0) ? 1 : 0;
-	// Check the other axis data already exists for the other axis number
-	auto other_axis_it = axes_data_.find(other_axis_number);
-	if (other_axis_it == axes_data_.end()) {
-		// Other axis data does not exist for this axis number, throw an error
-		throw std::invalid_argument("Other axis number " + std::to_string(other_axis_number) + " does not exist. Set axis parameters for both axes before adding a label.");
-		return;
-	}
 	// Add the label to the list of point markers for this axis number and layer.
 	point_marker_t marker;
 	marker.position = position;
@@ -321,15 +269,23 @@ void zc_graph_::add_label(
 // Clear the plot_data
 void zc_graph_::start_config() {
 	// Clear the plot data for all data types and layers
-	plot_data_.clear();
+	clear_plot_data();
 	// Clear the axis data for all axes
-	axes_data_.clear();
+	for (auto& axis_data : axes_data_) {
+		axis_data = axis_data_t();
+	}
 	// Clear the value markers for all axes and layers
-	value_markers_.clear();
+	for (auto& marker_map : value_markers_) {
+		marker_map.clear();
+	}
 	// Clear the point markers for all axes and layers
-	point_markers_.clear();
+	for (auto& marker_map : point_markers_) {
+		marker_map.clear();
+	}
 	// Clear the point lozenge markers for all axes and layers
-	lozenge_markers_.clear();
+	for (auto& marker_map : lozenge_markers_) {
+		marker_map.clear();
+	}
 }
 
 // Initiaite the plot data
@@ -337,11 +293,11 @@ void zc_graph_::end_config() {
 	axis_width_ = default_text_size_ * 2; // Default width of the axes is twice the default text size.
 	v_axis_width_ = default_text_size_ * 3; // Default width of the vertical axis is thrice the default text size.
 	// Update the current ranges for each axis to include the default ranges, if they are not already included.
-	for (auto& [axis_number, axis_data] : axes_data_) {
+	for (auto& axis_data : axes_data_) {
 		axis_data.current_range |= axis_data.default_range;
 	}
 	// Clear the plot data for all data types and layers.
-	plot_data_.clear();
+	clear_plot_data();
 
 	invalidate_layout();
 	redraw();
@@ -394,19 +350,11 @@ void zc_graph_::normalise(double fin, modifier_t modifier, double& mantissa, dou
 
 // Generate axis line
 void zc_graph_::generate_axis_line(int axis_number) {
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		// Axis data does not exist for this axis number, throw an error
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before generating an axis line.");
-		return;
-	}
-	axis_data_t& axis_data = it->second;
 	// Generate the axis line for this axis number based on the current ranges and tick spacing
 	value_marker_t marker;
 	marker.style = zc_line_style({ FL_BLACK, 1, FL_SOLID });
-	marker.value_1 = axis_data.position;
-	marker.value_2 = axis_data.position;
+	marker.value_1 = axes_data_[axis_number].position;
+	marker.value_2 = marker.value_1;
 	int drawing_axis_number = (axis_number == 0) ? 1 : 0; // The axis number to draw the line along is the other axis
 	generate_value_marker(
 		drawing_axis_number,
@@ -417,17 +365,9 @@ void zc_graph_::generate_axis_line(int axis_number) {
 
 // Generate grid_lines
 void zc_graph_::generate_grid_lines(int axis_number) {
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		// Axis data does not exist for this axis number, throw an error
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before generating grid lines.");
-		return;
-	}
-	axis_data_t& axis_data = it->second;
 	// Generate the grid lines for this axis number based on the current ranges and tick spacing
 	zc_line_style grid_line_style({ FL_LIGHT2, 1, FL_DOT });
-	for (auto& tick : axis_data.ticks) {
+	for (auto& tick : axes_data_[axis_number].ticks) {
 		if (tick.is_major) {
 			value_marker_t marker;
 			marker.style = grid_line_style;
@@ -447,20 +387,13 @@ void zc_graph_::set_ticks(
 	int axis_number, 
 	int tick_spacing_pixels, 
 	double inv_scale) {
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		// Axis data does not exist for this axis number, throw an error
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before setting ticks.");
-		return;
-	}
+	axis_data_t& axis_data = axes_data_[axis_number];
 	// Check the current range is valid
-	if (!it->second.current_range.is_valid()) {
+	if (!axis_data.current_range.is_valid()) {
 		// Current range is not valid, throw an error
 //		throw std::invalid_argument("Current range is not valid for axis number " + std::to_string(axis_number) + ". Set axis ranges before setting ticks.");
 		return;
 	}
-	axis_data_t& axis_data = it->second;
 	axis_data.ticks.clear();
 	// Calculate the tick spacing in data coordinates based on the desired spacing in pixels and the current
 	double tick_spacing = std::abs(tick_spacing_pixels * inv_scale);
@@ -602,14 +535,7 @@ void zc_graph_::set_ticks(
 
 // Generate the ticks on a linear axis.
 void zc_graph_::generate_axis_ticks(int axis_number) {
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		// Axis data does not exist for this axis number, throw an error
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before generating linear axis ticks.");
-		return;
-	}
-	axis_data_t& axis_data = it->second;
+	axis_data_t& axis_data = axes_data_[axis_number];
 	// If tick orientation is NO_TICKS, return without generating ticks.
 	if (axis_data.tick_orientation == NO_TICKS) {
 		return;
@@ -624,8 +550,7 @@ void zc_graph_::generate_axis_ticks(int axis_number) {
 		tick_mark.text = tick.label;
 		tick_mark.text_style = zc_text_style({ FL_FOREGROUND_COLOR, textfont(), default_text_size_});
 		if (axis_number == 0) {
-			auto other_axis_it = axes_data_.find(1);
-			axis_data_t& other_axis_data = other_axis_it->second;
+			axis_data_t& other_axis_data = axes_data_[1];
 			// Horizontal axis - generate vertical ticks
 			// Get the pixel coords of the tick mark start.
 			plot_vertex_t start(convert_axis_point({tick.value, axis_data.position}));
@@ -649,8 +574,7 @@ void zc_graph_::generate_axis_ticks(int axis_number) {
 				tick_mark.text_alignment = ALIGN_RIGHT | ALIGN_BELOW;
 		}
 		else {
-			auto other_axis_it = axes_data_.find(0);
-			axis_data_t& other_axis_data = other_axis_it->second;
+			axis_data_t& other_axis_data = axes_data_[0];
 			// Vertical axis - generate horizontal ticks
 			plot_vertex_t start(convert_axis_point({axis_data.position, tick.value}));
 			tick_mark.segments.push_back(plot_segment_t(start));
@@ -672,14 +596,7 @@ void zc_graph_::generate_axis_ticks(int axis_number) {
 // Generate the axis label. 
 // this will located att he position in the axis_data for this axis number.
 void zc_graph_::generate_axis_label(int axis_number) {
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		// Axis data does not exist for this axis number, throw an error
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before generating axis label.");
-		return;
-	}
-	axis_data_t& axis_data = it->second;
+	axis_data_t& axis_data = axes_data_[axis_number];
 	// Add a text label at the specified position
 	plot_object_t label;
 	label.shape = TEXT_BOX;
@@ -708,27 +625,13 @@ void zc_graph_::generate_data_lines(int axis_number) {
 		throw std::invalid_argument("Cannot add a data set for axis number 0. Axis number 0 is reserved for the primary axis and is used to define the X or R coordinates for the plot. Set axis parameters for axis 0 and add data sets for other axis numbers to plot data against the primary axis.");
 		return;
 	}
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		// Axis data does not exist for this axis number, throw an error
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a data set.");
-		return;
-	}
-	// Check that axis 0 exists.
-	auto axis_0_it = axes_data_.find(0);
-	if (axis_0_it == axes_data_.end()) {
-		// Axis 0 does not exist, throw an error
-		throw std::invalid_argument("Axis number 0 does not exist. Set axis parameters for axis 0 before adding a data set.");
-		return;
-	}
 	// Delete existing data lines for this axis number, if any.
 	int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the data along is the other axis
 	plot_data_[plot_number].layer_data[DATA].clear();
 
 	for (const auto& data_set : data_sets_[axis_number]) {
-		axis_data_t& axis_data = it->second;
-		axis_data_t& axis_0_data = axis_0_it->second;
+		axis_data_t& axis_data = axes_data_[axis_number];
+		axis_data_t& axis_0_data = axes_data_[0];
 		// Add the data set to the plot data for this axis number
 		// Create a new plot line for this data set.
 		plot_object_t plot_line;
@@ -770,35 +673,15 @@ void zc_graph_::generate_density_plot(
 		throw std::invalid_argument("Density plot can only be generated for axis number 2 (the Z axis).");
 		return;
 	}
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		// Axis data does not exist for this axis number, throw an error
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before generating a density plot.");
-		return;
-	}
-	// Check that axis 0 and axis 1 exist.
-	auto axis_0_it = axes_data_.find(0);
-	if (axis_0_it == axes_data_.end()) {
-		// Axis 0 does not exist, throw an error
-		throw std::invalid_argument("Axis number 0 does not exist. Set axis parameters for axis 0 before generating a density plot.");
-		return;
-	}
-	auto axis_1_it = axes_data_.find(1);
-	if (axis_1_it == axes_data_.end()) {
-		// Axis 1 does not exist, throw an error
-		throw std::invalid_argument("Axis number 1 does not exist. Set axis parameters for axis 1 before generating a density plot.");
-		return;
-	}
 	// Generate the density plot for this axis number based 
 	// on the current ranges for the X and Y axes and the Z values in the data sets for this axis number.
 	// We need to create a bit map representing the Z values at each pixel in the current range for the X and Y axes, 
 	// then convert this to a plot object and add it to the plot data for this axis number.
 	plot_object_t density_plot;
 	density_plot.shape = BITMAP;
-	axis_data_t& x_axis_data = axis_0_it->second;
-	axis_data_t& y_axis_data = axis_1_it->second;
-	axis_data_t& z_axis_data = it->second;
+	axis_data_t& x_axis_data = axes_data_[0];
+	axis_data_t& y_axis_data = axes_data_[1];
+	axis_data_t& z_axis_data = axes_data_[axis_number];
 	// NB bitmap coordinates are in pixels so use the plot area dimensions in pixels 
 	// for the bitmap size, not the current ranges for the axes.
 	plot_bitmap_t bitmap;
@@ -850,6 +733,8 @@ void zc_graph_::generate_density_plot(
 			index += 3;
 		}
 	}
+	// Add the plot line to the plot data for this axis number.
+	plot_data_[2].layer_data[DATA].push_back(density_plot);
 }
 
 //! \brief Add a text label to the graph at a specific position.
@@ -857,8 +742,7 @@ void zc_graph_::generate_point_markers(
 	int axis_number
 ) {
 	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
+	if (axis_number >= static_cast<int>(axes_data_.size())) {
 		// Axis data does not exist for this axis number, throw an error
 		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a label.");
 		return;
@@ -866,8 +750,7 @@ void zc_graph_::generate_point_markers(
 	// Get the other axis number: If axis 0 then the primary axis.
 	int other_axis_number = (axis_number == 0) ? 1 : 0;
 	// Check the other axis data already exists for the other axis number
-	auto other_axis_it = axes_data_.find(other_axis_number);
-	if (other_axis_it == axes_data_.end()) {
+	if (other_axis_number >= static_cast<int>(axes_data_.size())) {
 		// Other axis data does not exist for this axis number, throw an error
 		throw std::invalid_argument("Other axis number " + std::to_string(other_axis_number) + " does not exist. Set axis parameters for both axes before adding a label.");
 		return;
@@ -876,8 +759,8 @@ void zc_graph_::generate_point_markers(
 		layer_t layer = point_marker.first;
 		auto& point_data = point_marker.second;
 		// Check the position is within the outer range for both axes
-		axis_data_t& axis_data = it->second;
-		axis_data_t& other_axis_data = other_axis_it->second;
+		axis_data_t& axis_data = axes_data_[axis_number];
+		axis_data_t& other_axis_data = axes_data_[other_axis_number];
 		axis_data_t& x_axis_data = (axis_number == 0) ? axis_data : other_axis_data;
 		axis_data_t& y_axis_data = (axis_number == 0) ? other_axis_data : axis_data;
 		// Fore each point marker...
@@ -919,22 +802,6 @@ void zc_graph_::generate_point_markers(
 void zc_graph_::generate_value_markers(
 	int axis_number
 ) {
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		// Axis data does not exist for this axis number, throw an error
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a label.");
-		return;
-	}
-	// Get the other axis number: If axis 0 then the primary axis.
-	int other_axis_number = (axis_number == 0) ? 1 : 0;
-	// Check the other axis data already exists for the other axis number
-	auto other_axis_it = axes_data_.find(other_axis_number);
-	if (other_axis_it == axes_data_.end()) {
-		// Other axis data does not exist for this axis number, throw an error
-		throw std::invalid_argument("Other axis number " + std::to_string(other_axis_number) + " does not exist. Set axis parameters for both axes before adding a label.");
-		return;
-	}
 	for (auto& axis_marker : value_markers_[axis_number]) {
 		layer_t layer = axis_marker.first;
 		auto& layer_markers = axis_marker.second;
@@ -953,8 +820,7 @@ void zc_graph_::generate_lozenge_markers(
 	int axis_number
 ) {
 	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
+	if (axis_number >= static_cast<int>(axes_data_.size())) {
 		// Axis data does not exist for this axis number, throw an error
 		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a label.");
 		return;
@@ -962,8 +828,7 @@ void zc_graph_::generate_lozenge_markers(
 	// Get the other axis number: If axis 0 then the primary axis.
 	int other_axis_number = (axis_number == 0) ? 1 : 0;
 	// Check the other axis data already exists for the other axis number
-	auto other_axis_it = axes_data_.find(other_axis_number);
-	if (other_axis_it == axes_data_.end()) {
+	if (other_axis_number >= static_cast<int>(axes_data_.size())) {
 		// Other axis data does not exist for this axis number, throw an error
 		throw std::invalid_argument("Other axis number " + std::to_string(other_axis_number) + " does not exist. Set axis parameters for both axes before adding a label.");
 		return;
@@ -1032,8 +897,8 @@ int zc_graph_::handle(int event) {
 			if (!shift_pressed) {
 				// If the mouse wheel event was on the plot and Shift is not pressed, 
 				// zoom on all axes.
-				for (auto& it : axes_data_) {
-					zoom_axis(it.first, mouse_x, mouse_y, dy);
+				for (int axis = 0; axis < num_axes_; axis++) {
+					zoom_axis(axis, mouse_x, mouse_y, dy);
 					handled = true;
 				}
 			}
@@ -1071,8 +936,8 @@ int zc_graph_::handle(int event) {
 				}
 				else {
 					// If the double-click was on the plot, reset all axes to their default range.
-					for (auto& it : axes_data_) {
-						reset_zoom(it.first);
+					for (int axis = 0; axis < num_axes_; axis++) {
+						reset_zoom(axis);
 					}
 					redraw();
 					// Return 0 to indicate we do not want a drag event.
@@ -1116,7 +981,7 @@ int zc_graph_::handle(int event) {
 			}
 			else if (Fl::event_button() == FL_RIGHT_MOUSE) {
 				scroll_axis(0, dx);
-				if (axes_data_.find(2) != axes_data_.end()) {
+				if (2 < static_cast<int>(axes_data_.size())) {
 					scroll_axis(2, -dy);
 				}
 				redraw();
@@ -1133,13 +998,12 @@ void zc_graph_::zoom_axis(int axis_number, int mouse_x, int mouse_y, int zoom_fa
 		return;
 	}
 	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
+	if (axis_number >= static_cast<int>(axes_data_.size())) {
 		// Axis data does not exist for this axis number, throw an error
 		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before zooming.");
 		return;
 	}
-	axis_data_t& axis_data = it->second;
+	axis_data_t& axis_data = axes_data_[axis_number];
 	data_point_t mouse_position;
 	switch (zoom_capability_) {
 	case ZOOM_ON_ORIGIN:
@@ -1184,13 +1048,12 @@ void zc_graph_::scroll_axis(int axis_number, int scroll_offset) {
 		return;
 	}
 	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
+	if (axis_number >= static_cast<int>(axes_data_.size())) {
 		// Axis data does not exist for this axis number, throw an error
 		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before scrolling.");
 		return;
 	}
-	axis_data_t& axis_data = it->second;
+	axis_data_t& axis_data = axes_data_[axis_number];
 	// Calculate the new range based on the scroll offset and current scale.
 	double scroll_amount = scroll_offset * axis_data.inv_scale;
 	double new_min, new_max;
@@ -1214,13 +1077,12 @@ void zc_graph_::scroll_axis(int axis_number, int scroll_offset) {
 // Reset the zoom for the specified axis number to the default range.
 void zc_graph_::reset_zoom(int axis_number) {
 	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
+	if (axis_number >= static_cast<int>(axes_data_.size())) {
 		// Axis data does not exist for this axis number, throw an error
 		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before resetting zoom.");
 		return;
 	}
-	axis_data_t& axis_data = it->second;
+	axis_data_t& axis_data = axes_data_[axis_number];
 	axis_data.current_range = axis_data.default_range;
 	invalidate_layout();
 }
@@ -1235,15 +1097,20 @@ void zc_graph_::resize(int X, int Y, int W, int H) {
 	}
 }
 
+// Clear ephemeral plot data
+void zc_graph_::clear_plot_data() {
+	for (auto& plot_data : plot_data_) {
+		for (auto& layer_pair : plot_data.layer_data) {
+			layer_pair.second.clear();
+		}
+	}
+}
+
 // draw the widget
 void zc_graph_::draw() {
 
 	// Clear the plot layer data for all data types and layers.
-	for (auto& data_pair : plot_data_) {
-		for (auto& layer_pair : data_pair.second.layer_data) {
-			layer_pair.second.clear();
-		}
-	}
+	clear_plot_data();
 	// Set out the positions of the axes and plot area, set the 
 	// drawing transformation schemata.
 	// Only recalculate layout if it's been invalidated.
@@ -1286,15 +1153,15 @@ void zc_graph_::draw() {
 			tighter_clip = true;
 		}
 		// For each of the data types...
-		for (const auto& data_pair : plot_data_) {
+		for (const auto& plot_data : plot_data_) {
 			// If there is data for this layer and data type, draw it.
-			if (data_pair.second.layer_data.find(layer) == data_pair.second.layer_data.end()) {
+			if (plot_data.layer_data.find(layer) == plot_data.layer_data.end()) {
 				continue;
 			}
 			// Set the transformation for this data type based on the axis parameters
 			fl_push_matrix();
-			apply_transformations(data_pair.second.xform_schema);
-			const std::vector<plot_object_t>& layer_data = data_pair.second.layer_data.at(layer);
+			apply_transformations(plot_data.xform_schema);
+			const std::vector<plot_object_t>& layer_data = plot_data.layer_data.at(layer);
 			// For each of the plot objects in this layer for this data type...
 			for (const auto& plot_object : layer_data) {
 				draw_plot_object(plot_object);
@@ -1309,7 +1176,7 @@ void zc_graph_::draw() {
 }
 
 //! \brief Apply the necessary transformations to the FLTK drawing context based on the specified transformation schema.
-void zc_graph_::apply_transformations(plot_xform_t schema) {
+void zc_graph_::apply_transformations(const plot_xform_t& schema) {
 	// Calculate the scaling factors and origin for the transformation.
 	// I think this is how the transformation should work.
 	double scale_x = w() / (schema.x_max_ - schema.x_min_);
@@ -1325,17 +1192,14 @@ zc_graph_::data_point_t zc_graph_::pixel_to_data(int axis_number, int pixel_x, i
 	// For axis 0 use axis 1 parameters.
 	int drawing_axis_number = (axis_number == 0) ? 1 : axis_number;
 	// Check the plot data already exists for this axis number
-	auto plot_data_it = plot_data_.find(drawing_axis_number);
-	if (plot_data_it == plot_data_.end()) {
+	if (drawing_axis_number >= static_cast<int>(plot_data_.size())) {
 		// Plot data does not exist for this axis number, throw an error
 		throw std::invalid_argument("Plot data does not exist for axis number " + std::to_string(drawing_axis_number) + ". Set axis parameters and add data sets before converting pixel to data coordinates.");
-		return { 0.0F, 0.0F };
 	}
-	const plot_xform_t& xform_schema = plot_data_it->second.xform_schema;
-	double inv_scale_x = (xform_schema.x_max_ - xform_schema.x_min_) / w();
-	double inv_scale_y = (xform_schema.y_min_ - xform_schema.y_max_) / h();
-	double data_x = xform_schema.x_min_ + (pixel_x - x()) * inv_scale_x;
-	double data_y = xform_schema.y_max_ + (pixel_y - y()) * inv_scale_y;
+	const plot_xform_t& xform_schema = plot_data_[drawing_axis_number].xform_schema;
+	// Use pre-calculated inverse scales
+	double data_x = xform_schema.x_min_ + (pixel_x - x()) * xform_schema.inv_scale_x_;
+	double data_y = xform_schema.y_max_ + (pixel_y - y()) * xform_schema.inv_scale_y_;
 	return { data_x, data_y };
 }
 
@@ -1549,16 +1413,25 @@ Fl_Color zc_graph_::density_colour(double z_value) const {
 	// Find the first colour map entry with a z_value greater than the input z_value.
 	// Normalise Z between 0 and 1 within the current range of axis 2
 	double z_min = axes_data_.at(2).current_range.min;
-	double z_max = axes_data_.at(2).current_range.max;
+	double z_max = axes_data_.at(2).current_range.max / 4.0;
+	double z;
 	if (z_max > z_min) {
-		z_value = (z_value - z_min) / (z_max - z_min);
+		if (z_value > z_max) {
+			z = 1.0;
+		}
+		else if (z_value < z_min) {
+			z = 0.0;
+		}
+		else {
+			z = (z_value - z_min) / (z_max - z_min);
+		}
 	}
 	else {
-		z_value = 0.0; // If the range is invalid, default to 0.
+		z = 0.0; // If the range is invalid, default to 0.
 	}
-	// Z = 0 select first entry, Z = 1 select last entry, select linearly between them.
 	size_t num_entries = colour_map_.size();
-	size_t index = static_cast<size_t>(z_value * (num_entries - 1));
+	size_t index = static_cast<size_t>(num_entries * z);
+	// Z = 0 select first entry, Z = 1 select last entry, select linearly between them.
 	return colour_map_[index];
 }
 
@@ -1583,6 +1456,9 @@ void zc_graph_cartesian::layout() {
 	xform_schema.x_max_ = x_max;
 	xform_schema.y_min_ = y_min - axis_width_ * dpp_y;
 	xform_schema.y_max_ = y_max;
+	// Pre-calculate inverse scales for pixel_to_data conversion
+	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
+	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
 	plot_data_[1].xform_schema = xform_schema;
 	plot_data_[1].data_area.display_min = { x_min, y_min };
 	plot_data_[1].data_area.display_max = { x_max, y_max };
@@ -1626,25 +1502,14 @@ void zc_graph_cartesian::generate_value_marker(
 	layer_t layer,
 	const value_marker_t& marker
 ) {
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a marker.");
-		return;
-	}
 	// Get the other axis number: If axis 0 then axis 1.
 	int other_axis_number = (axis_number == 0) ? 1 : 0;
-	auto other_axis_it = axes_data_.find(other_axis_number);
-	if (other_axis_it == axes_data_.end()) {
-		throw std::invalid_argument("Other axis number " + std::to_string(other_axis_number) + " does not exist. Set axis parameters for both axes before adding a marker.");
-		return;
-	}
 	// Check the values are within the outer range for this axis
-	axis_data_t& axis_data = it->second;
+	axis_data_t& axis_data = axes_data_[axis_number];
 	if (!axis_data.current_range.contains(marker.value_1) || !axis_data.current_range.contains(marker.value_2)) {
 		return;
 	}
-	axis_data_t& other_axis_data = other_axis_it->second;
+	axis_data_t& other_axis_data = axes_data_[other_axis_number];
 
 	int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the marker along is the other axis
 
@@ -1716,6 +1581,9 @@ void zc_graph_cartesian_2y::layout() {
 	xform_schema.x_max_ = x_max + v_axis_width_ * dpp_x;
 	xform_schema.y_min_ = y_min - axis_width_ * dpp_y;
 	xform_schema.y_max_ = y_max;
+	// Pre-calculate inverse scales for pixel_to_data conversion
+	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
+	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
 	plot_data_[1].xform_schema = xform_schema;
 	plot_data_[1].data_area.display_min = { x_min, y_min };
 	plot_data_[1].data_area.display_max = { x_max, y_max };
@@ -1739,6 +1607,9 @@ void zc_graph_cartesian_2y::layout() {
 	xform_schema_2.x_max_ = x_max + v_axis_width_ * dpp_x;
 	xform_schema_2.y_min_ = y2_min - axis_width_ * dpp_y2;
 	xform_schema_2.y_max_ = y2_max;
+	// Pre-calculate inverse scales for pixel_to_data conversion
+	xform_schema_2.inv_scale_x_ = (xform_schema_2.x_max_ - xform_schema_2.x_min_) / w();
+	xform_schema_2.inv_scale_y_ = (xform_schema_2.y_min_ - xform_schema_2.y_max_) / h();
 	plot_data_[2].xform_schema = xform_schema_2;
 	plot_data_[2].data_area.display_min = { x_min, y2_min };
 	plot_data_[2].data_area.display_max = { x_max, y2_max };
@@ -1778,25 +1649,14 @@ void zc_graph_cartesian_2y::generate_value_marker(
 	layer_t layer,
 	const value_marker_t& marker
 ) {
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a marker.");
-		return;
-	}
 	// For axis 0 (X), use axis 1 (YL) as the other axis. For axis 1 or 2 (YL or YR), use axis 0 (X) as the other axis.
 	int other_axis_number = (axis_number == 0) ? 1 : 0;
-	auto other_axis_it = axes_data_.find(other_axis_number);
-	if (other_axis_it == axes_data_.end()) {
-		throw std::invalid_argument("Other axis number " + std::to_string(other_axis_number) + " does not exist. Set axis parameters for both axes before adding a marker.");
-		return;
-	}
 	// Check the values are within the outer range for this axis
-	axis_data_t& axis_data = it->second;
+	axis_data_t& axis_data = axes_data_[axis_number];
 	if (!axis_data.current_range.contains(marker.value_1) || !axis_data.current_range.contains(marker.value_2)) {
 		return;
 	}
-	axis_data_t& other_axis_data = other_axis_it->second;
+	axis_data_t& other_axis_data = axes_data_[other_axis_number];
 
 	int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the marker along is the other axis
 
@@ -1869,6 +1729,9 @@ void zc_graph_cart_overlay::layout() {
 	xform_schema.x_max_ = x_max;
 	xform_schema.y_min_ = y_min;
 	xform_schema.y_max_ = y_max;
+	// Pre-calculate inverse scales for pixel_to_data conversion
+	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
+	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
 	plot_data_[1].xform_schema = xform_schema;
 	plot_data_[1].data_area.display_min = { x_min, y_min };
 	plot_data_[1].data_area.display_max = { x_max, y_max };
@@ -1938,25 +1801,14 @@ void zc_graph_cart_overlay::generate_value_marker(
 	layer_t layer,
 	const value_marker_t& marker
 ) {
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a marker.");
-		return;
-	}
 	// Get the other axis number: If axis 0 then axis 1.
 	int other_axis_number = (axis_number == 0) ? 1 : 0;
-	auto other_axis_it = axes_data_.find(other_axis_number);
-	if (other_axis_it == axes_data_.end()) {
-		throw std::invalid_argument("Other axis number " + std::to_string(other_axis_number) + " does not exist. Set axis parameters for both axes before adding a marker.");
-		return;
-	}
 	// Check the values are within the outer range for this axis
-	axis_data_t& axis_data = it->second;
+	axis_data_t& axis_data = axes_data_[axis_number];
 	if (!axis_data.current_range.contains(marker.value_1) || !axis_data.current_range.contains(marker.value_2)) {
 		return;
 	}
-	axis_data_t& other_axis_data = other_axis_it->second;
+	axis_data_t& other_axis_data = axes_data_[other_axis_number];
 
 	int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the marker along is the other axis
 
@@ -2026,6 +1878,9 @@ void zc_graph_polar::layout() {
 	xform_schema.x_max_ = (w() * dpp_r / 2.0);
 	xform_schema.y_min_ = -(h() * dpp_r / 2.0);
 	xform_schema.y_max_ = (h() * dpp_r / 2.0);
+	// Pre-calculate inverse scales for pixel_to_data conversion
+	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
+	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
 	plot_data_[1].xform_schema = xform_schema;
 	//double rmax_x = plot_w * dpp_r / 2.0;
 	//double rmax_y = plot_h * dpp_r / 2.0;
@@ -2060,25 +1915,14 @@ void zc_graph_polar::generate_value_marker(
 	layer_t layer,
 	const value_marker_t& marker
 ) {
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a marker.");
-		return;
-	}
 	// Get the other axis number: If axis 0 (R) then axis 1 (Theta).
 	int other_axis_number = (axis_number == 0) ? 1 : 0;
-	auto other_axis_it = axes_data_.find(other_axis_number);
-	if (other_axis_it == axes_data_.end()) {
-		throw std::invalid_argument("Other axis number " + std::to_string(other_axis_number) + " does not exist. Set axis parameters for both axes before adding a marker.");
-		return;
-	}
 	// Check the values are within the outer range for this axis
-	axis_data_t& axis_data = it->second;
+	axis_data_t& axis_data = axes_data_[axis_number];
 	if (!axis_data.current_range.contains(marker.value_1) || !axis_data.current_range.contains(marker.value_2)) {
 		return;
 	}
-	axis_data_t& other_axis_data = other_axis_it->second;
+	axis_data_t& other_axis_data = axes_data_[other_axis_number];
 
 	int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the marker along is the other axis
 
@@ -2190,6 +2034,9 @@ void zc_graph_smith::layout() {
 	xform_schema.x_max_ = (w() * dpp_r / 2.0);
 	xform_schema.y_min_ = -(h() * dpp_r / 2.0);
 	xform_schema.y_max_ = (h() * dpp_r / 2.0);
+	// Pre-calculate inverse scales for pixel_to_data conversion
+	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
+	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
 	plot_data_[1].xform_schema = xform_schema;
 	//double rmax_x = plot_w * dpp_r / 2.0;
 	//double rmax_y = plot_h * dpp_r / 2.0;
@@ -2237,11 +2084,6 @@ void zc_graph_smith::generate_value_marker(
 	const value_marker_t& marker
 ) {
 	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before adding a marker.");
-		return;
-	}
 	// Do not support shaded area markers for the Smith chart, so check the values are the same.
 	if (marker.value_1 != marker.value_2) {
 		throw std::invalid_argument("Smith chart does not support shaded area markers. Value 1 and Value 2 must be the same.");
@@ -2333,20 +2175,13 @@ void zc_graph_smith::set_ticks(
 	// R = 0, 0.2, 0.5, 1, 2, 3 and 5, and X = +/- 0.2, 0.5, 1, 2, 3 and 5.
 	// I want to be able to calculate tick values based on the tick spacing in pixels.
 	// For now use the same fixed tick values as nanovna-saver.
-	// Check the axis data already exists for this axis number
-	auto it = axes_data_.find(axis_number);
-	if (it == axes_data_.end()) {
-		// Axis data does not exist for this axis number, throw an error
-		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before setting ticks.");
-		return;
-	}
 	// Check the current range is valid
-	if (!it->second.current_range.is_valid()) {
+	axis_data_t& axis_data = axes_data_[axis_number];
+	if (!axis_data.current_range.is_valid()) {
 		// Current range is not valid, throw an error
 		throw std::invalid_argument("Current range is not valid for axis number " + std::to_string(axis_number) + ". Set axis ranges before setting ticks.");
 		return;
 	}
-	axis_data_t& axis_data = it->second;
 	if (axis_number == 0) {
 		// Resistance axis - ticks at R = 0, 0.2, 0.5, 1, 2, 3 and 5.
 		std::vector<double> tick_values = { 0.0, 0.2, 0.5, 1.0, 2.0, 3.0, 5.0 };

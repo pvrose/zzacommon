@@ -418,6 +418,8 @@ public:
 		double y_min_ = 0;    //!< Minimum Y-coordinate of the plot in pixels. Maps onto y() + h() of the widget (i.e. Y increases upwards).
 		double x_max_ = 1;     //!< Maximum X-coordinate of the plot in pixels. Maps onto x() + w() of the widget.
 		double y_max_ = 1;     //!< Maximum Y-coordinate of the plot in pixels. Maps onto y() of the widget.
+		double inv_scale_x_ = 0.0; //!< Pre-calculated inverse X scale: (x_max_ - x_min_) / width
+		double inv_scale_y_ = 0.0; //!< Pre-calculated inverse Y scale: (y_min_ - y_max_) / height
 		density_xform_t z_xform;     //!< Density transformation matrix.
 	};
 
@@ -479,6 +481,11 @@ public:
 	//! \param num_axes The number of axes to support for the graph. This should be set before setting the parameters for each axis.
 	void set_num_axes(int num_axes) {
 		num_axes_ = num_axes;
+		plot_data_.resize(num_axes + 1); // +1 because axis numbers start from 1
+		axes_data_.resize(num_axes);
+		value_markers_.resize(num_axes);
+		point_markers_.resize(num_axes);
+		lozenge_markers_.resize(num_axes);
 	}
 
 	//! \brief Specify the basic parameters of an axis.
@@ -527,9 +534,11 @@ public:
 	//! \brief Add a data set of 3D points for a density plot.
 	//! \param axis_number The number of the data set to add (starting from 0). Should be 2, plotted against X and Y axes.
 	//! \param data The 3D data points to plot for this data set. A pointer is used to allow updating the data without needing to re-add the data set.
+	//! \param colour_map Array of N colours - Z-values allocated a colour from this map. Z < Zmax/N allocated 0 et sim. 
 	void add_data_set(
 		int axis_number,
-		data_set_dens_t* data
+		data_set_dens_t* data,
+		std::vector<Fl_Color> colour_map
 	);
 
 	//! \brief Add a marker to the graph at a specific value or range of values.
@@ -734,7 +743,7 @@ protected:
 
 	//! \brief Apply the transformation schema to the data points for plotting.
 	//! \param schema The transformation schema to apply.
-	void apply_transformations(plot_xform_t schema);
+	void apply_transformations(const plot_xform_t& schema);
 
 	//! \brief Return the data coordinates corresponding to the given pixel coordinates.
 	//! \param axis_number The number of the axis to use for the transformation (starting from 1)
@@ -874,6 +883,9 @@ protected:
 		return graph_type_ == DENSITY;
 	}
 
+	//! \brief Clear ephemeral plot data
+	void clear_plot_data();
+
 	//! \brief The number of axes supported
 	int num_axes_ = 0;
 
@@ -890,33 +902,33 @@ protected:
 	//! \brief The graph_type for the graph, which defines the layout of the axes and plot area.
 	graph_type_t graph_type_ = NO_DATA;
 
-	//! \brief The axis data for the graph, keyed by axis number (starting from 0).
+	//! \brief The axis data for the graph, indexed by axis number (starting from 0).
 	//! 
 	//! Ths data will be applied to the AXES amd GRIDLINES layers.
-	std::map<int, axis_data_t> axes_data_;
+	std::vector<axis_data_t> axes_data_;
 
-	//! \brief The value markers for the graph, keyed by axis number (starting from 0).
+	//! \brief The value markers for the graph, indexed by axis number (starting from 0).
 	//! 
 	//! This data will be applied to either the BACKGROUND or FOREGROUND layer, as required 
 	//! by the application.
-	std::map<int, std::map<layer_t, std::vector<value_marker_t>>> value_markers_;
+	std::vector<std::map<layer_t, std::vector<value_marker_t>>> value_markers_;
 
-	//! \brief The point markers for the graph, keyed by axis number (starting from 0).
+	//! \brief The point markers for the graph, indexed by axis number (starting from 0).
 	//! 
 	//! This data will be applied to either the BACKGROUND or FOREGROUND layer, as required
 	//! by the application.
-	std::map<int, std::map<layer_t, std::vector<point_marker_t>>> point_markers_;
+	std::vector<std::map<layer_t, std::vector<point_marker_t>>> point_markers_;
 
-	//! \brief The lozenge markers for the graph, keyed by axis number (starting from 0).
+	//! \brief The lozenge markers for the graph, indexed by axis number (starting from 0).
 	//! 
 	//! This data may be applied on any layer, but typically with DATA or FOREGROUND layer.
-	std::map<int, std::map<layer_t, std::vector<lozenge_marker_t>>> lozenge_markers_;
+	std::vector<std::map<layer_t, std::vector<lozenge_marker_t>>> lozenge_markers_;
 
 	//! \brief The data for plotting.
 	//! 
 	//! This data will be regenerated from the application data and configuration
 	//! parameters every time the widget needs to be redrawn.
-	std::map<int, plot_data_t> plot_data_; //!< Map of data sets to plot, keyed by axis number (starting from 1).
+	std::vector<plot_data_t> plot_data_; //!< Vector of data sets to plot, indexed by axis number (starting from 1).
 
 	//! \brief The width of the axes in pixels. This is used to calculate the dimensions of the plot area and the transformation schema for the data points.
 	int axis_width_ = 50;
