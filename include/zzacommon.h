@@ -30,6 +30,12 @@ ZZACOMMON is based in part on the work of the FLTK project <A HREF=https://www.f
 
 It provides a number of FLTK-derived widgets and other object classes for general use:
 
+- zc_async_deque
+This is a thread-safe deque that can be used to pass data between threads. It provides
+some of the basic functionality of std::deque with access locking.
+- zc_async_queue
+This is a thread-safe queue that can be used to pass data between threads. It provides
+some of the basic functionality of std::queue with access locking.
 - zc_banner
   This is a banner window that provides a progress wheel and status message screen. 
 - zc_button_dialog
@@ -64,25 +70,30 @@ for widget operations or used within custom callbacks.
 See \ref zc_callback.h.
 - zc_drawing.h
 This is a set of drawing constants to maintain a consistent "look-and-feel" across
-all projects.
+all projects. It is deprecated and will be removed in a future release. Use zc_fltk.h instead.
 - zc_file_holder
 This class provides a consistent approach to filestore management used across all
 projects.
+- zc_fltk.h
+This is a set of FLTK extensions that provide additional functionality.
 - zc_graph
 This class provides a simple X/Y line graph. 
-This is deprecated in favour of zc_graph_xy and zc_graph_x2y, but is retained 
+This is deprecated in favour of zc_graph_, but is retained 
 for backward compatibility with older projects.
 - zc_graph_
 This is the base class for all graph types.
 See \ref zc_graph_. It has the following derived classes.
   - zc_graph_cartesian
-This class provides a Cartesian line graph and is derived from zc_graph_base.
+This class provides a Cartesian line graph and is derived from zc_graph_.
   - zc_graph_cartesian_2y
 This class provides a Cartesian line graph with two Y axes and is derived from zc_graph_cartesian.
+  - zc_graph_density
+This class provides a density plot showing Z values as a function of X and Y and
+is derived from zc_graph_cartesian.
   - zc_graph_polar
-This class provides a polar line graph and is derived from zc_graph_base.
+This class provides a polar line graph and is derived from zc_graph_.
   - zc_graph_smith
-This class provides a Smith chart and is derived from zc_graph_base.
+This class provides a Smith chart and is derived from zc_graph_.
 - zc_input_hierch
 This is an extension of Fl_Input_Choice that uses a hierarchic menu for use where
 there are a large number of menu options. The supplied options are split into
