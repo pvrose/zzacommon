@@ -28,6 +28,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cfloat>
+#include <list>
 #include <map>
 #include <string>
 #include <tuple>
