@@ -713,7 +713,6 @@ void zc_graph_::generate_density_plot(
 	size_t data_row_size = density_data_set_->x_values.size();
 	for (int y = 0; y < plot_h_; y++) {
 		for (int x = 0; x < plot_w_; x++) {
-			data_point_t point = pixel_to_data(1, plot_x_ + x, plot_y_ + y);
 			double z_value = 0.0;
 			// Calculate the Z value at this point based on the data sets for this axis number.
 			// Interpolation coefficients will have been set in layout().
