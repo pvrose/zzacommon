@@ -710,7 +710,7 @@ void zc_graph_::generate_density_plot(
 	// then calculate the Z value at that point based on the data sets for this axis number, and set the pixel colour based on the Z value.
 	int index = 0;
 	auto& z_xform = plot_data_[axis_number].xform_schema.z_xform;
-	size_t data_row_size = density_data_set_->y_values.size();
+	size_t data_row_size = density_data_set_->x_values.size();
 	for (int y = 0; y < plot_h_; y++) {
 		for (int x = 0; x < plot_w_; x++) {
 			data_point_t point = pixel_to_data(1, plot_x_ + x, plot_y_ + y);
@@ -1118,61 +1118,71 @@ void zc_graph_::draw() {
 		layout();
 		layout_dirty_ = false;
 	}
-	// Generate the axis lines, ticks, grid lines and labels for each axis based on the current parameters and ranges.
-	for (int i = 0; i < num_axes_; ++i) {
-		generate_axis_grid(i);
-		generate_value_markers(i);
-		generate_point_markers(i);
-	}
 
-	// Regenerate data for each data set.
-	for (auto& data_set_pair : data_sets_) {
-		generate_data_lines(data_set_pair.first);
-	}
-
-	// Regenerate data for each 3D data set.
-	if (supports_3d_plots()) {
-		generate_density_plot(2);
-	}
-
-	// Generate the data lozenge markers for each axis.
-	for (int i = 0; i < num_axes_; ++i) {
-		generate_lozenge_markers(i);
-	}
-
-	// Clear the drawing area
-	fl_push_clip(x(), y(), w(), h());
-	fl_color(color());
-	fl_rectf(x(), y(), w(), h());
-	// For each of the layers....
-	for (layer_t layer = BACKGROUND; layer <= MASK; ((uint8_t&)layer)++) {
-		bool tighter_clip = false;
-		if (layer == BACKGROUND || layer == FOREGROUND || layer == DATA) {
-			// Set tighter clipping for these layers to prevent drawing outside the plot area.
-			fl_push_clip(plot_x_, plot_y_, plot_w_, plot_h_);
-			tighter_clip = true;
+	if (active()) {
+		// Generate the axis lines, ticks, grid lines and labels for each axis based on the current parameters and ranges.
+		for (int i = 0; i < num_axes_; ++i) {
+			generate_axis_grid(i);
+			generate_value_markers(i);
+			generate_point_markers(i);
 		}
-		// For each of the data types...
-		for (const auto& plot_data : plot_data_) {
-			// If there is data for this layer and data type, draw it.
-			if (plot_data.layer_data.find(layer) == plot_data.layer_data.end()) {
-				continue;
+
+		// Regenerate data for each data set.
+		for (auto& data_set_pair : data_sets_) {
+			generate_data_lines(data_set_pair.first);
+		}
+
+		// Regenerate data for each 3D data set.
+		if (supports_3d_plots()) {
+			generate_density_plot(2);
+		}
+
+		// Generate the data lozenge markers for each axis.
+		for (int i = 0; i < num_axes_; ++i) {
+			generate_lozenge_markers(i);
+		}
+
+		// Clear the drawing area
+		fl_push_clip(x(), y(), w(), h());
+		fl_color(color());
+		fl_rectf(x(), y(), w(), h());
+		// For each of the layers....
+		for (layer_t layer = BACKGROUND; layer <= MASK; ((uint8_t&)layer)++) {
+			bool tighter_clip = false;
+			if (layer == BACKGROUND || layer == FOREGROUND || layer == DATA) {
+				// Set tighter clipping for these layers to prevent drawing outside the plot area.
+				fl_push_clip(plot_x_, plot_y_, plot_w_, plot_h_);
+				tighter_clip = true;
 			}
-			// Set the transformation for this data type based on the axis parameters
-			fl_push_matrix();
-			apply_transformations(plot_data.xform_schema);
-			const std::vector<plot_object_t>& layer_data = plot_data.layer_data.at(layer);
-			// For each of the plot objects in this layer for this data type...
-			for (const auto& plot_object : layer_data) {
-				draw_plot_object(plot_object);
+			// For each of the data types...
+			for (const auto& plot_data : plot_data_) {
+				// If there is data for this layer and data type, draw it.
+				if (plot_data.layer_data.find(layer) == plot_data.layer_data.end()) {
+					continue;
+				}
+				// Set the transformation for this data type based on the axis parameters
+				fl_push_matrix();
+				apply_transformations(plot_data.xform_schema);
+				const std::vector<plot_object_t>& layer_data = plot_data.layer_data.at(layer);
+				// For each of the plot objects in this layer for this data type...
+				for (const auto& plot_object : layer_data) {
+					draw_plot_object(plot_object);
+				}
+				fl_pop_matrix();
 			}
-			fl_pop_matrix(); 
+			if (tighter_clip) {
+				fl_pop_clip();
+			}
 		}
-		if (tighter_clip) {
-			fl_pop_clip();
-		}
+		fl_pop_clip();
 	}
-	fl_pop_clip();
+	else {
+		// Clear the drawing area
+		fl_push_clip(x(), y(), w(), h());
+		fl_color(FL_BACKGROUND_COLOR);
+		fl_rectf(x(), y(), w(), h());
+		fl_pop_clip();
+	}
 }
 
 //! \brief Apply the necessary transformations to the FLTK drawing context based on the specified transformation schema.
@@ -1429,8 +1439,8 @@ Fl_Color zc_graph_::density_colour(double z_value) const {
 	else {
 		z = 0.0; // If the range is invalid, default to 0.
 	}
-	size_t num_entries = colour_map_.size();
-	size_t index = static_cast<size_t>(num_entries * z);
+	size_t max_index = colour_map_.size() - 1;
+	size_t index = static_cast<size_t>(max_index * z);
 	// Z = 0 select first entry, Z = 1 select last entry, select linearly between them.
 	return colour_map_[index];
 }

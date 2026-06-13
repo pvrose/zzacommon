@@ -121,6 +121,8 @@ set(ZZAP_CPPFILES
 # Header files - used as dependencies for API documentation
 set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_debug.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_async_deque.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_async_queue.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_audio_data.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_banner.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_button_dialog.h
