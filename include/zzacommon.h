@@ -106,6 +106,9 @@ defined by FLTK such as FL_SOLID.
 This class provides a protocol handler for an XML-RPC inter-application interface.
 It converts between the XML passed over the interface and methods using the 
 data structure zc_rpc_data_item.
+- zc_running_average
+This class provides a simple FIFO/Implementer to provide a running arithmetic mean
+over a fixed number of values.
 - zc_serial
 Thos class provides a lightweight wrapper around the boost::asio::serial_port library
 to provide simple read/write access to a serial port.

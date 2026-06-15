@@ -142,6 +142,7 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_password_input.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_rpc_data_item.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_rpc_handler.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_running_average.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_serial.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_settings.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_socket_server.h
