@@ -30,9 +30,22 @@ class zc_async_queue {
 	mutable std::mutex mutex_;
 	//! \brief Condition variable to notify waiting threads when new data is available.
 	std::condition_variable cond_;
+	//! \brief Flag to indicate that the queue is being shut down.
+	bool shutdown_ = false;
 
 
 public:
+	//! \brief Destructor - wake up all waiting threads before destruction
+	~zc_async_queue() {
+		shutdown();
+	}
+
+	//! \brief Shutdown the queue and wake up all waiting threads
+	void shutdown() {
+		std::lock_guard<std::mutex> lock(mutex_);
+		shutdown_ = true;
+		cond_.notify_all(); // Wake up all waiting threads
+	}
 	//! \brief Push a new value into the queue and notify one waiting thread.
 	void push(T value) {
 		std::lock_guard<std::mutex> lock(mutex_);
@@ -62,13 +75,18 @@ public:
 	}
 	
 	//! \brief Wait until the queue is not empty and pop the front element.
-	void wait_and_pop(T& value) {
+	//! \return false if the queue is shutting down, true if a value was successfully popped
+	bool wait_and_pop(T& value) {
 		std::unique_lock<std::mutex> lock(mutex_);
-		while (queue_.empty()) {
-			cond_.wait(lock);  // Wait until notified by push()
+		while (queue_.empty() && !shutdown_) {
+			cond_.wait(lock);  // Wait until notified by push() or shutdown()
+		}
+		if (shutdown_ && queue_.empty()) {
+			return false; // Queue is shutting down and empty
 		}
 		value = std::move(queue_.front());
 		queue_.pop();
+		return true;
 	}
 
 	//! \brief Check if the queue is empty.

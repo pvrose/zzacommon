@@ -116,6 +116,7 @@ set(ZZAD_CPPFILES
 # PortAudio component - requires PortAudio
 set(ZZAP_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_speaker.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_audio.cpp
 )
 
 # Header files - used as dependencies for API documentation
@@ -123,6 +124,7 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_debug.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_async_deque.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_async_queue.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_audio.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_audio_data.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_banner.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_button_dialog.h
