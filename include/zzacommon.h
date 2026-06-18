@@ -76,10 +76,6 @@ This class provides a consistent approach to filestore management used across al
 projects.
 - zc_fltk.h
 This is a set of FLTK extensions that provide additional functionality.
-- zc_graph
-This class provides a simple X/Y line graph. 
-This is deprecated in favour of zc_graph_, but is retained 
-for backward compatibility with older projects.
 - zc_graph_
 This is the base class for all graph types.
 See \ref zc_graph_. It has the following derived classes.

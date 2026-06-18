@@ -17,7 +17,7 @@
 */
 #pragma once
 
-//! \file zc_speaker.h
+//! \file zc_audio.h
 //! \brief Audio input/output using PortAudio
 
 // PortAudio

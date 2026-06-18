@@ -115,7 +115,6 @@ set(ZZAD_CPPFILES
 
 # PortAudio component - requires PortAudio
 set(ZZAP_CPPFILES
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_speaker.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_audio.cpp
 )
 
@@ -148,7 +147,6 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_serial.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_settings.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_socket_server.h
-  ${ZZACOMMON_INCLUDE_DIR}/zc_speaker.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_status.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_symbols.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_tabs_nonav.h

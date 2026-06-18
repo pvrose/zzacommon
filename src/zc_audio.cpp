@@ -304,7 +304,9 @@ std::vector<std::string> zc_audio::get_ports(double sample_rate) {
         for (auto ix = 0; ix < num_devices; ix++) {
             info = Pa_GetDeviceInfo(ix);
             if (info) {
+#ifdef _DEBUG
                 printf("DEBUG: Checking port %d (%s)", ix, info->name);
+#endif
                 // Set output stream parametsr
                 PaStreamParameters parameters;
                 parameters.device = ix;   // \todo set up from settings
@@ -325,10 +327,12 @@ std::vector<std::string> zc_audio::get_ports(double sample_rate) {
                     port_names_.push_back(std::string(info->name));
                     snprintf(t, sizeof(t), "%0d: %s", ix, info->name);
                     annotated_names_.push_back(std::string(t));
+#ifdef _DEBUG
                     printf(" - OK\n");
                 }
                 else {
                     printf(" - Not OK\n");
+#endif
                 }
             }
         }
