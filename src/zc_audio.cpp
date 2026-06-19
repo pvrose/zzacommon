@@ -49,35 +49,34 @@ zc_audio::zc_audio(
     monitor_audio_ = monitor_data;
     buffer_depth_ = BUFFER_DEPTH;
     idle_ = true;
-    enabled_ = false;
-    ready_ = false;
     reset();
 }
 
 //! Start
 bool zc_audio::enable() {
-    if (!ready_) return false;
+    if (state_ != STATE_DISCONNECTED) return false;
+	state_ = STATE_CONNECTING;
     if (!use_port(port_number_)) {
         if (status_) {
             status_->misc_status(ST_ERROR, "Failed to start port.");
         }
-        ready_ = true;
+        state_ = STATE_DISCONNECTED;
         return false;
     }
-    enabled_ = true;
+    state_ = STATE_CONNECTED;
     return true;
 }
 
 //! Destructor
 zc_audio::~zc_audio() {
-    if (enabled_) disconnect_port();
+    if (state_ == STATE_CONNECTED) disconnect_port();
 }
 
 //! Reset
 bool zc_audio::reset() {
-    if (ready_) return false;
-    if (enabled_) {
-        enabled_ = false;
+    if (state_ == STATE_DISCONNECTED) return false;
+    if (state_ == STATE_CONNECTED) {
+        state_ = STATE_DISCONNECTING;
         while (!idle_) std::this_thread::yield();
         disconnect_port();
     }
@@ -85,7 +84,7 @@ bool zc_audio::reset() {
 
     PaError err;
 
-    if (!pa_initialised_) {
+    if (state_ == STATE_RESET) {
         /* Initialize library before making any other calls. */
         err = Pa_Initialize();
         if (err != paNoError) {
@@ -94,9 +93,8 @@ bool zc_audio::reset() {
             }
             return false;
         }
-        pa_initialised_ = true;
+        state_ = STATE_DISCONNECTED;
     }
-    ready_ = true;
     get_ports(sample_rate_);
     bool found = false;
     if (port_name_.length()) {
@@ -169,12 +167,12 @@ int zc_audio::pa_stream(const void* input,
         }
     }
     else if (direction_ == zc_audio_direction::AUDIO_IN && input) {
-        double* in = (double*)input;
+        float* in = (float*)input;
         unsigned long samples_to_receive = frame_count;
         while (samples_to_receive) {
             // Channel data is interleaved in bot app and port.
             for (int i = 0; i < channels_; i++) {
-                app_audio_->push(*(in++));
+                app_audio_->push(static_cast<double>(*(in++)));
             }
         }
     }
@@ -186,8 +184,8 @@ int zc_audio::pa_stream(const void* input,
 
 //! Initialise portaudio
 bool zc_audio::initialise_port() {
-    if (enabled_ || !ready_) return false;
-    ready_ = false;
+    if (state_ != STATE_DISCONNECTED) return false;
+    state_ = STATE_CONNECTING;
     PaError err;
     const PaDeviceInfo* info = Pa_GetDeviceInfo(port_index_);
 
@@ -218,6 +216,7 @@ bool zc_audio::initialise_port() {
             status_->misc_status(ST_ERROR, "Port %d(%s) could not be opened",
                 port_index_, port_name_.c_str());
         }
+		state_ = STATE_DISCONNECTED;
         return false;
     }
 
@@ -231,7 +230,7 @@ bool zc_audio::initialise_port() {
         return false;
     }
     port_name_ = info->name;
-    enabled_ = true;
+    state_ = STATE_CONNECTED;
     return true;
 
 }
@@ -241,14 +240,16 @@ bool zc_audio::idle() const {
 }
 
 bool zc_audio::ready() const {
-    return ready_;
+    return state_ != STATE_RESET;
+
 }
 
 bool zc_audio::enabled() const {
-    return enabled_;
+    return state_ == STATE_CONNECTED;
 }
 
 bool zc_audio::disconnect_port() {
+	state_ = STATE_DISCONNECTING;
     PaError err = paNoError;
     err = Pa_StopStream(stream_);
     if (err == paNoError) {
@@ -259,6 +260,8 @@ bool zc_audio::disconnect_port() {
             status_->misc_status(ST_OK, "Port %d disconnected OK", port_index_);
         }
         port_index_ = -1;
+        port_name_ = "";
+        state_ = STATE_DISCONNECTED;
         return true;
     }
     else {
@@ -284,7 +287,7 @@ bool zc_audio::close_pa() {
 
 std::vector<std::string> zc_audio::get_ports(double sample_rate) {
     // If neither ready nor enabled return an empty list
-    if (!ready_ && !enabled_) return {};
+    if (state_ == STATE_RESET) return {};
     // Now enumerate all the ports
     PaError err;
     PaDeviceIndex num_devices = Pa_GetDeviceCount();
@@ -342,26 +345,14 @@ std::vector<std::string> zc_audio::get_ports(double sample_rate) {
 
 bool zc_audio::use_port(int port_number) {
     // We have no portaudio
-    if (!ready_ && !enabled_) return false;
+    if (state_ == STATE_RESET) return false;
     // We have another port currently connected
-    if (enabled_) {
-        enabled_ = false;
-        PaError err = paNoError;
-        err = Pa_StopStream(stream_);
-        if (err == paNoError) {
-            err = Pa_CloseStream(stream_);
-        }
-        if (err != paNoError) {
-            if (status_) {
-                status_->misc_status(ST_ERROR, "Unable to stop current audio device");
-            }
-            return false;
-        }
-        ready_ = true;
+    if (state_ == STATE_CONNECTED) {
+		disconnect_port();
     }
     if (port_number < 0 || port_number >= port_indices_.size()) {
         if (status_) {
-            status_->misc_status(ST_ERROR, "Invalid audio port selected");
+            status_->misc_status(ST_ERROR, "Invalid audio port %d selected", port_number);
         }
         return false;
     }
@@ -380,7 +371,7 @@ bool zc_audio::use_port(int port_number) {
 
 void zc_audio::buffer_depth(int d) {
     // Only change the buffer depth when not active
-    if (!ready_) return;
+    if (state_ != STATE_DISCONNECTED) return;
     buffer_depth_ = d;
 }
 

@@ -62,6 +62,15 @@ public:
     //! Destructor
     ~zc_audio();
 
+    //! Internal state
+    enum state_t : uint8_t {
+		STATE_RESET,         //!< Reset state, not initialised
+		STATE_DISCONNECTED , //!< Portaudio initialised, but not connected
+		STATE_CONNECTING,    //!< Portaudio initialised, port is being connected.
+		STATE_CONNECTED,     //!< Portaudio initialised and connected
+		STATE_DISCONNECTING, //!< Portaudio initialised, port is being disconnected.
+    };
+
     //! \brief Enable audio out.
     //! \return true if successfully enabled.
     bool enable();
@@ -110,6 +119,9 @@ public:
     //! Get port list index
     int port_number() const;
 
+    //! \brief Disconnect current port
+    bool disconnect_port();
+
     //! \brief Callback from PortAudio.
     //! \param input buffer containing received audio data.
     //! \param output buffer to receive audio data
@@ -143,9 +155,6 @@ protected:
 
     //! \brief Close down portaudio
     bool close_pa();
-
-    //! \brief Disconnect current port
-    bool disconnect_port();
 
     //! \brief Convert volume control value (-20dB to 0) to multiplier
     double v2x(double v);
@@ -187,23 +196,14 @@ protected:
     //! Idle
     bool idle_ = false;
 
-    //! The audio is in operational state.
-    bool enabled_ = false;
-
-    //! Portaudio initialised
-    bool pa_initialised_ = false;
-
-    //! Portaudio has been initialised and appears to support the required audio.
-    //! If neither \a enabled_ nor \a ready_ are true, the audio is in transition between
-    //! the two valid states, yet to be initialised, or does not support the
-    //! required sample rate.
-    bool ready_ = false;
+    //! Internal state
+    state_t state_ = STATE_RESET;
 
     //! Direction 
-    zc_audio_direction direction_;
+    zc_audio_direction direction_ = zc_audio_direction::AUDIO_OUT;
 
     //! Number of channels
-    int channels_;
+    int channels_ = 0;
 
     //! List of port indices, itself indexed locally
     std::vector<PaDeviceIndex> port_indices_ = {};
