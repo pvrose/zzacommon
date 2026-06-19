@@ -159,11 +159,11 @@ int zc_audio::pa_stream(const void* input,
                 if (monitor_audio_) {
                     monitor_audio_->push(sample);
                 }
-                samples_to_send--;
                 if (!idle_ && !samples_to_send) {
                     idle_ = true;
                 }
             }
+            samples_to_send--;
         }
     }
     else if (direction_ == zc_audio_direction::AUDIO_IN && input) {
@@ -174,6 +174,7 @@ int zc_audio::pa_stream(const void* input,
             for (int i = 0; i < channels_; i++) {
                 app_audio_->push(static_cast<double>(*(in++)));
             }
+            samples_to_receive--;
         }
     }
     else {
