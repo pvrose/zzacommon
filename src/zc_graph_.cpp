@@ -213,7 +213,7 @@ void zc_graph_::add_data_set(
 		}
 	}
 	density_data_set_ = data;
-	colour_map_ = colour_map;
+	set_colour_mapping(colour_map);
 };
 
 //! \brief Add a value marker to the graph for a specific axis number.
@@ -1439,9 +1439,24 @@ Fl_Color zc_graph_::density_colour(double z_value) const {
 		z = 0.0; // If the range is invalid, default to 0.
 	}
 	size_t max_index = colour_map_.size() - 1;
-	size_t index = static_cast<size_t>(max_index * z);
+	size_t index = 0;
+	while (z > colour_triggers_[index]) index++;
 	// Z = 0 select first entry, Z = 1 select last entry, select linearly between them.
 	return colour_map_[index];
+}
+
+// Set colour map
+void zc_graph_::set_colour_mapping(const std::vector<Fl_Color>& colour_map) {
+	colour_map_ = colour_map;
+	size_t num_levels = colour_map_.size();
+	double d = static_cast<double>(num_levels - 1);
+	colour_triggers_.resize(num_levels);
+	for (size_t i = 0; i < num_levels; i++) {
+		// Lower limit is -40dB which is 10^-2 voltage
+		double exp = -2.0 + (2.0 * static_cast<double>(i) / d);
+		double level = pow(10.0, exp);
+		colour_triggers_[i] = level;
+	}
 }
 
 // Layout cartesian 2-axis graph

@@ -697,9 +697,7 @@ public:
 	//! \param colour_map The colour map to use for mapping data values to colours. 
 	//! This should be a vector of N FLTK colour values, where 0 is the colour for the minimum data value and N-1 
 	//! is the colour for the maximum data value (as set in the Z-axis data).
-	void set_colour_mapping(const std::vector<Fl_Color>& colour_map) {
-		colour_map_ = colour_map;
-	}
+	void set_colour_mapping(const std::vector<Fl_Color>& colour_map);
 
 protected:
 
@@ -966,6 +964,8 @@ protected:
 
 	//! \brief Z-value colour map.
 	std::vector<Fl_Color> colour_map_;
+	//! \brief Z-value colour trigger levels. Calculated that level 1 = -40 dB and level N = 0 dB
+	std::vector<double> colour_triggers_;
 
 	//! \brief Layout dirty flag - true if layout needs recalculation.
 	//! Set to true when widget dimensions, axis ranges, or axis parameters change.
