@@ -460,6 +460,22 @@ public:
 		int axis_number;   //!< If this is an axis area, the number of the axis (starting from 0). Ignored if is_plot_area is true.
 	};
 
+	//! \brief Colour map specification
+	//! 
+	//! The colour look-up table will be generated from the provided parameters. 
+	//! (Algorithm courtesy Google AI).
+	//! Intensity I (between 1 and 0)
+	//! I < 1/3: R = 3I * 200, G = 0, B = 3I * 55.
+	//! 1/3 < I < 2/3: R = 200 + (3I - 1) * 55, G = (3I - 1) * 200. B = 50 + (3I - 1) * 20.
+	//! 2/3 < I < 1: R = 255, G = 200 + (3I - 2) * 55, B = 70 + (3I - 2) * 185.
+	//! Linear - values should be provided between 0 and 1 but clamp within the ranges.
+	//! Logarithmic - values between lower value and 0dB map onto intensity 0 to 1.
+	struct colour_map_t {
+		int depth = 8;               //!< Number of distinct colours
+		bool logarithmic = true;     //!< Use logarithmic scale rather than linear.
+		double lower_limit = -40.0;  //!< For logarithmic scales the limit below which values are black.
+	};
+
 public:
 	//! \brief Constructor
 	//! \param X The X coordinate of the top-left corner of the graph drawing area
@@ -535,11 +551,11 @@ public:
 	//! \brief Add a data set of 3D points for a density plot.
 	//! \param axis_number The number of the data set to add (starting from 0). Should be 2, plotted against X and Y axes.
 	//! \param data The 3D data points to plot for this data set. A pointer is used to allow updating the data without needing to re-add the data set.
-	//! \param colour_map Array of N colours - Z-values allocated a colour from this map. Z < Zmax/N allocated 0 et sim. 
+	//! \param colour_map Specification for the colour conversion. 
 	void add_data_set(
 		int axis_number,
 		data_set_dens_t* data,
-		std::vector<Fl_Color> colour_map
+		colour_map_t colour_map
 	);
 
 	//! \brief Add a marker to the graph at a specific value or range of values.
@@ -697,7 +713,7 @@ public:
 	//! \param colour_map The colour map to use for mapping data values to colours. 
 	//! This should be a vector of N FLTK colour values, where 0 is the colour for the minimum data value and N-1 
 	//! is the colour for the maximum data value (as set in the Z-axis data).
-	void set_colour_mapping(const std::vector<Fl_Color>& colour_map);
+	void set_colour_mapping(colour_map_t colour_map);
 
 protected:
 
@@ -964,7 +980,7 @@ protected:
 
 	//! \brief Z-value colour map.
 	std::vector<Fl_Color> colour_map_;
-	//! \brief Z-value colour trigger levels. Calculated that level 1 = -40 dB and level N = 0 dB
+	//! \brief Z-value colour trigger levels. 
 	std::vector<double> colour_triggers_;
 
 	//! \brief Layout dirty flag - true if layout needs recalculation.

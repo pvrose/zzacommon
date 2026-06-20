@@ -181,7 +181,7 @@ void zc_graph_::add_data_set(
 void zc_graph_::add_data_set(
 	int axis_number,                    //!< Axis number to add the data set for (should be ignored for 3D graphs as the data set will always be added to axes 0, 1 and 2)
 	data_set_dens_t* data,     //!< Reference to a vector of 3D data points to be plotted
-	std::vector<Fl_Color> colour_map
+	colour_map_t colour_map
 ) {
 	// Check that axis number is 2 (Z-axis)
 	if (axis_number != 2) {
@@ -1446,16 +1446,49 @@ Fl_Color zc_graph_::density_colour(double z_value) const {
 }
 
 // Set colour map
-void zc_graph_::set_colour_mapping(const std::vector<Fl_Color>& colour_map) {
-	colour_map_ = colour_map;
-	size_t num_levels = colour_map_.size();
-	double d = static_cast<double>(num_levels - 1);
+void zc_graph_::set_colour_mapping(colour_map_t colour_map) {
+	size_t num_levels = colour_map.depth;
 	colour_triggers_.resize(num_levels);
-	for (size_t i = 0; i < num_levels; i++) {
-		// Lower limit is -40dB which is 10^-2 voltage
-		double exp = -2.0 + (2.0 * static_cast<double>(i) / d);
-		double level = pow(10.0, exp);
-		colour_triggers_[i] = level;
+	colour_map_.resize(num_levels);
+	double d = static_cast<double>(num_levels - 1);
+	double min_exp = colour_map.lower_limit / 20.0;
+	if (colour_map.logarithmic) {
+		// generate the trigger levels
+		for (size_t i = 0; i < num_levels; i++) {
+			// Lower limit is -40dB which is 10^-2 voltage
+			double exp = (min_exp) + (- min_exp * static_cast<double>(i) / d);
+			double level = pow(10.0, exp);
+			colour_triggers_[i] = level;
+		}
+	}
+	else {
+		for (size_t i = 0; i < num_levels; i++) {
+			colour_triggers_[i] = static_cast<double>(i + 1) / d;
+		}
+	}
+	// Generate the colour map
+	uint8_t r = 0, g = 0, b = 0;
+	for (int i = 0; i < num_levels; i++) {
+		double v = static_cast<double>(i) / d;
+		if (v < 1.0 / 3.0) {
+			// Gradiate from black to reddish-purple
+			r = static_cast<uint8_t>(600.0 * v);
+			g = 0.0;
+			b = static_cast<uint8_t>(150.0 * v);
+		}
+		else if (v < 2.0 / 3.0) {
+			// Gradiate from reddish-purple to orange-yellow
+			r = static_cast<uint8_t>(255.0 + 165.0 * v);
+			g = static_cast<uint8_t>(600.0 * v - 200.0);
+			b = static_cast<uint8_t>(60.0 * v + 30.0);
+		}
+		else {
+			// Gradiate from orange-yellow to white
+			r = 255;
+			g = static_cast<uint8_t>(165.0 * v + 90.0);
+			b = static_cast<uint8_t>(555.0 * v - 300.0);
+		}
+		colour_map_[i] = fl_rgb_color(r, g, b);
 	}
 }
 
