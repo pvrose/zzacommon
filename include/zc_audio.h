@@ -36,6 +36,7 @@
 //! Minimum speech volume (dB relative to full-scale) 
 //! data is made zero at this value.
 constexpr double MINIMUM_VOLUME = -40.0F;
+extern double DEFAULT_SAMPLE_RATE;
 
 enum zc_audio_direction : uint8_t {
     AUDIO_IN,
@@ -50,6 +51,20 @@ public:
     //! \brief Constructor.
     //! \param direction Input or output
     //! \param channels Number of audio channels (Mono = 1, Stereo = 2 etc.)
+    //! \param sample_rate Number of audio samples per second.
+    //! \param audio_data Audio data stream
+    //! \param monitor_data Monitored data stream (Output only)
+    zc_audio(
+        zc_audio_direction direction,
+        int channels,
+        double sample_rate,
+        zc_async_queue<double>* audio_data,
+        zc_async_queue<double>* monitor_data = nullptr
+    );
+
+    //! \brief Legacy constructor (without sample rate)
+    //! \param direction Input or output
+    //! \param channels Number of audio channels (Mono = 1, Stereo = 2 etc.)
     //! \param audio_data Audio data stream
     //! \param monitor_data Monitored data stream (Output only)
     zc_audio(
@@ -57,7 +72,8 @@ public:
         int channels,
         zc_async_queue<double>* audio_data,
         zc_async_queue<double>* monitor_data = nullptr
-    );
+    ) : zc_audio(direction, channels, DEFAULT_SAMPLE_RATE, audio_data, monitor_data) {
+    };
 
     //! Destructor
     ~zc_audio();

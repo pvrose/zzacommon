@@ -40,6 +40,7 @@ extern int BUFFER_DEPTH;
 zc_audio::zc_audio(
     zc_audio_direction direction,
     int channels,
+    double sample_rate,
     zc_async_queue<double>* audio_data,
     zc_async_queue<double>* monitor_data
 ) {
@@ -47,6 +48,7 @@ zc_audio::zc_audio(
     channels_ = channels;
     app_audio_ = audio_data;
     monitor_audio_ = monitor_data;
+    sample_rate_ = sample_rate;
     buffer_depth_ = BUFFER_DEPTH;
     idle_ = true;
     reset();
@@ -80,7 +82,6 @@ bool zc_audio::reset() {
         while (!idle_) std::this_thread::yield();
         disconnect_port();
     }
-    sample_rate_ = DEFAULT_SAMPLE_RATE;
 
     PaError err;
 
