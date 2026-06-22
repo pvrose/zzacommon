@@ -105,7 +105,9 @@ public:
     bool idle() const;
 
     //! Set the port 
-    //! \param port_number local index of the port to be used.
+	//! \param port_number local index of the port to be used. 
+    //! \note this is not the PortAudio device index, but the index 
+    //! of the port in the list of available ports.
     bool use_port(int port_number);
 
     //! Get the available ports that support \param sample_rate
@@ -133,6 +135,8 @@ public:
     }
 
     //! Get port list index
+    //! \note this is not the PortAudio device index, but the index 
+    //! of the port in the list of available ports.
     int port_number() const;
 
     //! \brief Disconnect current port

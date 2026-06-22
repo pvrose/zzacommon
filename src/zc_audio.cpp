@@ -186,7 +186,7 @@ int zc_audio::pa_stream(const void* input,
 
 //! Initialise portaudio
 bool zc_audio::initialise_port() {
-    if (state_ != STATE_DISCONNECTED) return false;
+    if (state_ != STATE_DISCONNECTED && state_ != STATE_CONNECTING) return false;
     state_ = STATE_CONNECTING;
     PaError err;
     const PaDeviceInfo* info = Pa_GetDeviceInfo(port_index_);
@@ -251,6 +251,7 @@ bool zc_audio::enabled() const {
 }
 
 bool zc_audio::disconnect_port() {
+	if (state_ == STATE_DISCONNECTED) return false;
 	state_ = STATE_DISCONNECTING;
     PaError err = paNoError;
     err = Pa_StopStream(stream_);
@@ -350,7 +351,13 @@ bool zc_audio::use_port(int port_number) {
     if (state_ == STATE_RESET) return false;
     // We have another port currently connected
     if (state_ == STATE_CONNECTED) {
-		disconnect_port();
+        if (port_number == port_number_) {
+            if (status_) {
+                status_->misc_status(ST_NOTE, "Already using audio port %d", port_indices_[port_number]);
+            }
+            return true;
+        }
+        disconnect_port();
     }
     if (port_number < 0 || port_number >= port_indices_.size()) {
         if (status_) {
