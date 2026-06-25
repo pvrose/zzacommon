@@ -133,5 +133,8 @@ subscribed instances within the application. It, itself, receives a callback
 every 100 ms and forwards it to subscribers according to their needs.
 - zc_utils.h
 This is a set of standard utility methods.
+- zc_wheel_value_slider.h
+A version of Fl_Value_Slider that accepts mousewheel events to adjust the value
+up or down one Fl_Value_Slider::step() unit per mousewheel click.
 
 */

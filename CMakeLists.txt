@@ -21,7 +21,7 @@ if(NOT MSVC)
 endif()
 
 ## Library zzacommon. 
-project(ZZACOMMON VERSION 1.2.7.1)
+project(ZZACOMMON VERSION 1.2.7.2)
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
 
 # Language requirememnts
@@ -154,6 +154,7 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_ticker.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_url_handler.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_utils.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_wheel_value_slider.h
   ${ZZACOMMON_INCLUDE_DIR}/zzacommon.h
 )
 
