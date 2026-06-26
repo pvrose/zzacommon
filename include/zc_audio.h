@@ -28,6 +28,8 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
+#include <list>
+#include <map>
 #include <queue>
 #include <string>
 #include <thread>
@@ -104,14 +106,22 @@ public:
     //! Returns true if audio not being output.
     bool idle() const;
 
-    //! Set the port 
-	//! \param port_number local index of the port to be used. 
-    //! \note this is not the PortAudio device index, but the index 
-    //! of the port in the list of available ports.
-    bool use_port(int port_number);
+    //! Identification for an audio port.
+    struct port_id {
+        std::string audio_host;   //!< System API name: eg "WASAPI" or "pulse"
+        std::string port_name;    //!< Specific port name
 
-    //! Get the available ports that support \param sample_rate
-    std::vector<std::string> get_ports(double sample_rate);
+    };
+
+    //! Set the port 
+    //! \param id Port identifier
+    bool use_port(const port_id& id);
+
+    //! Get the identifiers of the available ports at the current sample rate and direction
+    const std::list<port_id> get_ports();
+
+    //! Return the identifier of the current active port.
+    const port_id get_port();
 
     //! Set buffer depth
     void buffer_depth(int d);
@@ -133,11 +143,6 @@ public:
     double sample_rate() const {
         return sample_rate_;
     }
-
-    //! Get port list index
-    //! \note this is not the PortAudio device index, but the index 
-    //! of the port in the list of available ports.
-    int port_number() const;
 
     //! \brief Disconnect current port
     bool disconnect_port();
@@ -179,6 +184,23 @@ protected:
     //! \brief Convert volume control value (-20dB to 0) to multiplier
     double v2x(double v);
 
+    //! \brief Supplied port identifier is valid
+    bool valid_port(port_id id) {
+        if (id.audio_host.empty() || id.port_name.empty()) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    //! \brief Enumerate ports
+    void enumerate_ports();
+
+    //! \brief Get port index
+    //! \return -1 if fail
+    PaDeviceIndex get_index(port_id id);
+
     //! Audio stream to/from user.
     zc_async_queue<double>* app_audio_ = nullptr;
     //! Montored audio to user
@@ -204,14 +226,14 @@ protected:
     //! Volume multiplier (= 10^(V/10))
     double vol_xier_ = 1.0;
 
+    //! Audio host API index
+    PaHostApiIndex api_index_;
+
     //! Audio port index
     PaDeviceIndex port_index_;
 
-    //! Local port index
-    size_t port_number_ = 0;
-
-    //! Audio port name
-    std::string port_name_ = "";
+    //! List of port identifiers - indexed by PaDeviceIndex
+    std::map<PaDeviceIndex, port_id> port_ids_;
 
     //! Idle
     bool idle_ = false;
@@ -224,12 +246,5 @@ protected:
 
     //! Number of channels
     int channels_ = 0;
-
-    //! List of port indices, itself indexed locally
-    std::vector<PaDeviceIndex> port_indices_ = {};
-    //! List of port names, indexed by the samae
-    std::vector<std::string> port_names_ = {};
-    //! List of port names prefixed with index.
-    std::vector<std::string> annotated_names_ = {};
 
 };

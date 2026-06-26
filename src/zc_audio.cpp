@@ -26,6 +26,8 @@
 #include <cmath>
 #include <cstdio>
 #include <iostream>
+#include <list>
+#include <map>
 #include <queue>
 #include <stdexcept>
 #include <string>
@@ -58,7 +60,7 @@ zc_audio::zc_audio(
 bool zc_audio::enable() {
     if (state_ != STATE_DISCONNECTED) return false;
 	state_ = STATE_CONNECTING;
-    if (!use_port(port_number_)) {
+    if (!use_port(port_ids_.at(port_index_))) {
         if (status_) {
             status_->misc_status(ST_ERROR, "Failed to start port.");
         }
@@ -96,28 +98,15 @@ bool zc_audio::reset() {
         }
         state_ = STATE_DISCONNECTED;
     }
-    get_ports(sample_rate_);
+    enumerate_ports();
     bool found = false;
-    if (port_name_.length()) {
-        size_t index = 0;
-        for (size_t ix = 0; ix < port_names_.size(); ix++) {
-            if (port_name_ == port_names_[ix]) {
-                found = true;
-                port_index_ = port_indices_[ix];
-                index = ix;
-            }
-        }
-        if (!found) {
-            if (status_) {
-                status_->misc_status(ST_ERROR, "Port %s not found!\n", port_name_.c_str());
-            }
-            port_index_ = 0;
-        }
-        else {
-            port_number_ = index;
-        }
+    if (port_index_ >= 0) {
+        port_id& current_port = port_ids_.at(port_index_);
+        status_->misc_status(ST_OK, "Port %s/%s reset OK",
+            current_port.audio_host.c_str(), current_port.port_name.c_str());
+        return true;
     }
-    return true;
+    return false;
 }
 
 //! \brief Callback from PortAudio.
@@ -190,6 +179,13 @@ bool zc_audio::initialise_port() {
     state_ = STATE_CONNECTING;
     PaError err;
     const PaDeviceInfo* info = Pa_GetDeviceInfo(port_index_);
+    port_id current_port = port_ids_.at(port_index_);
+    // Sanity check that hostApi and name still match
+    const PaHostApiInfo* api_info = Pa_GetHostApiInfo(info->hostApi);
+    if (info->name != current_port.port_name || api_info->name != current_port.audio_host) {
+        status_->misc_status(ST_ERROR, "Portaudio mismatch");
+        return false;
+    }
 
     /* Open an audio I/O stream. */
     if (direction_ == zc_audio_direction::AUDIO_OUT) 
@@ -215,8 +211,8 @@ bool zc_audio::initialise_port() {
 
     if (err != paNoError) {
         if (status_) {
-            status_->misc_status(ST_ERROR, "Port %d(%s) could not be opened",
-                port_index_, port_name_.c_str());
+            status_->misc_status(ST_ERROR, "Port %d(%s/%s) could not be opened",
+                port_index_, current_port.audio_host.c_str(), current_port.port_name.c_str());
         }
 		state_ = STATE_DISCONNECTED;
         return false;
@@ -226,12 +222,11 @@ bool zc_audio::initialise_port() {
     err = Pa_StartStream(stream_);
     if (err != paNoError) {
         if (status_) {
-            status_->misc_status(ST_ERROR, "Port %d(%s) could not be started",
-                port_index_, port_name_.c_str());
+            status_->misc_status(ST_ERROR, "Port %d(%s/%s) could not be started",
+                port_index_, current_port.audio_host.c_str(), current_port.port_name.c_str());
         }
         return false;
     }
-    port_name_ = info->name;
     state_ = STATE_CONNECTED;
     return true;
 
@@ -263,7 +258,6 @@ bool zc_audio::disconnect_port() {
             status_->misc_status(ST_OK, "Port %d disconnected OK", port_index_);
         }
         port_index_ = -1;
-        port_name_ = "";
         state_ = STATE_DISCONNECTED;
         return true;
     }
@@ -288,9 +282,17 @@ bool zc_audio::close_pa() {
     return true;
 }
 
-std::vector<std::string> zc_audio::get_ports(double sample_rate) {
+const std::list<zc_audio::port_id> zc_audio::get_ports() {
+    std::list<port_id> result;
+    for (auto& id : port_ids_) {
+        result.push_back(id.second);
+    }
+    return result;
+}
+
+void zc_audio::enumerate_ports() {
     // If neither ready nor enabled return an empty list
-    if (state_ == STATE_RESET) return {};
+    if (state_ == STATE_RESET) return;
     // Now enumerate all the ports
     PaError err;
     PaDeviceIndex num_devices = Pa_GetDeviceCount();
@@ -298,21 +300,21 @@ std::vector<std::string> zc_audio::get_ports(double sample_rate) {
     const PaDeviceInfo* info;
     // TODO this will haveto change if ever a variable sample-rate is implemented.
     // For now we assume once these have been read in a session, they do not change.
-    if (port_indices_.size() == 0) {
+    if (port_ids_.size() == 0) {
         // port_indices_.clear();
         // port_names_.clear();
         if (num_devices < 0) {
             if (status_) {
                 status_->misc_status(ST_ERROR, "No audio devices");
             }
-            return annotated_names_;
+            return;
         }
         for (auto ix = 0; ix < num_devices; ix++) {
             info = Pa_GetDeviceInfo(ix);
             if (info) {
+                const PaHostApiInfo* api_info = Pa_GetHostApiInfo(info->hostApi);
 #ifdef _DEBUG
-                const PaHostApiInfo* apiInfo = Pa_GetHostApiInfo(info->hostApi);
-                printf("DEBUG: Checking port %d (API %s(%d)) (%s)", ix, apiInfo->name, apiInfo->type, info->name);
+                printf("DEBUG: Checking port %d (%s/%s)", ix, api_info->name, info->name);
 #endif
                 // Set output stream parametsr
                 PaStreamParameters parameters;
@@ -324,16 +326,15 @@ std::vector<std::string> zc_audio::get_ports(double sample_rate) {
                 parameters.hostApiSpecificStreamInfo = nullptr;
 
                 if (direction_ == zc_audio_direction::AUDIO_OUT)
-                    err = Pa_IsFormatSupported(nullptr, &parameters, sample_rate);
+                    err = Pa_IsFormatSupported(nullptr, &parameters, sample_rate_);
                 else 
-                    err = Pa_IsFormatSupported(&parameters, nullptr, sample_rate);
+                    err = Pa_IsFormatSupported(&parameters, nullptr, sample_rate_);
 
                 if (err == paFormatIsSupported) {
-                    if (ix == port_index_) port_number_ = port_indices_.size();
-                    port_indices_.push_back(ix);
-                    port_names_.push_back(std::string(info->name));
-                    snprintf(t, sizeof(t), "%0d: %s", ix, info->name);
-                    annotated_names_.push_back(std::string(t));
+                    port_id id;
+                    id.audio_host = api_info->name;
+                    id.port_name = info->name;
+                    port_ids_[ix] = id;
 #ifdef _DEBUG
                     printf(" - OK\n");
                 }
@@ -344,30 +345,32 @@ std::vector<std::string> zc_audio::get_ports(double sample_rate) {
             }
         }
     }
-    return annotated_names_;
 }
 
-bool zc_audio::use_port(int port_number) {
+bool zc_audio::use_port(const zc_audio::port_id& id) {
     // We have no portaudio
     if (state_ == STATE_RESET) return false;
     // We have another port currently connected
     if (state_ == STATE_CONNECTED) {
-        if (port_number == port_number_) {
+        port_id& current_port = port_ids_.at(port_index_);
+        if (id.audio_host == current_port.audio_host &&
+            id.port_name == current_port.port_name) {
             if (status_) {
-                status_->misc_status(ST_NOTE, "Already using audio port %d", port_indices_[port_number]);
+                status_->misc_status(ST_NOTE, "Already using audio port %s/%s", 
+                    id.audio_host.c_str(), id.port_name.c_str());
             }
             return true;
         }
         disconnect_port();
     }
-    if (port_number < 0 || port_number >= port_indices_.size()) {
+    port_index_ = get_index(id);
+    if (port_index_ == -1) {
         if (status_) {
-            status_->misc_status(ST_ERROR, "Invalid audio port %d selected", port_number);
+            status_->misc_status(ST_ERROR, "Invalid audio port %s/%s selected", 
+                id.audio_host.c_str(), id.port_name.c_str());
         }
         return false;
     }
-    port_number_ = port_number;
-    port_index_ = port_indices_[port_number];
     // Set new output stream parameters
     parameters_.device = port_index_;   // 
     parameters_.channelCount = channels_;       
@@ -398,10 +401,6 @@ double zc_audio::volume() const {
     return volume_;
 }
 
-int zc_audio::port_number() const {
-    return port_number_;
-}
-
 double zc_audio::v2x(double v) {
     if (v == MINIMUM_VOLUME) return 0.0;
     else {
@@ -409,5 +408,16 @@ double zc_audio::v2x(double v) {
         double result = pow(10.0, (v * 0.05));
         return result;
     }
+}
+
+// Get the index of the defined id
+PaDeviceIndex zc_audio::get_index(zc_audio::port_id id) {
+    for (auto& idr : port_ids_) {
+        if (id.audio_host == idr.second.audio_host &&
+            id.port_name == idr.second.port_name) {
+            return idr.first;
+        }
+    }
+    return -1;
 }
 
