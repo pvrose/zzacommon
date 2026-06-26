@@ -311,7 +311,8 @@ std::vector<std::string> zc_audio::get_ports(double sample_rate) {
             info = Pa_GetDeviceInfo(ix);
             if (info) {
 #ifdef _DEBUG
-                printf("DEBUG: Checking port %d (%s)", ix, info->name);
+                const PaHostApiInfo* apiInfo = Pa_GetHostApiInfo(info->hostApi);
+                printf("DEBUG: Checking port %d (API %s(%d)) (%s)", ix, apiInfo->name, apiInfo->type, info->name);
 #endif
                 // Set output stream parametsr
                 PaStreamParameters parameters;
