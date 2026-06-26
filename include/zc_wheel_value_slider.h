@@ -30,7 +30,7 @@ public:
 	{
 	}
 
-	int zc_wheel_value_slider::handle(int event) {
+	int handle(int event) {
 		// Handle wheel events.
 		// Adjust the value by the wheel dy * step() clamping if necessary.
 		if (event == FL_MOUSEWHEEL && Fl::event_inside(this)) {
