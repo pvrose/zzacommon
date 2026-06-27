@@ -60,7 +60,7 @@ zc_audio::zc_audio(
 bool zc_audio::enable() {
     if (state_ != STATE_DISCONNECTED) return false;
 	state_ = STATE_CONNECTING;
-    if (!use_port(port_ids_.at(port_index_))) {
+    if (port_ids_.find(port_index_) == port_ids_.end() || !use_port(port_ids_.at(port_index_))) {
         if (status_) {
             status_->misc_status(ST_ERROR, "Failed to start port.");
         }
@@ -248,6 +248,7 @@ bool zc_audio::enabled() const {
 bool zc_audio::disconnect_port() {
 	if (state_ == STATE_DISCONNECTED) return false;
 	state_ = STATE_DISCONNECTING;
+    port_id current_port = port_ids_.at(port_index_);
     PaError err = paNoError;
     err = Pa_StopStream(stream_);
     if (err == paNoError) {
@@ -255,7 +256,8 @@ bool zc_audio::disconnect_port() {
     }
     if (err == paNoError) {
         if (status_) {
-            status_->misc_status(ST_OK, "Port %d disconnected OK", port_index_);
+            status_->misc_status(ST_OK, "Port %d(%s/%s) disconnected OK", port_index_,
+                current_port.audio_host.c_str(), current_port.port_name.c_str());
         }
         port_index_ = -1;
         state_ = STATE_DISCONNECTED;
@@ -263,7 +265,8 @@ bool zc_audio::disconnect_port() {
     }
     else {
         if (status_) {
-            status_->misc_status(ST_ERROR, "Fail to disconnect port %d (%s)", port_index_, Pa_GetErrorText(err));
+            status_->misc_status(ST_ERROR, "Fail to disconnect port %d(%s/%s): %s", port_index_,
+                current_port.audio_host.c_str(), current_port.port_name.c_str(), Pa_GetErrorText(err));
         }
         return false;
     }

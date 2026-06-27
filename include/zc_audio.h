@@ -227,10 +227,10 @@ protected:
     double vol_xier_ = 1.0;
 
     //! Audio host API index
-    PaHostApiIndex api_index_;
+    PaHostApiIndex api_index_ = -1;
 
     //! Audio port index
-    PaDeviceIndex port_index_;
+    PaDeviceIndex port_index_ = -1;
 
     //! List of port identifiers - indexed by PaDeviceIndex
     std::map<PaDeviceIndex, port_id> port_ids_;

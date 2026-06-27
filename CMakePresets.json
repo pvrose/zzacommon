@@ -71,8 +71,8 @@
       "description": "Target Windows (64-bit) with the Visual Studio development environment. (RelWithDebInfo)",
       "inherits": "x64-debug",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "FLTK_DIR": "C:/Users/pvros/source/repos/fltk/out/build/x64-Release",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "FLTK_DIR": "C:/Users/pvros/source/repos/fltk/out/build/x64-Release"
       }
     },
     {

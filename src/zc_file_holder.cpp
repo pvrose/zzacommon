@@ -51,8 +51,9 @@ zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_co
 	char * pwd = fl_getcwd(nullptr, 256);
 	std::string run_dir = zc::directory(arg0);
 	auto exe_path = boost::dll::program_location();
-	exec_directory_ = zc::directory(exe_path.string());
-	std::string app_name = zc::terminal(exe_path.string());
+	std::string s_exe_path = exe_path.string();
+	exec_directory_ = zc::directory(s_exe_path);
+	std::string app_name = zc::terminal(s_exe_path);
 	// Try reading from run directory first - if present then
 	// we are development
 #ifdef _WIN32

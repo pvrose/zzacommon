@@ -115,10 +115,11 @@ if(NOT ZZAB_REQUESTED EQUAL -1 OR NOT ZZAFB_REQUESTED EQUAL -1)
     endif()
 
     if(MSVC)
-        find_package(Boost 1.85.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS filesystem asio)
+        set(BOOST_COMPONENTS filesystem asio)
     else()
-        find_package(Boost 1.83.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS filesystem)
+        set(BOOST_COMPONENTS filesystem)
     endif()
+    find_package(Boost 1.83.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS ${BOOST_COMPONENTS})
     if(NOT Boost_FOUND)
         if(zzacommon_FIND_REQUIRED_zzab OR zzacommon_FIND_REQUIRED_zzafb)
             message(FATAL_ERROR "Boost is required for zzab/zzafb component but was not found.\n"
@@ -131,6 +132,18 @@ if(NOT ZZAB_REQUESTED EQUAL -1 OR NOT ZZAFB_REQUESTED EQUAL -1)
             message(WARNING "Boost not found - zzab/zzafb component will not be available")
         endif()
     endif()
+    # Force Boost to map RelWithDebInfo to Release 
+    if(TARGET Boost::headers)
+        set_target_properties(Boost::headers PROPERTIES MAP_IMPORTED_CONFIG_RELWITHDEBINFO "Release")
+    endif()
+
+    # Loop through your compiled Boost components
+    set(BOOST_COMPONENTS filesystem system) # Match your components above
+    foreach(component ${BOOST_COMPONENTS})
+        if(TARGET Boost::${component})
+            set_target_properties(Boost::${component} PROPERTIES MAP_IMPORTED_CONFIG_RELWITHDEBINFO "Release")
+        endif()
+    endforeach()
 endif()
 
 # Find nlohmann_json before including Targets file, as zzam's INTERFACE_LINK_LIBRARIES
