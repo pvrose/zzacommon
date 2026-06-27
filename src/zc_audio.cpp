@@ -22,6 +22,9 @@
 #include "zc_status.h"
 
 #include "portaudio.h"
+#ifdef _WIN32
+#include "pa_win_wasapi.h"
+#endif
 
 #include <cmath>
 #include <cstdio>
@@ -204,7 +207,7 @@ bool zc_audio::initialise_port() {
             &parameters_,
             nullptr,
             sample_rate_,
-            buffer_depth_,        /* frames per buffer */
+            paFramesPerBufferUnspecified,        /* frames per buffer */
             paClipOff,
             cb_pa_stream,         // 
             this);
@@ -225,7 +228,14 @@ bool zc_audio::initialise_port() {
             status_->misc_status(ST_ERROR, "Port %d(%s/%s) could not be started",
                 port_index_, current_port.audio_host.c_str(), current_port.port_name.c_str());
         }
+        state_ = STATE_DISCONNECTED;
         return false;
+    }
+    else {
+		if (status_) {
+			status_->misc_status(ST_OK, "Port %d(%s/%s) started OK",
+				port_index_, current_port.audio_host.c_str(), current_port.port_name.c_str());
+		}
     }
     state_ = STATE_CONNECTED;
     return true;
@@ -325,8 +335,23 @@ void zc_audio::enumerate_ports() {
                 parameters.channelCount = channels_;       
                 parameters.sampleFormat = paFloat32;    // double
                 parameters.suggestedLatency =
-                    info->defaultLowOutputLatency;
+                    info->defaultHighOutputLatency;
+#ifdef _WIN32
+                // Set WASAPI parameters - allow up/down sampling
+                if (api_info->type == paWASAPI) {
+                    PaWasapiStreamInfo wasapi_info;
+                    wasapi_info.size = sizeof(PaWasapiStreamInfo);
+                    wasapi_info.hostApiType = paWASAPI;
+                    wasapi_info.version = 1;
+                    wasapi_info.flags = paWinWasapiAutoConvert;
+                    parameters.hostApiSpecificStreamInfo = &wasapi_info;
+                }
+                else {
+                    parameters.hostApiSpecificStreamInfo = nullptr;
+                }
+#else
                 parameters.hostApiSpecificStreamInfo = nullptr;
+#endif
 
                 if (direction_ == zc_audio_direction::AUDIO_OUT)
                     err = Pa_IsFormatSupported(nullptr, &parameters, sample_rate_);
@@ -375,12 +400,29 @@ bool zc_audio::use_port(const zc_audio::port_id& id) {
         return false;
     }
     // Set new output stream parameters
+    const PaDeviceInfo* info = Pa_GetDeviceInfo(port_index_);
+    const PaHostApiInfo* api_info = Pa_GetHostApiInfo(info->hostApi);
     parameters_.device = port_index_;   // 
     parameters_.channelCount = channels_;       
     parameters_.sampleFormat = paFloat32;    // double
     parameters_.suggestedLatency =
-        Pa_GetDeviceInfo(parameters_.device)->defaultLowOutputLatency;
-    parameters_.hostApiSpecificStreamInfo = nullptr;
+        info->defaultHighOutputLatency;
+#ifdef _WIN32
+    // Set WASAPI parameters - allow up/down samplings
+    if (api_info->type == paWASAPI && id.audio_host == "Windows WASAPI") {
+        PaWasapiStreamInfo wasapi_info;
+        wasapi_info.size = sizeof(PaWasapiStreamInfo);
+        wasapi_info.hostApiType = paWASAPI;
+        wasapi_info.version = 1;
+        wasapi_info.flags = paWinWasapiAutoConvert;
+        parameters_.hostApiSpecificStreamInfo = &wasapi_info;
+    }
+    else {
+        parameters_.hostApiSpecificStreamInfo = nullptr;
+    }
+#else
+    parameters.hostApiSpecificStreamInfo = nullptr;
+#endif
     // Set new port
     return initialise_port();
 }

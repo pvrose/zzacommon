@@ -212,8 +212,6 @@ protected:
     //! Stream parameters
     PaStreamParameters parameters_;
 
-    //! \todo add audio port configuration data
-
     //! Sample rate (samples per second)
     double sample_rate_ = 0.0;
 
