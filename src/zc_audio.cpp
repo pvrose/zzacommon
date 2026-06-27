@@ -421,7 +421,7 @@ bool zc_audio::use_port(const zc_audio::port_id& id) {
         parameters_.hostApiSpecificStreamInfo = nullptr;
     }
 #else
-    parameters.hostApiSpecificStreamInfo = nullptr;
+    parameters_.hostApiSpecificStreamInfo = nullptr;
 #endif
     // Set new port
     return initialise_port();
