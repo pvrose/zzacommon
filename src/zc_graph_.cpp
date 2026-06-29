@@ -638,6 +638,7 @@ void zc_graph_::generate_data_lines(int axis_number) {
 		plot_line.shape = LINE_STRIP;
 		plot_line.style = data_set.style;
 
+		data_point_t previous_point;
 		// Add a vertex for each data point in the data set.
 		// Include the data points in the current ranges for the axes.
 		for (const auto& point : *data_set.data) {
@@ -654,15 +655,25 @@ void zc_graph_::generate_data_lines(int axis_number) {
 			//	axis_0_data.default_range |= point.first;
 			//}
 			// Now add the point to the plot line as a vertex. Convert to Cartesian coordinates if necessary.
-			plot_vertex_t vertex;
-			vertex = plot_vertex_t(convert_point(point));
-			plot_segment_t segment(vertex);
-			plot_line.segments.push_back(segment);
+			if (!duplicate_point(axis_number, point, previous_point)) {
+				plot_vertex_t vertex;
+				vertex = plot_vertex_t(convert_point(point));
+				plot_segment_t segment(vertex);
+				plot_line.segments.push_back(segment);
+				previous_point = point;
+			}
 		}
 		// Add the plot line to the plot data for this axis number.
 		plot_data_[plot_number].layer_data[DATA].push_back(plot_line);
 	}
+}
 
+//! \brief Check whether the specified vertex is a duplicate of the previous vertex for the specified axis number.
+bool zc_graph_::duplicate_point(int axis_number, const data_point_t& point, const data_point_t& last_point) const {
+	int px1, px2, py1, py2;
+	data_to_pixel(axis_number, px1, py1, point);
+	data_to_pixel(axis_number, px2, py2, last_point);
+	return px1 == px2 && py1 == py2;
 }
 
 //! \brief Generate a bit map reperesenting the Z-value at each point in the current range for the X and Y axes.
@@ -1200,16 +1211,35 @@ void zc_graph_::apply_transformations(const plot_xform_t& schema) {
 zc_graph_::data_point_t zc_graph_::pixel_to_data(int axis_number, int pixel_x, int pixel_y) const {
 	// For axis 0 use axis 1 parameters.
 	int drawing_axis_number = (axis_number == 0) ? 1 : axis_number;
+#ifdef _DEBUG
 	// Check the plot data already exists for this axis number
 	if (drawing_axis_number >= static_cast<int>(plot_data_.size())) {
 		// Plot data does not exist for this axis number, throw an error
 		throw std::invalid_argument("Plot data does not exist for axis number " + std::to_string(drawing_axis_number) + ". Set axis parameters and add data sets before converting pixel to data coordinates.");
 	}
+#endif
 	const plot_xform_t& xform_schema = plot_data_[drawing_axis_number].xform_schema;
 	// Use pre-calculated inverse scales
 	double data_x = xform_schema.x_min_ + (pixel_x - x()) * xform_schema.inv_scale_x_;
 	double data_y = xform_schema.y_max_ + (pixel_y - y()) * xform_schema.inv_scale_y_;
 	return { data_x, data_y };
+}
+
+//! \brief Convert data coordinates to pixel coordinates for the specified axis number based on the current transformation schema for that axis.
+//! This function is the inverse of pixel_to_data().
+void zc_graph_::data_to_pixel(int axis_number, int& pixel_x, int& pixel_y, const data_point_t& data) const {
+	// For axis 0 use axis 1 parameters.
+	int drawing_axis_number = (axis_number == 0) ? 1 : axis_number;
+#ifdef _DEBUG
+	// Check the plot data already exists for this axis number
+	if (drawing_axis_number >= static_cast<int>(plot_data_.size())) {
+		// Plot data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Plot data does not exist for axis number " + std::to_string(drawing_axis_number) + ". Set axis parameters and add data sets before converting pixel to data coordinates.");
+	}
+#endif
+	const plot_xform_t& xform_schema = plot_data_[drawing_axis_number].xform_schema;
+	pixel_x = x() + (data.first - xform_schema.x_min_) * xform_schema.scale_x_;
+	pixel_y = y() + h() - (data.second - xform_schema.y_min_) * xform_schema.scale_y_;
 }
 
 //! \brief Draw a plot object using the FLTK drawing functions based on its shape and style.
@@ -1516,6 +1546,8 @@ void zc_graph_cartesian::layout() {
 	// Pre-calculate inverse scales for pixel_to_data conversion
 	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
 	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
+	xform_schema.scale_x_ = 1.0 / xform_schema.inv_scale_x_;
+	xform_schema.scale_y_ = 1.0 / xform_schema.inv_scale_y_;
 	plot_data_[1].xform_schema = xform_schema;
 	plot_data_[1].data_area.display_min = { x_min, y_min };
 	plot_data_[1].data_area.display_max = { x_max, y_max };
@@ -1641,6 +1673,8 @@ void zc_graph_cartesian_2y::layout() {
 	// Pre-calculate inverse scales for pixel_to_data conversion
 	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
 	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
+	xform_schema.scale_x_ = 1.0 / xform_schema.inv_scale_x_;
+	xform_schema.scale_y_ = 1.0 / xform_schema.inv_scale_y_;
 	plot_data_[1].xform_schema = xform_schema;
 	plot_data_[1].data_area.display_min = { x_min, y_min };
 	plot_data_[1].data_area.display_max = { x_max, y_max };
@@ -1667,6 +1701,8 @@ void zc_graph_cartesian_2y::layout() {
 	// Pre-calculate inverse scales for pixel_to_data conversion
 	xform_schema_2.inv_scale_x_ = (xform_schema_2.x_max_ - xform_schema_2.x_min_) / w();
 	xform_schema_2.inv_scale_y_ = (xform_schema_2.y_min_ - xform_schema_2.y_max_) / h();
+	xform_schema_2.scale_x_ = 1.0 / xform_schema_2.inv_scale_x_;
+	xform_schema_2.scale_y_ = 1.0 / xform_schema_2.inv_scale_y_;
 	plot_data_[2].xform_schema = xform_schema_2;
 	plot_data_[2].data_area.display_min = { x_min, y2_min };
 	plot_data_[2].data_area.display_max = { x_max, y2_max };
@@ -1789,6 +1825,8 @@ void zc_graph_cart_overlay::layout() {
 	// Pre-calculate inverse scales for pixel_to_data conversion
 	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
 	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
+	xform_schema.scale_x_ = 1.0 / xform_schema.inv_scale_x_;
+	xform_schema.scale_y_ = 1.0 / xform_schema.inv_scale_y_;
 	plot_data_[1].xform_schema = xform_schema;
 	plot_data_[1].data_area.display_min = { x_min, y_min };
 	plot_data_[1].data_area.display_max = { x_max, y_max };
@@ -1938,6 +1976,8 @@ void zc_graph_polar::layout() {
 	// Pre-calculate inverse scales for pixel_to_data conversion
 	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
 	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
+	xform_schema.scale_x_ = 1.0 / xform_schema.inv_scale_x_;
+	xform_schema.scale_y_ = 1.0 / xform_schema.inv_scale_y_;
 	plot_data_[1].xform_schema = xform_schema;
 	//double rmax_x = plot_w * dpp_r / 2.0;
 	//double rmax_y = plot_h * dpp_r / 2.0;
@@ -2094,6 +2134,8 @@ void zc_graph_smith::layout() {
 	// Pre-calculate inverse scales for pixel_to_data conversion
 	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
 	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
+	xform_schema.scale_x_ = 1.0 / xform_schema.inv_scale_x_;
+	xform_schema.scale_y_ = 1.0 / xform_schema.inv_scale_y_;
 	plot_data_[1].xform_schema = xform_schema;
 	//double rmax_x = plot_w * dpp_r / 2.0;
 	//double rmax_y = plot_h * dpp_r / 2.0;

@@ -421,6 +421,8 @@ public:
 		double y_max_ = 1;     //!< Maximum Y-coordinate of the plot in pixels. Maps onto y() of the widget.
 		double inv_scale_x_ = 0.0; //!< Pre-calculated inverse X scale: (x_max_ - x_min_) / width
 		double inv_scale_y_ = 0.0; //!< Pre-calculated inverse Y scale: (y_min_ - y_max_) / height
+		double scale_x_ = 0.0;     //!< Pre-calculated X scale: width / (x_max_ - x_min_)
+		double scale_y_ = 0.0;     //!< Pre-calculated Y scale: height / (y_min_ - y_max_)
 		density_xform_t z_xform;     //!< Density transformation matrix.
 	};
 
@@ -766,6 +768,13 @@ protected:
 	//! \param y_pixel The y-coordinate in pixels to convert to data coordinates.
 	data_point_t pixel_to_data(int axis_number,int x_pixel, int y_pixel) const;
 
+	//! \brief Return the pixel coordinates corresponding to the given data coordinates.
+	//! \param axis_number The number of the axis to use for the transformation (starting from 1)
+	//! \param x_pixel The x-coordinate in pixels converted from data coordinates.
+	//! \param y_pixel The y-coordinate in pixels converted from data coordinates.
+	//! \param data The data coordinates to convert to pixel coordinates.
+	void data_to_pixel(int axis_number, int& x_pixel, int& y_pixel, const data_point_t& data) const;
+
 	//! \brief Generate axis drawing objects.
 	//! \param axis_number The number of the axis to generate the drawing objects for (starting from 0).
 	void generate_axis_grid(
@@ -900,6 +909,14 @@ protected:
 
 	//! \brief Clear ephemeral plot data
 	void clear_plot_data();
+
+	//! \brief Check whether the data point needs to be added to the plot
+	//! data for the specified axis number. This is used to avoid adding duplicate points.
+	//! \param axis_number The number of the axis to check (starting from 0).
+	//! \param point The data point to check.
+	//! \param last_point The last data point added to the plot data for this axis.
+	//! \return False if the point needs to be added to the plot data, true if it is a duplicate.
+	bool duplicate_point(int axis_number, const data_point_t& point, const data_point_t& last_point) const;
 
 	//! \brief The number of axes supported
 	int num_axes_ = 0;
