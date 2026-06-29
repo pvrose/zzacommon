@@ -326,9 +326,7 @@ void zc_audio::enumerate_ports() {
             info = Pa_GetDeviceInfo(ix);
             if (info) {
                 const PaHostApiInfo* api_info = Pa_GetHostApiInfo(info->hostApi);
-#ifdef _DEBUG
                 printf("DEBUG: Checking port %d (%s/%s)", ix, api_info->name, info->name);
-#endif
                 // Set output stream parametsr
                 PaStreamParameters parameters;
                 parameters.device = ix;   // \todo set up from settings
@@ -363,12 +361,10 @@ void zc_audio::enumerate_ports() {
                     id.audio_host = api_info->name;
                     id.port_name = info->name;
                     port_ids_[ix] = id;
-#ifdef _DEBUG
                     printf(" - OK\n");
                 }
                 else {
-                    printf(" - Not OK\n");
-#endif
+                    printf(" - Not OK - %s\n", Pa_GetErrorText(err));
                 }
             }
         }

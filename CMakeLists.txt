@@ -21,7 +21,10 @@ if(NOT MSVC)
 endif()
 
 ## Library zzacommon. 
-project(ZZACOMMON VERSION 1.2.9)
+project(ZZACOMMON VERSION 1.2.9.1
+  DESCRIPTION "Common utilities for GM3ZZA software"
+  LANGUAGES CXX
+)
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
 
 # Language requirememnts
