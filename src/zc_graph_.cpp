@@ -1111,6 +1111,13 @@ void zc_graph_::resize(int X, int Y, int W, int H) {
 void zc_graph_::clear_plot_data() {
 	for (auto& plot_data : plot_data_) {
 		for (auto& layer_pair : plot_data.layer_data) {
+			for (auto& obj : layer_pair.second) {
+				for (auto& seg : obj.segments) {
+					if (seg.type == plot_segment_t::IMAGE) {
+						delete[] seg.b.data;
+					}
+				}
+			}
 			layer_pair.second.clear();
 		}
 	}
