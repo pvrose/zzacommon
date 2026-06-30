@@ -1011,6 +1011,10 @@ protected:
 		layout_dirty_ = true;
 	}
 
+	//! \brief The bitmap to be drawn for the density plot. 
+	//! This is generated from the 3D data set and the colour mapping.
+	//! Each bitmap that needs to be included will be allocated an index to this.
+	std::vector<unsigned char> density_bitmap_ = {};
 };
 
 //! \brief Derived class for Cartesian graphs.

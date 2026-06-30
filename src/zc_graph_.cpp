@@ -700,11 +700,14 @@ void zc_graph_::generate_density_plot(
 	bitmap.y = plot_y_;
 	bitmap.w = plot_w_;
 	bitmap.h = plot_h_;
-	// Create a bitmap with the same dimensions as the plot area. 
-	size_t bitmap_size = plot_w_ * plot_h_ * 3; // 4 bytes per pixel for RGB
-	bitmap.data = new unsigned char[bitmap_size](); // RGB bitmap
-	// Clear the bitmap to transparent black.
-	std::memset(bitmap.data, 0, bitmap_size);
+	// Using the density_bitmap_ vector to store the pixel data for the bitmap.
+	// This is deliberately avoiding the run-time checks on indexing for performance reasons.
+	// so check once here:
+	if (density_bitmap_.size() != static_cast<size_t>(plot_w_ * plot_h_ * 3)) {
+		throw std::invalid_argument("Density bitmap size does not match plot area dimensions.");
+		return;
+	}
+	bitmap.data = density_bitmap_.data();
 	plot_segment_t segment(bitmap);
 	density_plot.segments.push_back(segment);
 
@@ -1111,13 +1114,6 @@ void zc_graph_::resize(int X, int Y, int W, int H) {
 void zc_graph_::clear_plot_data() {
 	for (auto& plot_data : plot_data_) {
 		for (auto& layer_pair : plot_data.layer_data) {
-			for (auto& obj : layer_pair.second) {
-				for (auto& seg : obj.segments) {
-					if (seg.type == plot_segment_t::IMAGE) {
-						delete[] seg.b.data;
-					}
-				}
-			}
 			layer_pair.second.clear();
 		}
 	}
@@ -2448,4 +2444,5 @@ void zc_graph_density::layout() {
 			}
 		}
 	}
+	density_bitmap_.resize(plot_w_ * plot_h_ * 3); // RGB bitmap
 }
