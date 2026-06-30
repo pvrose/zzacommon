@@ -30,6 +30,9 @@ ZZACOMMON is based in part on the work of the FLTK project <A HREF=https://www.f
 
 It provides a number of FLTK-derived widgets and other object classes for general use:
 
+-zc_active_queue
+This is a queue that asks for more data when it is empty. 
+It is not thread-safe and should be used in a single thread context.
 - zc_async_deque
 This is a thread-safe deque that can be used to pass data between threads. It provides
 some of the basic functionality of std::deque with access locking.

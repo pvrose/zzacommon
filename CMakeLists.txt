@@ -21,9 +21,8 @@ if(NOT MSVC)
 endif()
 
 ## Library zzacommon. 
-project(ZZACOMMON VERSION 1.2.9.1
+project(ZZACOMMON VERSION 1.2.10
   DESCRIPTION "Common utilities for GM3ZZA software"
-  LANGUAGES CXX
 )
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
 
@@ -124,6 +123,7 @@ set(ZZAP_CPPFILES
 # Header files - used as dependencies for API documentation
 set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_INCLUDE_DIR}/zc_debug.h
+  ${ZZACOMMON_INCLUDE_DIR}/zc_active_queue.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_async_deque.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_async_queue.h
   ${ZZACOMMON_INCLUDE_DIR}/zc_audio.h
