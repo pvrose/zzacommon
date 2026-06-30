@@ -19,6 +19,7 @@
 #pragma once
 #include <queue>
 #include <functional>
+#include <stdexcept>
 
 //! \brief A queue that asks for more data when it is empty.
 //! It is not thread-safe and should be used in a single thread context.
