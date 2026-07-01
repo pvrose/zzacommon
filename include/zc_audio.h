@@ -138,6 +138,7 @@ public:
     //! Set Sample rate (samples per second)
     void sample_rate(double s) {
         sample_rate_ = s;
+        enumerate_ports();
     }
     //! Get sample rate (samples per second)
     double sample_rate() const {

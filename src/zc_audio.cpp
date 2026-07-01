@@ -311,61 +311,56 @@ void zc_audio::enumerate_ports() {
     PaDeviceIndex num_devices = Pa_GetDeviceCount();
     char t[128];
     const PaDeviceInfo* info;
-    // TODO this will haveto change if ever a variable sample-rate is implemented.
-    // For now we assume once these have been read in a session, they do not change.
-    if (port_ids_.size() == 0) {
-        // port_indices_.clear();
-        // port_names_.clear();
-        if (num_devices < 0) {
-            if (status_) {
-                status_->misc_status(ST_ERROR, "No audio devices");
-            }
-            return;
+    port_ids_.clear();
+    if (num_devices < 0) {
+        if (status_) {
+            status_->misc_status(ST_ERROR, "No audio devices");
         }
-        for (auto ix = 0; ix < num_devices; ix++) {
-            info = Pa_GetDeviceInfo(ix);
-            if (info) {
-                const PaHostApiInfo* api_info = Pa_GetHostApiInfo(info->hostApi);
-                printf("DEBUG: Checking port %d (%s/%s)", ix, api_info->name, info->name);
-                // Set output stream parametsr
-                PaStreamParameters parameters;
-                parameters.device = ix;   // \todo set up from settings
-                parameters.channelCount = channels_;       
-                parameters.sampleFormat = paFloat32;    // double
-                parameters.suggestedLatency =
-                    info->defaultHighOutputLatency;
+        return;
+    }
+    for (auto ix = 0; ix < num_devices; ix++) {
+        info = Pa_GetDeviceInfo(ix);
+        if (info) {
+            const PaHostApiInfo* api_info = Pa_GetHostApiInfo(info->hostApi);
+            printf("DEBUG: Checking port %d (%s/%s)", ix, api_info->name, info->name);
+            // Set output stream parametsr
+            PaStreamParameters parameters;
+            parameters.device = ix;   // \todo set up from settings
+            parameters.channelCount = channels_;       
+            parameters.sampleFormat = paFloat32;    // double
+            parameters.suggestedLatency =
+                info->defaultHighOutputLatency;
 #ifdef _WIN32
-                // Set WASAPI parameters - allow up/down sampling
-                if (api_info->type == paWASAPI) {
-                    PaWasapiStreamInfo wasapi_info;
-                    wasapi_info.size = sizeof(PaWasapiStreamInfo);
-                    wasapi_info.hostApiType = paWASAPI;
-                    wasapi_info.version = 1;
-                    wasapi_info.flags = paWinWasapiAutoConvert;
-                    parameters.hostApiSpecificStreamInfo = &wasapi_info;
-                }
-                else {
-                    parameters.hostApiSpecificStreamInfo = nullptr;
-                }
-#else
+            // Set WASAPI parameters - allow up/down sampling
+            if (api_info->type == paWASAPI) {
+                PaWasapiStreamInfo wasapi_info;
+                wasapi_info.size = sizeof(PaWasapiStreamInfo);
+                wasapi_info.hostApiType = paWASAPI;
+                wasapi_info.version = 1;
+                wasapi_info.flags = paWinWasapiAutoConvert;
+                parameters.hostApiSpecificStreamInfo = &wasapi_info;
+            }
+            else {
                 parameters.hostApiSpecificStreamInfo = nullptr;
+            }
+#else
+            parameters.hostApiSpecificStreamInfo = nullptr;
 #endif
 
-                if (direction_ == zc_audio_direction::AUDIO_OUT)
-                    err = Pa_IsFormatSupported(nullptr, &parameters, sample_rate_);
-                else 
-                    err = Pa_IsFormatSupported(&parameters, nullptr, sample_rate_);
+            if (direction_ == zc_audio_direction::AUDIO_OUT)
+                err = Pa_IsFormatSupported(nullptr, &parameters, sample_rate_);
+            else 
+                err = Pa_IsFormatSupported(&parameters, nullptr, sample_rate_);
 
-                if (err == paFormatIsSupported) {
-                    port_id id;
-                    id.audio_host = api_info->name;
-                    id.port_name = info->name;
-                    port_ids_[ix] = id;
-                    printf(" - OK\n");
-                }
-                else {
-                    printf(" - Not OK - %s\n", Pa_GetErrorText(err));
-                }
+            if (err == paFormatIsSupported) {
+                port_id id;
+                id.audio_host = api_info->name;
+                id.port_name = info->name;
+                port_ids_[ix] = id;
+                printf(" - OK\n");
+            }
+            else {
+                printf(" - Not OK - %s\n", Pa_GetErrorText(err));
             }
         }
     }
