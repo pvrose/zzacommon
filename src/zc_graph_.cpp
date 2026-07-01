@@ -878,12 +878,7 @@ int zc_graph_::get_tick_angle(
 }
 
 //! \brief override of Fl_Group handle to allow for zooming and scrolling on axes.
-// TODO: Implement and test the major functionality before adding 
-// zooming and scrolling
 int zc_graph_::handle(int event) {
-	// TODO: Using the return value from zoom and scroll is not ideal as
-	// it is not clear whether the event was handled by the axis or not only
-	// that it was completely successful.
 	if (event == FL_MOUSEWHEEL) {
 		// Get the mouse wheel delta and position, and the state of the modifier keys.
 		int dy = Fl::event_dy();

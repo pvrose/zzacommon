@@ -250,7 +250,6 @@ bool zc_url_handler::post_form(std::string url, std::vector<field_pair> fields, 
 			curl_mime_data_cb(field, req_length, cb_read, nullptr, nullptr, req);
 		}
 		else {
-			// TODO: Report error
 		}
 		// Add a filename - if supplied
 		if ((*it).filename.length()) {
