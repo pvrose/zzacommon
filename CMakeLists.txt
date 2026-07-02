@@ -923,7 +923,6 @@ if(NOT COMMAND zzacommon_copy_api_docs)
 endif()
 
 # generate API documentation
-if (ZZACOMMON_DOX)
   message(STATUS "ZZACOMMON: Adding API documentation")
   add_subdirectory(api)
 
@@ -932,30 +931,6 @@ if (ZZACOMMON_DOX)
   if (NOT PROJECT_IS_TOP_LEVEL)
     set(ZZACOMMON_API_HTML_DIR ${ZZACOMMON_API_HTML_DIR} PARENT_SCOPE)
   endif()
-
-  # Add dependency for all built component targets
-  if(NOT ZZAF_INDEX EQUAL -1)
-    add_dependencies(zzaf zzacommon_api_html)
-  endif()
-  if(NOT ZZAB_INDEX EQUAL -1)
-    add_dependencies(zzab zzacommon_api_html)
-  endif()
-  if(NOT ZZAX_INDEX EQUAL -1)
-    add_dependencies(zzax zzacommon_api_html)
-  endif()
-  if(NOT ZZAM_INDEX EQUAL -1)
-    add_dependencies(zzam zzacommon_api_html)
-  endif()
-  if(NOT ZZAFB_INDEX EQUAL -1)
-    add_dependencies(zzafb zzacommon_api_html)
-  endif()
-  if(NOT ZZAD_INDEX EQUAL -1)
-    add_dependencies(zzad zzacommon_api_html)
-  endif()
-  if(NOT ZZAP_INDEX EQUAL -1)
-    add_dependencies(zzap zzacommon_api_html)
-  endif()
-endif()
 
 # Installation rules for component targets
 if (BUILD_SHARED_LIBS)
