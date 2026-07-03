@@ -1,4 +1,4 @@
 # Copilot Instructions
 
 ## Project Guidelines
-- User requires explicit per-imported-library config mapping (not global CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO) because global mapping breaks other packages.
+- Use explicit per-imported-library MAP_IMPORTED_CONFIG_RELWITHDEBINFO mapping; do not use global CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO because it breaks other packages.

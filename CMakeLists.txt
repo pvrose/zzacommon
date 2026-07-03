@@ -990,33 +990,8 @@ if (BUILD_SHARED_LIBS)
   endif()
 endif()
 
-# Install library files and CMake config for find_package support
-include(CMakePackageConfigHelpers)
-
-# Configure version file (use write_basic_package_version_file for proper versioning)
-write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/zzacommonConfigVersion.cmake"
-  VERSION ${ZZACOMMON_VERSION}
-  COMPATIBILITY SameMajorVersion
-)
-
-# Configure build tree config file (simple version that uses exported targets)
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/zzacommonConfig-build.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/zzacommonConfig.cmake"
-  @ONLY
-)
-
 # Set the CMake directory variable for install tree config file
 set(ZZACOMMON_CMAKE_DIR "${CMAKE_INSTALL_PREFIX}/lib/cmake/zzacommon")
-
-# Configure install tree config file (use configure_package_config_file for proper package support)
-configure_package_config_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/zzacommonConfig.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/zzacommonConfig-install.cmake"
-  INSTALL_DESTINATION lib/cmake/zzacommon
-  PATH_VARS ZZACOMMON_CMAKE_DIR
-)
 
 # Install component libraries
 set(INSTALL_LIB_TARGETS "")
@@ -1071,17 +1046,6 @@ endif()
 # Install headers
 install(FILES ${ZZACOMMON_HPPFILES}
   DESTINATION include
-)
-
-# Install CMake config files
-install(FILES
-  "${CMAKE_CURRENT_BINARY_DIR}/zzacommonConfigVersion.cmake"
-  DESTINATION lib/cmake/zzacommon
-)
-install(FILES
-  "${CMAKE_CURRENT_BINARY_DIR}/zzacommonConfig-install.cmake"
-  DESTINATION lib/cmake/zzacommon
-  RENAME zzacommonConfig.cmake
 )
 
 # Install helper CMake modules
