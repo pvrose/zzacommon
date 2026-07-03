@@ -251,6 +251,14 @@ if(NOT ZZAB_INDEX EQUAL -1 OR NOT ZZAFB_INDEX EQUAL -1)
     find_package(Boost 1.83.0 CONFIG COMPONENTS filesystem)
   endif()
 
+  foreach(_bgt Boost::headers Boost::filesystem Boost::system Boost::asio)
+    if(TARGET ${_bgt})
+      set_target_properties(${_bgt} PROPERTIES
+        MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release
+      )
+    endif()
+  endforeach()
+
   if (Boost_FOUND)
     message(STATUS "Boost found: ${Boost_VERSION}")
     message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
@@ -294,6 +302,12 @@ if(NOT ZZAX_INDEX EQUAL -1)
       message(STATUS "ZLIB found via CONFIG mode: ${ZLIB_VERSION}")
     endif()
 
+    if(TARGET ZLIB::ZLIB)
+      set_target_properties(ZLIB::ZLIB PROPERTIES
+        MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release
+      )
+    endif()
+
     if(ZLIB_FOUND)
       message(STATUS "ZLIB libraries: ${ZLIB_LIBRARIES}")
 
@@ -328,12 +342,24 @@ if(NOT ZZAX_INDEX EQUAL -1)
   else()
     find_package(CURL REQUIRED)
   endif()
+
+ foreach(_ctgt
+    CURL::libcurl
+    CURL::libcurl_shared
+    CURL::libcurl_static
+   )
+   if(TARGET ${_ctgt})
+     set_target_properties(${_ctgt} PROPERTIES
+       MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release
+     )
+   endif()
+ endforeach()
+
   if (CURL_FOUND)
     message(STATUS "CURL found: ${CURL_VERSION}")
     message(STATUS "CURL include dir: ${CURL_INCLUDE_DIR}")
     message(STATUS "CURL libraries: ${CURL_LIBRARIES}")
 
-    # Find and export CURL DLL location for user applications (MSVC only)
     if(MSVC)
       zzacommon_find_curl_dlls("${VCPKG_ROOT}")
     endif()
@@ -760,7 +786,9 @@ if (NOT PROJECT_IS_TOP_LEVEL)
   if(NOT ZZAX_INDEX EQUAL -1)
     set(ZZACOMMON_ZLIB_DLL_RELEASE ${ZZACOMMON_ZLIB_DLL_RELEASE} PARENT_SCOPE)
     set(ZZACOMMON_ZLIB_DLL_DEBUG ${ZZACOMMON_ZLIB_DLL_DEBUG} PARENT_SCOPE)
-  endif()
+    set(ZZACOMMON_CURL_DLL_RELEASE ${ZZACOMMON_CURL_DLL_RELEASE} PARENT_SCOPE)
+    set(ZZACOMMON_CURL_DLL_DEBUG ${ZZACOMMON_CURL_DLL_DEBUG} PARENT_SCOPE)
+endif()
 
   # Export Boost DLL paths for user applications (if zzab or zzafb component is used)
   if(NOT ZZAB_INDEX EQUAL -1 OR NOT ZZAFB_INDEX EQUAL -1)

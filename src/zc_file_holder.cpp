@@ -48,7 +48,8 @@ extern debug_flag DEBUG_DEVELOPMENT;
 
 zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_control_t>& control) {
 	control_data_ = control;
-	char * pwd = fl_getcwd(nullptr, 256);
+	char pwd[1024];
+	fl_getcwd(pwd, sizeof(pwd));
 	std::string run_dir = zc::directory(arg0);
 	auto exe_path = boost::dll::program_location();
 	std::string s_exe_path = exe_path.string();

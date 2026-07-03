@@ -161,6 +161,12 @@ if(NOT ZZAB_REQUESTED EQUAL -1 OR NOT ZZAFB_REQUESTED EQUAL -1)
         set(BOOST_COMPONENTS filesystem)
     endif()
     find_package(Boost 1.83.0 CONFIG ${_BOOST_FIND_MODE} COMPONENTS ${BOOST_COMPONENTS})
+    foreach(component filesystem system asio)
+      if(TARGET Boost::${component})
+        set_target_properties(Boost::${component} PROPERTIES
+          MAP_IMPORTED_CONFIG_RELWITHDEBINFO "Release")
+      endif()
+    endforeach()
 
     if(NOT Boost_FOUND)
         if(zzacommon_FIND_REQUIRED_zzab OR zzacommon_FIND_REQUIRED_zzafb)
@@ -246,6 +252,19 @@ if(NOT ZZAX_REQUESTED EQUAL -1)
     else()
         find_package(CURL QUIET)
     endif()
+ 
+    foreach(_ctgt
+        CURL::libcurl
+        CURL::libcurl_shared
+        CURL::libcurl_static
+      )
+      if(TARGET ${_ctgt})
+        set_target_properties(${_ctgt} PROPERTIES
+          MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release
+        )
+      endif()
+    endforeach()
+
 
     if(NOT CURL_FOUND)
         if(zzacommon_FIND_REQUIRED_zzax)
@@ -264,6 +283,11 @@ if(NOT ZZAX_REQUESTED EQUAL -1)
         find_package(ZLIB CONFIG QUIET)
         if(NOT ZLIB_FOUND)
             find_package(ZLIB MODULE QUIET)
+        endif()
+
+        if(TARGET ZLIB::ZLIB)
+          set_target_properties(ZLIB::ZLIB PROPERTIES
+            MAP_IMPORTED_CONFIG_RELWITHDEBINFO "Release")
         endif()
 
         if(NOT ZLIB_FOUND)
