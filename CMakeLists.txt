@@ -32,11 +32,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 ## Set home directory per OS.
-if(MSVC)
-  set(USER_HOME_DIR $ENV{USERPROFILE})
-else()
-  set(USER_HOME_DIR $ENV{HOME})
-endif()
+file(REAL_PATH "~" USER_HOME_PATH EXPAND_TILDE)
+file(TO_CMAKE_PATH "${USER_HOME_PATH}" USER_HOME_PATH) 
+set(USER_HOME_PATH ${USER_HOME_PATH} PARENT_SCOPE)
+message(STATUS "Setting home path to ${USER_HOME_PATH}")
 
 ## Detect vcpkg root if not already set
 if(NOT DEFINED VCPKG_ROOT AND DEFINED ENV{VCPKG_ROOT})
@@ -45,8 +44,8 @@ if(NOT DEFINED VCPKG_ROOT AND DEFINED ENV{VCPKG_ROOT})
 elseif(NOT DEFINED VCPKG_ROOT)
   # Try common locations
   if(MSVC)
-    if(EXISTS "${USER_HOME_DIR}/source/repos/vcpkg")
-      set(VCPKG_ROOT "${USER_HOME_DIR}/source/repos/vcpkg")
+    if(EXISTS "${USER_HOME_PATH}/source/repos/vcpkg")
+      set(VCPKG_ROOT "${USER_HOME_PATH}/source/repos/vcpkg")
       message(STATUS "Auto-detected VCPKG_ROOT: ${VCPKG_ROOT}")
     elseif(EXISTS "C:/vcpkg")
       set(VCPKG_ROOT "C:/vcpkg")
@@ -54,6 +53,7 @@ elseif(NOT DEFINED VCPKG_ROOT)
     endif()
   endif()
 endif()
+file(TO_CMAKE_PATH "${VCPKG_ROOT}" VCPKG_ROOT)
 
 
 # Set timestamp and version into files (build directory to avoid unnecessary rebuilds)
@@ -217,6 +217,7 @@ if(NOT ZZAF_INDEX EQUAL -1 OR NOT ZZAX_INDEX EQUAL -1 OR NOT ZZAFB_INDEX EQUAL -
     if (NOT FLTK_DIR)
       message(FATAL_ERROR "Please set FLTK_DIR") 
     else()
+      file(TO_CMAKE_PATH "${FLTK_DIR}" FLTK_DIR)
       message(STATUS "Using FLTK_DIR: ${FLTK_DIR}")
     endif()
   endif()
@@ -378,6 +379,7 @@ if(NOT ZZAP_INDEX EQUAL -1)
 
   if(PORTAUDIO_ROOT)
     if(MSVC)
+      file(TO_CMAKE_PATH "${PORTAUDIO_ROOT}" PORTAUDIO_ROOT)
       # Add PortAudio source as subdirectory (as done in zzatts)
       add_subdirectory(${PORTAUDIO_ROOT}
         ${CMAKE_BINARY_DIR}/portaudio 
@@ -483,14 +485,14 @@ if(NOT ZZAFB_INDEX EQUAL -1)
 
     if(NOT nlohmann_json_FOUND)
       # Fallback to hardcoded path if it exists
-      if(EXISTS "${USER_HOME_DIR}\\source\\repos\\json\\include")
-        message(STATUS "nlohmann_json: Using local installation at ${USER_HOME_DIR}\\source\\repos\\json\\include")
-        set(NLOHMANN_JSON_INCLUDE_DIR "${USER_HOME_DIR}\\source\\repos\\json\\include")
+      if(EXISTS "${USER_HOME_PATH}/source/repos/json/include")
+        message(STATUS "nlohmann_json: Using local installation at ${USER_HOME_PATH}/source/repos/json/include")
+        set(NLOHMANN_JSON_INCLUDE_DIR "${USER_HOME_PATH}/source/repos/json/include")
       else()
         message(FATAL_ERROR "nlohmann_json not found. To resolve this:\n"
           "  1. Install nlohmann_json via vcpkg: vcpkg install nlohmann-json:x64-windows\n"
           "  2. Set VCPKG_ROOT environment variable, OR\n"
-          "  3. Install nlohmann_json to ${USER_HOME_DIR}\\source\\repos\\json\\include")
+          "  3. Install nlohmann_json to ${USER_HOME_PATH}/source/repos/json/include")
       endif()
     else()
       message(STATUS "nlohmann_json found via vcpkg CONFIG mode")
@@ -545,7 +547,7 @@ if(NOT ZZAF_INDEX EQUAL -1)
     PRIVATE ${FLTK_INCLUDE_DIR}
   )
   if(MSVC)
-    target_include_directories(zzaf PRIVATE ${USER_HOME_DIR}\\source\\repos\\json\\include)
+    target_include_directories(zzaf PRIVATE ${USER_HOME_PATH}/source/repos/json/include)
   endif()
   target_link_libraries(zzaf PUBLIC ${FLTK_LIBRARIES})
   if(NOT ZZAD_INDEX EQUAL -1)
@@ -599,14 +601,14 @@ if(NOT ZZAM_INDEX EQUAL -1)
 
     if(NOT nlohmann_json_FOUND)
       # Fallback to hardcoded path if it exists
-      if(EXISTS "${USER_HOME_DIR}\\source\\repos\\json\\include")
-        message(STATUS "nlohmann_json: Using local installation at ${USER_HOME_DIR}\\source\\repos\\json\\include")
-        set(NLOHMANN_JSON_INCLUDE_DIR "${USER_HOME_DIR}\\source\\repos\\json\\include")
+      if(EXISTS "${USER_HOME_PATH}/source/repos/json/include")
+        message(STATUS "nlohmann_json: Using local installation at ${USER_HOME_PATH}/source/repos/json/include")
+        set(NLOHMANN_JSON_INCLUDE_DIR "${USER_HOME_PATH}/source/repos/json/include")
       else()
         message(FATAL_ERROR "nlohmann_json not found. To resolve this:\n"
           "  1. Install nlohmann_json via vcpkg: vcpkg install nlohmann-json:x64-windows\n"
           "  2. Set VCPKG_ROOT environment variable, OR\n"
-          "  3. Install nlohmann_json to ${USER_HOME_DIR}\\source\\repos\\json\\include")
+          "  3. Install nlohmann_json to ${USER_HOME_PATH}/source/repos/json/include")
       endif()
     else()
       message(STATUS "nlohmann_json found via vcpkg CONFIG mode")
