@@ -956,8 +956,12 @@ endif()
   message(STATUS "ZZACOMMON: Adding API documentation")
   add_subdirectory(api)
 
-  # Set the API documentation output directory
-  set(ZZACOMMON_API_HTML_DIR "${CMAKE_CURRENT_BINARY_DIR}/api/html")
+  # Get API documentation output directory from api/CMakeLists.txt.
+  # Keep a fallback for compatibility if the subdirectory did not export it.
+  if(NOT ZZACOMMON_API_HTML_DIR)
+    set(ZZACOMMON_API_HTML_DIR "${CMAKE_CURRENT_BINARY_DIR}/api/html")
+  endif()
+  set(ZZACOMMON_API_HTML_DIR "${ZZACOMMON_API_HTML_DIR}" CACHE INTERNAL "zzacommon API documentation directory" FORCE)
   if (NOT PROJECT_IS_TOP_LEVEL)
     set(ZZACOMMON_API_HTML_DIR ${ZZACOMMON_API_HTML_DIR} PARENT_SCOPE)
   endif()

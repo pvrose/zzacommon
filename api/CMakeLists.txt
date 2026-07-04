@@ -21,8 +21,12 @@ if(DOXYGEN_FOUND)
 
   message(STATUS "Doxygen found: ${DOXYGEN_EXECUTABLE}")
 
+  # Canonical API docs output path that consumers can use.
+  set(DOXY_ZZACOMMON_API_HTML_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
+  set(ZZACOMMON_API_HTML_DIR "${DOXY_ZZACOMMON_API_HTML_DIR}" CACHE INTERNAL "zzacommon API documentation directory" FORCE)
+
   # Set project files
-  set(DOXY_ZZACOMMON_API_INDEX_FILE index.html)
+  set(DOXY_ZZACOMMON_API_INDEX_FILE "${DOXY_ZZACOMMON_API_HTML_DIR}/index.html")
   set(DOXY_ZZACOMMON_API_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
   set(DOXY_ZZACOMMON_API_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
