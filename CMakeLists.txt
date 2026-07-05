@@ -141,6 +141,7 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_SOURCE_DIR}/include/zc_filename_input.h
   ${ZZACOMMON_SOURCE_DIR}/include/zc_fltk.h
   ${ZZACOMMON_SOURCE_DIR}/include/zc_graph_.h
+  ${ZZACOMMON_SOURCE_DIR}/include/zc_icons.h
   ${ZZACOMMON_SOURCE_DIR}/include/zc_input_hierch.h
   ${ZZACOMMON_SOURCE_DIR}/include/zc_line_style.h
   ${ZZACOMMON_SOURCE_DIR}/include/zc_password_input.h

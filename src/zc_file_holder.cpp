@@ -30,6 +30,8 @@
 
 #include <FL/fl_utf8.h>
 #include <FL/Fl_PNG_Image.H>
+#include <FL/Fl_RGB_Image.H>
+#include <FL/Fl_SVG_Image.H>
 #include <FL/Fl_Window.H>
 
 #include <boost/filesystem.hpp>
@@ -66,7 +68,7 @@ zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_co
 	default_git_directory_ = APP_SOURCE_DIR + "/reference/";
 	// Test the path using the icon
 	std::string logo = get_filename(FILE_ICON_ZZA);
-	Fl_PNG_Image* ilog = new Fl_PNG_Image(logo.c_str());
+	Fl_RGB_Image* ilog = new Fl_PNG_Image(logo.c_str());
 	if (ilog && !ilog->fail()) {
 		zc_app::set_debug(DEBUG_DEVELOPMENT);
 	} else {

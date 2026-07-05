@@ -41,6 +41,7 @@
 #include <FL/Fl_Multiline_Output.H>
 #include <FL/Fl_Output.H>
 #include <FL/Fl_PNG_Image.H>
+#include <FL/Fl_SVG_Image.H>
 #include <FL/Fl_Text_Buffer.H>
 #include <FL/Fl_Text_Display.H>
 #include <FL/Enumerations.H>
@@ -103,7 +104,7 @@ void zc_banner::create_form() {
 	// Create a box to hild the icon and resize it thereinto
 	bx_icon_ = new Fl_Box(curr_x, curr_y, HICON, HICON);
 	std::string fn_icon = file_holder_->get_filename(FILE_ICON_ZZA);
-	Fl_PNG_Image* main_icon = new Fl_PNG_Image(fn_icon.c_str());
+	Fl_Image* main_icon = new Fl_PNG_Image(fn_icon.c_str());
 	Fl_Image* image = main_icon->copy();
 	image->scale(HICON, HICON);
 	bx_icon_->image(image);
