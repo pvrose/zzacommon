@@ -93,6 +93,9 @@ is derived from zc_graph_cartesian.
 This class provides a polar line graph and is derived from zc_graph_.
   - zc_graph_smith
 This class provides a Smith chart and is derived from zc_graph_.
+- zc_icons.h
+This provides a set of icons that can be used in applications. The icons
+are resizeable and can have their fill colour changed.
 - zc_input_hierch
 This is an extension of Fl_Input_Choice that uses a hierarchic menu for use where
 there are a large number of menu options. The supplied options are split into

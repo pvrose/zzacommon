@@ -279,22 +279,30 @@ endfunction()
 # Legacy function for API documentation copy (unchanged)
 # Usage: zzacommon_copy_api_docs(destination_directory)
 function(zzacommon_copy_api_docs DESTINATION_DIR)
+    set(options "")
+    set(oneValueArgs OUT_TARGET)
+    set(multiValueArgs "")
+    cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
     if(NOT ZZACOMMON_API_HTML_DIR)
         message(WARNING "zzacommon: API documentation directory not available. Build zzacommon with ZZACOMMON_DOX=ON to generate documentation.")
         return()
     endif()
 
-    if(NOT EXISTS "${ZZACOMMON_API_HTML_DIR}")
-        message(WARNING "zzacommon: API documentation directory does not exist: ${ZZACOMMON_API_HTML_DIR}")
-        return()
-    endif()
+    string(MAKE_C_IDENTIFIER "${DESTINATION_DIR}" _dest_id)
+    set(_copy_target "copy_zzacommon_docs_${_dest_id}")
 
-    file(MAKE_DIRECTORY "${DESTINATION_DIR}")
-
-    file(COPY "${ZZACOMMON_API_HTML_DIR}/"
-        DESTINATION "${DESTINATION_DIR}"
-        PATTERN "*"
+    add_custom_target(${_copy_target}
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${DESTINATION_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${ZZACOMMON_API_HTML_DIR}" "${DESTINATION_DIR}"
+        COMMENT "zzacommon: Copying API documentation to ${DESTINATION_DIR}"
     )
 
-    message(STATUS "zzacommon: Copied API documentation from ${ZZACOMMON_API_HTML_DIR} to ${DESTINATION_DIR}")
+    if(TARGET zzacommon_api_html)
+        add_dependencies(${_copy_target} zzacommon_api_html)
+    endif()
+
+    if(ARG_OUT_TARGET)
+        set(${ARG_OUT_TARGET} "${_copy_target}" PARENT_SCOPE)
+    endif()
 endfunction()

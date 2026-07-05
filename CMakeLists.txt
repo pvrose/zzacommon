@@ -799,11 +799,6 @@ endif()
     set(ZZACOMMON_BOOST_DLLS_DEBUG ${ZZACOMMON_BOOST_DLLS_DEBUG} PARENT_SCOPE)
   endif()
 
-  # Export API documentation directory
-  if(ZZACOMMON_DOX AND ZZACOMMON_API_HTML_DIR)
-    set(ZZACOMMON_API_HTML_DIR ${ZZACOMMON_API_HTML_DIR} PARENT_SCOPE)
-  endif()
-
   # Export PortAudio include directory for user applications (if zzap component is used)
   if(NOT ZZAP_INDEX EQUAL -1)
     set(ZZACOMMON_PORTAUDIO_INCLUDE_DIR ${PORTAUDIO_INCLUDE_DIR} PARENT_SCOPE)
