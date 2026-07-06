@@ -20,12 +20,14 @@
 #include "zc_button_input.h"
 #include "zc_calendar.h"
 #include "zc_fltk.h"
+#include "zc_icons.h"
 #include "zc_utils.h"
 
 #include <cstring>
 #include <string>
 
 #include <FL/Fl.H>
+#include <FL/Fl_Image.H>
 #include <FL/Fl_Input.H>
 #include <FL/Fl_Widget.H>
 
@@ -34,9 +36,8 @@
 zc_calendar_input::zc_calendar_input(int X, int Y, int W, int H, const char* L) :
 	zc_button_input(X, Y, W, H, L)
 {
-	bn_->label("@calendar");
+	zc_add_icon_to_widget(bn_, zc_icon_t::ICON_CALENDAR);
 	bn_->callback(cb_button, nullptr);
-
 }
 
 zc_calendar_input::~zc_calendar_input() {}

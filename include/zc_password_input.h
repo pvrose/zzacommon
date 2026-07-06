@@ -18,6 +18,8 @@
 #pragma once
 #include "zc_button_input.h"
 
+class Fl_Image;
+
 //! \brief This class implements a combined input and button that allows the user
 //! to toggle the display of the input between clear text and hidden text.
 //! 
@@ -40,8 +42,6 @@ public:
 
     //! Callback to switch input between FL_NORMAL_INPUT and FL_SECRET_INPUT modes.
     static void cb_button(Fl_Widget* w, void* v);
-
-
 
 };
 

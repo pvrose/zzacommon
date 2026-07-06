@@ -18,12 +18,20 @@
 
 #pragma once
 
+#ifdef _WIN32
+#ifdef min
+#undef min
+#endif
+#endif
+
+#include <algorithm>
 #include <cstdint>
 #include <map>
 #include <string>
 
 #include <FL/Fl_SVG_Image.H>
 #include <FL/Fl_Image.H>
+#include <FL/Fl_Widget.H>
 #include <FL/Enumerations.H>
 
 //! \brief A class that supplies a number of icons for use in the application. 
@@ -50,7 +58,7 @@ enum class zc_icon_t : uint8_t {
 };
 
 //! \brief map of icons to their SVG data. The SVG data is stored as a string in the source code.
-std::map<zc_icon_t, std::string> zc_icon_data = {
+const std::map<zc_icon_t, std::string> zc_icon_data = {
 //! \cond
 	{ zc_icon_t::ICON_CALENDAR,
 	  "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewBox=\"0 -960 960 960\" width=\"24px\" fill=\"#e3e3e3\"><path d=\"M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Zm280 240q-17 0-28.5-11.5T440-440q0-17 11.5-28.5T480-480q17 0 28.5 11.5T520-440q0 17-11.5 28.5T480-400Zm-188.5-11.5Q280-423 280-440t11.5-28.5Q303-480 320-480t28.5 11.5Q360-457 360-440t-11.5 28.5Q337-400 320-400t-28.5-11.5ZM640-400q-17 0-28.5-11.5T600-440q0-17 11.5-28.5T640-480q17 0 28.5 11.5T680-440q0 17-11.5 28.5T640-400ZM480-240q-17 0-28.5-11.5T440-280q0-17 11.5-28.5T480-320q17 0 28.5 11.5T520-280q0 17-11.5 28.5T480-240Zm-188.5-11.5Q280-263 280-280t11.5-28.5Q303-320 320-320t28.5 11.5Q360-297 360-280t-11.5 28.5Q337-240 320-240t-28.5-11.5ZM640-240q-17 0-28.5-11.5T600-280q0-17 11.5-28.5T640-320q17 0 28.5 11.5T680-280q0 17-11.5 28.5T640-240Z\"/></svg>" },
@@ -87,7 +95,7 @@ std::map<zc_icon_t, std::string> zc_icon_data = {
 //! \param height The height of the icon.
 //! \param fill_colour The fill colour of the icon.
 //! \returns An Fl_Image pointer to the icon, or nullptr if the icon is not found.
-Fl_Image* zc_icon(zc_icon_t icon, int width, int height, Fl_Color fill_colour) {
+static Fl_Image* zc_icon(zc_icon_t icon, int width, int height, Fl_Color fill_colour) {
 	if (icon == zc_icon_t::ICON_NONE) return nullptr;
 	auto it = zc_icon_data.find(icon);
 	if (it == zc_icon_data.end()) return nullptr;
@@ -118,4 +126,25 @@ Fl_Image* zc_icon(zc_icon_t icon, int width, int height, Fl_Color fill_colour) {
 	}
 //	svg_image->scale(width, height);
 	return svg_image;
+}
+
+//! \brief Add the specified icon to the specified Fl_Widget. Add both the
+//! active and inactive icons to the widget. It will use the widget's size
+//! and the widget's colour to determine the size and color of the icon.
+static bool zc_add_icon_to_widget(Fl_Widget* widget, zc_icon_t icon) {
+	if (!widget) return false;
+	int width = widget->w() - 2;
+	int height = widget->h() - 2;
+	int min_size = std::min(width, height);
+	Fl_Color fill_colour = widget->labelcolor();
+	Fl_Image* icon_image = zc_icon(icon, min_size, min_size, fill_colour);
+	if (!icon_image) return false;
+	widget->bind_image(icon_image);
+	// Add an inactive icon for when the widget is inactive
+	Fl_Color inactive_fill_colour = fl_inactive(fill_colour);
+	Fl_Image* inactive_icon_image = zc_icon(icon, min_size, min_size, inactive_fill_colour);
+	if (inactive_icon_image) {
+		widget->bind_deimage(inactive_icon_image);
+	}
+	return true;
 }

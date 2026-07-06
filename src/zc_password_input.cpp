@@ -17,8 +17,10 @@
 */
 #include "zc_password_input.h"
 
-#include <zc_button_input.h>
+#include "zc_button_input.h"
+#include "zc_icons.h"
 
+#include <FL/Enumerations.H>
 #include <FL/Fl_Button.H>
 #include <FL/Fl_Input.H>
 #include <FL/Fl_Input_.H>
@@ -28,7 +30,7 @@ zc_password_input::zc_password_input(int X, int Y, int W, int H, const char* L) 
 	zc_button_input(X, Y, W, H, L)
 {
 	ip_->type(FL_SECRET_INPUT);
-	bn_->label("@eyeshut");
+	zc_add_icon_to_widget(bn_, zc_icon_t::ICON_EYE_SHUT);
 	bn_->callback(cb_button);
 }
 
@@ -39,11 +41,11 @@ void zc_password_input::cb_button(Fl_Widget* w, void* v) {
 	switch (ip->type()) {
 	case FL_SECRET_INPUT:
 		ip->type(FL_NORMAL_INPUT);
-		bn->label("@eyeopen");
+		zc_add_icon_to_widget(bn, zc_icon_t::ICON_EYE_OPEN);
 		break;
 	case FL_NORMAL_INPUT:
 		ip->type(FL_SECRET_INPUT);
-		bn->label("@eyeshut");
+		zc_add_icon_to_widget(bn, zc_icon_t::ICON_EYE_SHUT);
 		break;
 	}
 	ip->redraw();
