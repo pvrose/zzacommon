@@ -2,6 +2,7 @@
 #include "zc_calendar_table.h"
 #include "zc_drawing.h"
 #include "zc_fltk.h"
+#include "zc_icons.h"
 #include "zc_utils.h"
 
 #include <ctime>
@@ -49,13 +50,15 @@ zc_calendar::zc_calendar(int X, int Y) :
 	// Create row 1 buttons
 
 	// previous year
-	Fl_Button* bn_0_0 = new Fl_Button(C0, R0, COLWIDTH, H0, "@<<");
+	Fl_Button* bn_0_0 = new Fl_Button(C0, R0, COLWIDTH, H0);
+	zc_add_icon_to_widget(bn_0_0, zc_icon_t::ICON_FREWIND);
 	bn_0_0->box(FL_UP_BOX);
 	bn_0_0->callback(cb_bn_cal, (void*)BN_PREV_Y);
 	bn_0_0->when(FL_WHEN_RELEASE);
 	bn_0_0->tooltip("Previous year");
 	// previous month
-	Fl_Button* bn_0_1 = new Fl_Button(C1, R0, COLWIDTH, H0, "@<");
+	Fl_Button* bn_0_1 = new Fl_Button(C1, R0, COLWIDTH, H0);
+	zc_add_icon_to_widget(bn_0_1, zc_icon_t::ICON_REWIND);
 	bn_0_1->box(FL_UP_BOX);
 	bn_0_1->callback(cb_bn_cal, (void*)BN_PREV_M);
 	bn_0_1->when(FL_WHEN_RELEASE);
@@ -65,19 +68,22 @@ zc_calendar::zc_calendar(int X, int Y) :
 	month_bn_->box(FL_FLAT_BOX);
 	month_bn_->tooltip("The current month");
 	// next month
-	Fl_Button* bn_0_3 = new Fl_Button(C3, R0, COLWIDTH, H0, "@>");
+	Fl_Button* bn_0_3 = new Fl_Button(C3, R0, COLWIDTH, H0);
+	zc_add_icon_to_widget(bn_0_3, zc_icon_t::ICON_FORWARD);
 	bn_0_3->box(FL_UP_BOX);
 	bn_0_3->callback(cb_bn_cal, (void*)BN_NEXT_M);
 	bn_0_3->when(FL_WHEN_RELEASE);
 	bn_0_3->tooltip("Next month");
 	// next year
-	Fl_Button* bn_0_4 = new Fl_Button(C4, R0, COLWIDTH, H0, "@>>");
+	Fl_Button* bn_0_4 = new Fl_Button(C4, R0, COLWIDTH, H0);
+	zc_add_icon_to_widget(bn_0_4, zc_icon_t::ICON_FFORWARD);
 	bn_0_4->box(FL_UP_BOX);
 	bn_0_4->callback(cb_bn_cal, (void*)BN_NEXT_Y);
 	bn_0_4->when(FL_WHEN_RELEASE);
 	bn_0_4->tooltip("Next year");
 	// today
-	Fl_Button* bn_0_5 = new Fl_Button(C5, R0, COLWIDTH, H0, "@>|");
+	Fl_Button* bn_0_5 = new Fl_Button(C5, R0, COLWIDTH, H0);
+	zc_add_icon_to_widget(bn_0_5, zc_icon_t::ICON_TODAY);
 	bn_0_5->box(FL_UP_BOX);
 	bn_0_5->callback(cb_bn_cal, (void*)BN_TODAY);
 	bn_0_5->when(FL_WHEN_RELEASE);
@@ -92,14 +98,12 @@ zc_calendar::zc_calendar(int X, int Y) :
 	table_->col_width_all(COLWIDTH - 1);
 
 	// Row 3 - OK/Cancel buttons
-	Fl_Button* bn_2_3 = new Fl_Button(C4, R2, COLWIDTH, H2, "@circle");
-	bn_2_3->labelcolor(FL_GREEN);
+	Fl_Button* bn_2_3 = new Fl_Button(C4, R2, COLWIDTH, H2, "\360\237\227\271");
 	bn_2_3->callback(cb_bn_cal, (void*)BN_OK);
 	bn_2_3->when(FL_WHEN_RELEASE);
 	bn_2_3->tooltip("Set selected date and close");
 	
-	Fl_Button* bn_2_4 = new Fl_Button(C5, R2, COLWIDTH, H2, "@square");
-	bn_2_4->labelcolor(FL_RED);
+	Fl_Button* bn_2_4 = new Fl_Button(C5, R2, COLWIDTH, H2, "\342\234\230");
 	bn_2_4->callback(cb_bn_cal, (void*)BN_CANCEL);
 	bn_2_4->when(FL_WHEN_RELEASE);
 	bn_2_4->tooltip("Close without changing date");

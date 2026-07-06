@@ -19,6 +19,7 @@
 #include "zc_button_input.h"
 
 #include "zc_fltk.h"
+#include "zc_icons.h"
 #include "zc_utils.h"
 
 #include <cstdio>
@@ -33,7 +34,7 @@ zc_filename_input::zc_filename_input(int X, int Y, int W, int H, const char* L) 
     pattern_(nullptr) ,
     type_(FILE)
 {
-    bn_->label("@fileopen");
+    zc_add_icon_to_widget(bn_, zc_icon_t::ICON_FILE_SEARCH);
     bn_->callback(cb_button);
 
 }
