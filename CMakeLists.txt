@@ -21,7 +21,7 @@ if(NOT MSVC)
 endif()
 
 ## Library zzacommon. 
-project(ZZACOMMON VERSION 1.2.11
+project(ZZACOMMON VERSION 1.2.12
   DESCRIPTION "Common utilities for GM3ZZA software"
 )
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
@@ -961,110 +961,3 @@ endif()
     set(ZZACOMMON_API_HTML_DIR ${ZZACOMMON_API_HTML_DIR} PARENT_SCOPE)
   endif()
 
-#[=[  
-# Installation rules for component targets
-if (BUILD_SHARED_LIBS)
-  set(INSTALL_TARGETS "")
-  if(NOT ZZAF_INDEX EQUAL -1)
-    list(APPEND INSTALL_TARGETS zzaf)
-  endif()
-  if(NOT ZZAB_INDEX EQUAL -1)
-    list(APPEND INSTALL_TARGETS zzab)
-  endif()
-  if(NOT ZZAX_INDEX EQUAL -1)
-    list(APPEND INSTALL_TARGETS zzax)
-  endif()
-  if(NOT ZZAM_INDEX EQUAL -1)
-    list(APPEND INSTALL_TARGETS zzam)
-  endif()
-  if(NOT ZZAFB_INDEX EQUAL -1)
-    list(APPEND INSTALL_TARGETS zzafb)
-  endif()
-  if(NOT ZZAD_INDEX EQUAL -1)
-    list(APPEND INSTALL_TARGETS zzad)
-  endif()
-  if(NOT ZZAP_INDEX EQUAL -1)
-    list(APPEND INSTALL_TARGETS zzap)
-  endif()
-
-  if(INSTALL_TARGETS)
-    install(TARGETS ${INSTALL_TARGETS})
-  endif()
-endif()
-
-# Set the CMake directory variable for install tree config file
-set(ZZACOMMON_CMAKE_DIR "${CMAKE_INSTALL_PREFIX}/lib/cmake/zzacommon")
-
-# Install component libraries
-set(INSTALL_LIB_TARGETS "")
-if(NOT ZZAF_INDEX EQUAL -1)
-  list(APPEND INSTALL_LIB_TARGETS zzaf)
-endif()
-if(NOT ZZAB_INDEX EQUAL -1)
-  list(APPEND INSTALL_LIB_TARGETS zzab)
-endif()
-if(NOT ZZAX_INDEX EQUAL -1)
-  list(APPEND INSTALL_LIB_TARGETS zzax)
-  # Also install pugixml if zzax is being installed (since it's a bundled dependency)
-  if(TARGET pugixml)
-    list(APPEND INSTALL_LIB_TARGETS pugixml)
-  endif()
-endif()
-if(NOT ZZAM_INDEX EQUAL -1)
-  list(APPEND INSTALL_LIB_TARGETS zzam)
-endif()
-if(NOT ZZAFB_INDEX EQUAL -1)
-  list(APPEND INSTALL_LIB_TARGETS zzafb)
-endif()
-if(NOT ZZAD_INDEX EQUAL -1)
-  list(APPEND INSTALL_LIB_TARGETS zzad)
-endif()
-if(NOT ZZAP_INDEX EQUAL -1)
-  list(APPEND INSTALL_LIB_TARGETS zzap)
-endif()
-
-if(INSTALL_LIB_TARGETS)
-  set(_ZZACOMMON_INSTALL_CORE_TARGETS ${INSTALL_LIB_TARGETS})
-  list(REMOVE_ITEM _ZZACOMMON_INSTALL_CORE_TARGETS pugixml)
-
-  if(_ZZACOMMON_INSTALL_CORE_TARGETS)
-    install(TARGETS ${_ZZACOMMON_INSTALL_CORE_TARGETS}
-      ARCHIVE DESTINATION lib
-      LIBRARY DESTINATION lib
-      RUNTIME DESTINATION bin
-    )
-  endif()
-
-  if("pugixml" IN_LIST INSTALL_LIB_TARGETS)
-    install(TARGETS pugixml
-      ARCHIVE DESTINATION lib
-      LIBRARY DESTINATION lib
-      RUNTIME DESTINATION bin
-      FILE_SET common_headers DESTINATION include/pugixml
-    )
-  endif()
-endif()
-
-# Install headers
-install(FILES ${ZZACOMMON_HPPFILES}
-  DESTINATION include
-)
-
-# Install helper CMake modules
-install(FILES
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/vcpkg_helper.cmake"
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/zlib_vcpkg_helper.cmake"
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/zzacommon_runtime_helpers.cmake"
-  DESTINATION lib/cmake/zzacommon
-)
-
-# Install API documentation (if generated)
-if(ZZACOMMON_DOX AND EXISTS "${ZZACOMMON_API_HTML_DIR}")
-  install(DIRECTORY "${ZZACOMMON_API_HTML_DIR}"
-    DESTINATION share/doc/zzacommon
-    COMPONENT documentation
-  )
-  message(STATUS "zzacommon: Will install API documentation to share/doc/zzacommon/html")
-endif()
-
-#]=]
