@@ -961,6 +961,7 @@ endif()
     set(ZZACOMMON_API_HTML_DIR ${ZZACOMMON_API_HTML_DIR} PARENT_SCOPE)
   endif()
 
+#[=[  
 # Installation rules for component targets
 if (BUILD_SHARED_LIBS)
   set(INSTALL_TARGETS "")
@@ -1066,3 +1067,4 @@ if(ZZACOMMON_DOX AND EXISTS "${ZZACOMMON_API_HTML_DIR}")
   message(STATUS "zzacommon: Will install API documentation to share/doc/zzacommon/html")
 endif()
 
+#]=]
