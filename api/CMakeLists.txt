@@ -39,12 +39,17 @@ if(DOXYGEN_FOUND)
  
   # Command for generating dox from config file
   
-  add_custom_target(zzacommon_api_html 
-    DEPENDS ${DOXY_ZZACOMMON_API_FILES} ${DOXY_ZZACOMMON_API_OUT}
+  add_custom_command(
+    OUTPUT ${DOXY_ZZACOMMON_API_INDEX_FILE}
     COMMAND ${DOXYGEN_EXECUTABLE} ${DOXY_ZZACOMMON_API_OUT}
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    DEPENDS ${DOXY_ZZACOMMON_API_FILES} ${DOXY_ZZACOMMON_API_OUT}
     COMMENT "ZZACOMMON: Generating API documentation"
     VERBATIM
   )
+
+  add_custom_target(zzacommon_api_html DEPENDS ${DOXY_ZZACOMMON_API_INDEX_FILE})
+
+
 
 endif()

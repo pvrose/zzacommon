@@ -291,12 +291,18 @@ function(zzacommon_copy_api_docs DESTINATION_DIR)
 
     string(MAKE_C_IDENTIFIER "${DESTINATION_DIR}" _dest_id)
     set(_copy_target "copy_zzacommon_docs_${_dest_id}")
+    set(_stamp "${CMAKE_CURRENT_BINARY_DIR}/${_copy_target}.stamp")
 
-    add_custom_target(${_copy_target}
-        COMMAND ${CMAKE_COMMAND} -E make_directory "${DESTINATION_DIR}"
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${ZZACOMMON_API_HTML_DIR}" "${DESTINATION_DIR}"
-        COMMENT "zzacommon: Copying API documentation to ${DESTINATION_DIR}"
+    add_custom_command(
+      OUTPUT "${_stamp}"
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${DESTINATION_DIR}"
+      COMMAND ${CMAKE_COMMAND} -E copy_directory "${ZZACOMMON_API_HTML_DIR}" "${DESTINATION_DIR}"
+      COMMAND ${CMAKE_COMMAND} -E touch "${_stamp}"
+      DEPENDS "${ZZACOMMON_API_HTML_DIR}/index.html"
+      COMMENT "zzacommon: Copying API documentation to ${DESTINATION_DIR}"
     )
+
+    add_custom_target(${_copy_target} DEPENDS "${_stamp}")
 
     if(TARGET zzacommon_api_html)
         add_dependencies(${_copy_target} zzacommon_api_html)
