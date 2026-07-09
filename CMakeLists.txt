@@ -20,8 +20,13 @@ if(NOT MSVC)
   set(CMAKE_POSITION_INDEPENDENT_CODE ON) 
 endif()
 
+# Get dynamic versioning.
+include(Gm3zzaVersioning)
+
+gm3zza_get_git_version(ZC_DYNAMIC_VERSION)
+
 ## Library zzacommon. 
-project(ZZACOMMON VERSION 1.2.12
+project(ZZACOMMON VERSION ${ZC_DYNAMIC_VERSION}
   DESCRIPTION "Common utilities for GM3ZZA software"
 )
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
