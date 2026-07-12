@@ -130,6 +130,9 @@ public:
 	//! Update the display after changing verbosity level.
 	void update_display();
 
+	//! Set banner \p text and colour \p colour.
+	void set_banner_text(const std::string& text, Fl_Color colour);
+
 protected:
 
 	//! Add message to the message history display (with colour)

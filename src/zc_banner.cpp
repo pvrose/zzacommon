@@ -64,9 +64,6 @@ Fl_Text_Display::Style_Table_Entry style_table_[NUMBER_STYLES] = {
 	{ STATUS_COLOURS.at(ST_FATAL).fg, FL_SCREEN, FL_NORMAL_SIZE, Fl_Text_Display::ATTR_BGCOLOR, STATUS_COLOURS.at(ST_FATAL).bg }
 };
 
-extern std::string APP_NAME;
-extern std::string APP_VERSION;
-extern debug_flag DEBUG_DEVELOPMENT;
 extern std::string COPYRIGHT;
 extern std::string CONTACT;
 extern zc_status* status_;
@@ -76,7 +73,6 @@ std::thread::id main_thread_id_ = std::this_thread::get_id();
 zc_banner::zc_banner(int W, int H, const char* L) :
 	Fl_Double_Window(W, H, L)
 {
-	label(" ");
 	callback(cb_close);
 	load_settings();
 	create_form();
@@ -113,18 +109,10 @@ void zc_banner::create_form() {
 	int avail_w = g_topleft->w() - HICON - GAP;
 
 	// App title
-	op_app_title_ = new Fl_Box(curr_x, curr_y, avail_w, HMULT);
-	op_app_title_->labelsize(FL_NORMAL_SIZE * 2);
+	op_app_title_ = new Fl_Box(curr_x, curr_y, avail_w, HMULT, "Title");
+	op_app_title_->labelsize(FL_NORMAL_SIZE * 5);
 	op_app_title_->labelfont(FL_BOLD);
-	std::string title = APP_NAME + " " + APP_VERSION;
-#ifdef _DEBUG
-	if (zc_app::debug(DEBUG_DEVELOPMENT)) title += "\n(DEVT/DEBUG)";
-#else
-	if (zc_app::debug(DEBUG_DEVELOPMENT)) title += "\n(DEVELOPMENT)";
-#endif
-	op_app_title_->copy_label(title.c_str());
 	op_app_title_->align(FL_ALIGN_LEFT | FL_ALIGN_INSIDE);
-
 
 	// Progress "clock"
 	curr_y += HMULT + GAP;
@@ -172,10 +160,9 @@ void zc_banner::create_form() {
 	curr_x = g_topleft->x() + g_topleft->w();
 	curr_y = g_topleft->y();
 
-	Fl_Group* g_topright = new Fl_Group(curr_x, curr_y, GAP, g_topleft->h());
-	g_topright->box(FL_FLAT_BOX);
+	Fl_Box* g_topright = new Fl_Box(curr_x, curr_y, GAP, g_topleft->h());
+	g_topright->box(FL_NO_BOX);
 
-	g_topright->end();
 	g_top->resizable(g_topright);
 	g_top->end();
 
@@ -235,6 +222,14 @@ void zc_banner::save_settings() {
 	zc_settings banner_settings(&settings, "Banner");
 	behav_settings.set("Verbosity", verbosity_);
 };
+
+// Set the banner text
+void zc_banner::set_banner_text(const std::string& text, Fl_Color colour) {
+	op_app_title_->copy_label(text.c_str());
+	op_app_title_->labelcolor(colour);
+	// Redraw in case label falls outwith widget.
+	redraw();
+}
 
 // Add a message to the banner
 void zc_banner::add_message(status_t type, const char* msg, const char* ts) {
@@ -363,9 +358,7 @@ void zc_banner::cancel_progress(const char* msg) {
 // Callback - close button - close app.
 void zc_banner::cb_close(Fl_Widget* w, void* v) {
 	zc_banner* banner = zc::ancestor_view<zc_banner>(w);
-	banner->op_app_title_->copy_label("CLOSING!");
-	banner->op_app_title_->labelsize(FL_NORMAL_SIZE * 2);
-	banner->op_app_title_->labelcolor(FL_RED);
+	banner->set_banner_text("CLOSING!", FL_RED);
 	// Pretend to click the close button on the main window
 	status_->close_(status_->window_, nullptr);
 }
@@ -435,9 +428,7 @@ void zc_banner::update_display() {
 
 // Set closing
 void zc_banner::close() {
-	op_app_title_->copy_label("CLOSING!");
-	op_app_title_->labelsize(FL_NORMAL_SIZE * 2);
-	op_app_title_->labelcolor(FL_RED);
+	set_banner_text("CLOSING!", FL_RED);
 	closing_ = true;
 }
 
