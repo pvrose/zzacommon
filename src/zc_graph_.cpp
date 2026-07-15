@@ -149,6 +149,34 @@ zc_graph_::range_t zc_graph_::get_axis_range(int axis_number) const {
 	return axis_data.current_range;
 }
 
+// Set the axis bar chart parameters.
+void zc_graph_::set_bar_labels(
+	int axis_number,
+	const std::vector<std::string>& labels,
+	double bar_gap,
+	double bar_overlap
+) {
+	// Check that this is only applied to axis 0
+	if (axis_number != 0) {
+		throw std::invalid_argument("Bar chart parameters can only be applied to axis 0");
+		return;
+	}
+	// Set the ranges to the number of labels.
+	const range_t range = { 0.0, static_cast<double>(labels.size() - 1) };
+	axis_data_t& axis_data = axes_data_[axis_number];
+	axis_data.is_bar_axis = true;
+	axis_data.bar_gap = bar_gap;
+	axis_data.bar_overlap = bar_overlap;
+	axis_data.inner_range = range;
+	axis_data.outer_range = range;
+	axis_data.default_range = range;
+	axis_data.ticks.clear();
+	for (size_t ix = 0; ix < labels.size(); ix++) {
+		axis_data.ticks.push_back({ static_cast<double>(ix), labels[ix], true });
+	}
+}
+
+
 // Add data to the graph for a specific set of coordinates.
 void zc_graph_::add_data_set(
 	int axis_number,                    //!< Axis number to add the data set for (e.g. 0 for X or R axis, 1 for Y or Theta axis)
@@ -629,9 +657,12 @@ void zc_graph_::generate_data_lines(int axis_number) {
 	int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the data along is the other axis
 	plot_data_[plot_number].layer_data[DATA].clear();
 
+	axis_data_t& axis_data = axes_data_[axis_number];
+	axis_data_t& axis_0_data = axes_data_[0];
+	// Do not draw lines for a bar chart.
+	if (axis_0_data.is_bar_axis) return;
+
 	for (const auto& data_set : data_sets_[axis_number]) {
-		axis_data_t& axis_data = axes_data_[axis_number];
-		axis_data_t& axis_0_data = axes_data_[0];
 		// Add the data set to the plot data for this axis number
 		// Create a new plot line for this data set.
 		plot_object_t plot_line;
@@ -748,6 +779,56 @@ void zc_graph_::generate_density_plot(
 	}
 	// Add the plot line to the plot data for this axis number.
 	plot_data_[2].layer_data[DATA].push_back(density_plot);
+}
+
+//! \brief Generate the bar polygons
+void zc_graph_::generate_bar_polygons(
+	int axis_number
+) {
+	// Check we are not drawing onto plot_data 0.
+	if (axis_number == 0) {
+		throw std::invalid_argument("Cannot add a data set for axis number 0. Axis number 0 is reserved for the primary axis and is used to define the X or R coordinates for the plot. Set axis parameters for axis 0 and add data sets for other axis numbers to plot data against the primary axis.");
+		return;
+	}
+	// get the bar parameters
+	axis_data_t& axis_data = axes_data_[axis_number];
+	axis_data_t& axis_0_data = axes_data_[0];
+
+	// Do not draw bars if it is not a bar chart
+	if (!axis_0_data.is_bar_axis) return;
+
+	int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the data along is the other axis
+	int number_sets = data_sets_[axis_number].size();
+	double& gap = axis_0_data.bar_gap;
+	double& overlap = axis_0_data.bar_overlap;
+	double step = 1.0 + (number_sets - 1) * (1.0 - overlap) + gap;
+	double bar_width = 1.0 / step;
+	double bar_offset = bar_width * (1.0 - overlap);
+	std::vector<data_set_t>& axis_data_sets = data_sets_.at(axis_number);
+	for (size_t ix = 0; ix < axis_data_sets.size(); ix++) {
+		const data_set_t& data_set = axis_data_sets[ix];
+		// Add the data set to the plot data for this axis number
+		// Add a vertex for each data point in the data set.
+		for (const auto& point : *(data_set.data)) {
+			// Create a plot object for each bar.
+			plot_object_t plot_bar;
+			plot_bar.shape = POLYGON;
+			plot_bar.style = data_set.style;
+			data_point_t p1;
+			// Get the four corners of the bar.
+			p1.first = point.first + ix * bar_offset;
+			p1.second = point.second;
+			plot_bar.segments.push_back(plot_segment_t(plot_vertex_t(p1)));
+			p1.second = 0;
+			plot_bar.segments.push_back(plot_segment_t(plot_vertex_t(p1)));
+			p1.first += bar_width;
+			plot_bar.segments.push_back(plot_segment_t(plot_vertex_t(p1)));
+			p1.second = point.second;
+			plot_bar.segments.push_back(plot_segment_t(plot_vertex_t(p1)));
+			// Add the plot bar to the plot data for this axis number.
+			plot_data_[plot_number].layer_data[DATA].push_back(plot_bar);
+		}
+	}
 }
 
 //! \brief Add a text label to the graph at a specific position.
@@ -2441,3 +2522,272 @@ void zc_graph_density::layout() {
 	}
 	density_bitmap_.resize(plot_w_ * plot_h_ * 3); // RGB bitmap
 }
+
+// Layout vertical bar chart
+void zc_graph_bar_vertical::layout() {
+	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
+	// calculate pixel dimensions for the plot area.
+	plot_x_ = x() + v_axis_width_;
+	plot_y_ = y();
+	plot_w_ = w() - v_axis_width_;
+	plot_h_ = h() - axis_width_;
+	double x_min = axes_data_[0].current_range.min;
+	// Add 1 to the maximum to allow the full bar width to be displayed.
+	double x_max = axes_data_[0].current_range.max + 1;
+	double y_min = axes_data_[1].current_range.min;
+	double y_max = axes_data_[1].current_range.max;
+	// data per pixel values
+	double dpp_x = (x_max - x_min) / plot_w_;
+	double dpp_y = (y_max - y_min) / plot_h_;
+	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
+	plot_xform_t xform_schema;
+	xform_schema.x_min_ = x_min - v_axis_width_ * dpp_x;
+	xform_schema.x_max_ = x_max;
+	xform_schema.y_min_ = y_min - axis_width_ * dpp_y;
+	xform_schema.y_max_ = y_max;
+	// Pre-calculate inverse scales for pixel_to_data conversion
+	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
+	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
+	xform_schema.scale_x_ = 1.0 / xform_schema.inv_scale_x_;
+	xform_schema.scale_y_ = 1.0 / xform_schema.inv_scale_y_;
+	plot_data_[1].xform_schema = xform_schema;
+	plot_data_[1].data_area.display_min = { x_min, y_min };
+	plot_data_[1].data_area.display_max = { x_max, y_max };
+	// Set the axis sizes and positions for the axes.
+	axes_data_[0].position = y_min;
+	axes_data_[0].tick_orientation = TICK_DECREASING;
+	axes_data_[0].inv_scale = dpp_x;
+	// Position the label in the middle of the axis, offset by 0.5 times the axis width in the appropriate direction.
+	// This is because the axis width is two text heights, so 0.5 times the axis width is 1 text height, 
+	// which should give a good distance between the label and the axis.
+	axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, y_min - axis_width_ * dpp_y * 0.5 };
+	axes_data_[0].label_angle = 0;
+	axes_data_[1].position = x_min;
+	axes_data_[1].tick_orientation = TICK_DECREASING;
+	axes_data_[1].inv_scale = dpp_y;
+	axes_data_[1].label_position = { x_min - v_axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
+	axes_data_[1].label_angle = 90;
+}
+
+// Get the layout area under the mouse based on the current layout of the graph.
+zc_graph_::layout_area_t zc_graph_bar_vertical::get_layout_area(int mouse_x, int mouse_y) const {
+	layout_area_t result = { false, -1 };
+	// Check if the mouse is over the plot area.
+	if (mouse_x >= plot_x_ && mouse_x <= plot_x_ + plot_w_ &&
+		mouse_y >= plot_y_ && mouse_y <= plot_y_ + plot_h_) {
+		result = { true, -1 };
+	}
+	// Check if the mouse is over either of the axes.
+	else if (mouse_x >= x() && mouse_x < plot_x_) {
+		result = { false, 1 };
+	}
+	else if (mouse_y > plot_y_ && mouse_y <= plot_y_ + plot_h_) {
+		result = { false, 0 };
+	}
+	return result;
+}
+
+// Add a marker for vertical bar graphs
+void zc_graph_bar_vertical::generate_value_marker(
+	int axis_number,
+	layer_t layer,
+	const value_marker_t& marker
+) {
+	// Get the other axis number: If axis 0 then axis 1.
+	int other_axis_number = (axis_number == 0) ? 1 : 0;
+	// Check the values are within the outer range for this axis
+	axis_data_t& axis_data = axes_data_[axis_number];
+	if (!axis_data.current_range.contains(marker.value_1) || !axis_data.current_range.contains(marker.value_2)) {
+		return;
+	}
+
+	// Ignore for the bar axis
+	if (axis_data.is_bar_axis) return;
+
+	axis_data_t& other_axis_data = axes_data_[other_axis_number];
+
+	int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the marker along is the other axis
+
+	// If the marker values are the same, add a single line marker. If they are different, add a shaded area marker.
+	if (marker.value_1 == marker.value_2) {
+		// Add a single line marker at value_1
+		plot_object_t marker_line;
+		marker_line.shape = LINE_STRIP;
+		marker_line.style = marker.style;
+		if (axis_number == 0) {
+			// Vertical line at X = value_1
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
+		}
+		else {
+			// Horizontal line at Y = value_1
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
+		}
+		plot_data_[plot_number].layer_data[layer].push_back(marker_line);
+	}
+	else {
+		// Draw a rectangle between value 1 and 2 on 1 axis and min and max on the other
+		plot_object_t marker_shape;
+		marker_shape.shape = POLYGON;
+		marker_shape.style = marker.style;
+		if (axis_number == 0) {
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+		}
+		else {
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+		}
+		plot_data_[plot_number].layer_data[layer].push_back(marker_shape);
+	}
+}
+
+void zc_graph_bar_vertical::set_click_value(int mouse_x, int mouse_y) {
+	// Convert the mouse coordinates to data coordinates
+	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - x()) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / w();
+	double cy = plot_data_[1].xform_schema.y_max_ + (y() - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / h();
+	// Store the click values
+	value_ = { std::floor(cx), cy };
+}
+
+// Layout vertical bar chart
+void zc_graph_bar_horizontal::layout() {
+	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
+	// calculate pixel dimensions for the plot area.
+	plot_x_ = x() + v_axis_width_;
+	plot_y_ = y();
+	plot_w_ = w() - v_axis_width_;
+	plot_h_ = h() - axis_width_;
+	double x_min = axes_data_[0].current_range.min;
+	// Add 1 to the maximum to allow the full bar width to be displayed.
+	double x_max = axes_data_[0].current_range.max;
+	double y_min = axes_data_[1].current_range.min;
+	double y_max = axes_data_[1].current_range.max + 1;
+	// data per pixel values
+	double dpp_x = (x_max - x_min) / plot_w_;
+	double dpp_y = (y_max - y_min) / plot_h_;
+	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
+	plot_xform_t xform_schema;
+	xform_schema.x_min_ = x_min - v_axis_width_ * dpp_x;
+	xform_schema.x_max_ = x_max;
+	xform_schema.y_min_ = y_min - axis_width_ * dpp_y;
+	xform_schema.y_max_ = y_max;
+	// Pre-calculate inverse scales for pixel_to_data conversion
+	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
+	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
+	xform_schema.scale_x_ = 1.0 / xform_schema.inv_scale_x_;
+	xform_schema.scale_y_ = 1.0 / xform_schema.inv_scale_y_;
+	plot_data_[1].xform_schema = xform_schema;
+	plot_data_[1].data_area.display_min = { x_min, y_min };
+	plot_data_[1].data_area.display_max = { x_max, y_max };
+	// Set the axis sizes and positions for the axes.
+	axes_data_[0].position = y_min;
+	axes_data_[0].tick_orientation = TICK_DECREASING;
+	axes_data_[0].inv_scale = dpp_x;
+	// Position the label in the middle of the axis, offset by 0.5 times the axis width in the appropriate direction.
+	// This is because the axis width is two text heights, so 0.5 times the axis width is 1 text height, 
+	// which should give a good distance between the label and the axis.
+	axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, y_min - axis_width_ * dpp_y * 0.5 };
+	axes_data_[0].label_angle = 0;
+	axes_data_[1].position = x_min;
+	axes_data_[1].tick_orientation = TICK_DECREASING;
+	axes_data_[1].inv_scale = dpp_y;
+	axes_data_[1].label_position = { x_min - v_axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
+	axes_data_[1].label_angle = 90;
+}
+
+// Get the layout area under the mouse based on the current layout of the graph.
+zc_graph_::layout_area_t zc_graph_bar_horizontal::get_layout_area(int mouse_x, int mouse_y) const {
+	layout_area_t result = { false, -1 };
+	// Check if the mouse is over the plot area.
+	if (mouse_x >= plot_x_ && mouse_x <= plot_x_ + plot_w_ &&
+		mouse_y >= plot_y_ && mouse_y <= plot_y_ + plot_h_) {
+		result = { true, -1 };
+	}
+	// Check if the mouse is over either of the axes.
+	else if (mouse_x >= x() && mouse_x < plot_x_) {
+		result = { false, 1 };
+	}
+	else if (mouse_y > plot_y_ && mouse_y <= plot_y_ + plot_h_) {
+		result = { false, 0 };
+	}
+	return result;
+}
+
+// Add a marker for vertical bar graphs
+void zc_graph_bar_horizontal::generate_value_marker(
+	int axis_number,
+	layer_t layer,
+	const value_marker_t& marker
+) {
+	// Get the other axis number: If axis 0 then axis 1.
+	int other_axis_number = (axis_number == 0) ? 1 : 0;
+	// Check the values are within the outer range for this axis
+	axis_data_t& axis_data = axes_data_[axis_number];
+	if (!axis_data.current_range.contains(marker.value_1) || !axis_data.current_range.contains(marker.value_2)) {
+		return;
+	}
+
+	// Ignore for the bar axis
+	if (axis_data.is_bar_axis) return;
+
+	axis_data_t& other_axis_data = axes_data_[other_axis_number];
+
+	int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the marker along is the other axis
+
+	// If the marker values are the same, add a single line marker. If they are different, add a shaded area marker.
+	if (marker.value_1 == marker.value_2) {
+		// Add a single line marker at value_1
+		plot_object_t marker_line;
+		marker_line.shape = LINE_STRIP;
+		marker_line.style = marker.style;
+		if (axis_number == 0) {
+			// Vertical line at X = value_1
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
+		}
+		else {
+			// Horizontal line at Y = value_1
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
+		}
+		plot_data_[plot_number].layer_data[layer].push_back(marker_line);
+	}
+	else {
+		// Draw a rectangle between value 1 and 2 on 1 axis and min and max on the other
+		plot_object_t marker_shape;
+		marker_shape.shape = POLYGON;
+		marker_shape.style = marker.style;
+		if (axis_number == 0) {
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+		}
+		else {
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+		}
+		plot_data_[plot_number].layer_data[layer].push_back(marker_shape);
+	}
+}
+
+void zc_graph_bar_horizontal::set_click_value(int mouse_x, int mouse_y) {
+	// Convert the mouse coordinates to data coordinates
+	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - x()) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / w();
+	double cy = plot_data_[1].xform_schema.y_max_ + (y() - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / h();
+	// Store the click values
+	value_ = { std::floor(cy), cx };
+}
+

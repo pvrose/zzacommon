@@ -45,10 +45,13 @@
 //! graph->set_axis_params(...); // Set parameters for the axes (e.g. labels, units, tick spacing)
 //! graph->set_axis_ranges(...); // Set the inner and outer ranges for the axes
 //! ... repeat for each axis as needed ...
+//! graph->set_bar_labels(...); // Set bar labels for bar charts, if applicable. Note this replaces set_axis_ranges() for the label axis.
 //! graph->add_data_set(...); // Add data sets to plot, specifying the axis number, data points, and line style
 //! ... repeat for each data set as needed ...
 //! graph->add_marker(...); // Add markers to the plot, specifying the axis number, layer, line style, and value(s) for the marker
 //! ... repeat for each marker as needed ...
+//! graph->add_label(...); // Add labels to the plot, specifying the axis number, position, text, text style, and alignment
+//! ... repeat for each label as needed ...
 //! graph->end_config(); // End configuration of the graph.
 //! ... Contents of the data buffers may be changed at any time, after which...
 //! graph->redraw(); // Redraw the graph to display the data
@@ -74,13 +77,15 @@ public:
 
 	//! \brief Type of coordinates that a data_point_t represents.
 	enum graph_type_t : uint8_t {
-		NO_DATA,     //!< No data
+		NO_DATA,      //!< No data
 		CARTESIAN,    //!< Cartesian coordinates (x, y)
-		CARTESIAN_2Y,  //!< Cartesian coordinates with a secondary Y axis (x, y1) and (x, y2)
-		CART_OVERLAY,   //!< Cartesian coordinates with X and Y axes overlaid on the same plot area (x, y).
+		CARTESIAN_2Y, //!< Cartesian coordinates with a secondary Y axis (x, y1) and (x, y2)
+		CART_OVERLAY, //!< Cartesian coordinates with X and Y axes overlaid on the same plot area (x, y).
 		POLAR,        //!< Polar coordinates (r, theta)
 		SMITH,        //!< Smith chart.
-		DENSITY,       //!< Density plot (x, y, z) with a colour representing the z value at each (x, y) point.
+		DENSITY,      //!< Density plot (x, y, z) with a colour representing the z value at each (x, y) point.
+		BAR_HORIZ,    //!< Horizontal bar chart (label, value) with bars extending from the Y-axis to the value of the X-axis.
+		BAR_VERT,     //!< Vertical bar chart (label, value) with bars extending from the X-axis to the value of the Y-axis.
 	};
 
 	//! \brief Text alignment wrt the specified position for text labels and text boxes.
@@ -252,13 +257,16 @@ public:
 		std::string unit;          //!< Unit to display on the axis (e.g. "Hz")
 		std::string label;         //!< Base label for the axis (e.g. "Frequency")
 		data_point_t label_position; //!< Position on the axis to draw the label (in data coordinates)
-		std::string modified_label;      //!< Label to display for the axis, including any modifier (e.g. "Frequency (kHz)")
-		int label_angle = 0;         //!< Angle to draw the label at (in degrees, where 0 is horizontal and positive is counter-clockwise)
-		int tick_spacing_pixels = 0;   //!< Suggested spacing between ticks in pixels
+		std::string modified_label;//!< Label to display for the axis, including any modifier (e.g. "Frequency (kHz)")
+		int label_angle = 0;       //!< Angle to draw the label at (in degrees, where 0 is horizontal and positive is counter-clockwise)
+		int tick_spacing_pixels = 0; //!< Suggested spacing between ticks in pixels
 		double position = 0.0;     //!< Position on other axis where this is drawn
 		double inv_scale = 1.0;    //!< Inverse scale factor - number of units per pixel	
 		tick_orientation_t tick_orientation = NO_TICKS; //!< Orientation of ticks for this axis
 		std::vector<tick_data_t> ticks; //!< Data for the ticks on this axis (value and label)
+		bool is_bar_axis = false;  //!< Whether this axis is used for bar chart data (true) or not (false)
+		double bar_gap = 1.0;      //!< Gap between bars for two labels in a bar chart (in units of bar width)
+		double bar_overlap = 0.0;  //!< Overlap between bars for the same label in a bar chart (in units of bar width)
 	};
 
 	//! \brief Data required for the data plot area.
@@ -466,7 +474,7 @@ public:
 	//! \brief Colour map specification
 	//! 
 	//! The colour look-up table will be generated from the provided parameters. 
-	//! (Algorithm courtesy Google AI).
+	//! (Algorithm courtesy Google Gemini AI).
 	//! Intensity I (between 1 and 0)
 	//! I < 1/3: R = 3I * 200, G = 0, B = 3I * 55.
 	//! 1/3 < I < 2/3: R = 200 + (3I - 1) * 55, G = (3I - 1) * 200. B = 50 + (3I - 1) * 20.
@@ -538,6 +546,19 @@ public:
 
 	//! \brief Get the current range for an axis.
 	range_t get_axis_range(int axis_number) const;
+
+	//! \brief Set the parameters for the bar labels for a bar chart.
+	//! \param axis_number The number of the axis to set the bar labels for.
+	//!        Axis 0 is the X axis for vertical bars, and the Y axis for horizontal bars.
+	//! \param labels A vector of strings to use as the labels for the bars. The index of each label corresponds to the X or Y position of the bar.
+	//! \param bar_gap The gap between bars for two labels in a bar chart (in units of bar width).
+	//! \param bar_overlap The overlap between bars for the same label in a bar chart (in units of bar width).
+	void set_bar_labels(
+		int axis_number,
+		const std::vector<std::string>& labels,
+		double bar_gap = 1.0,
+		double bar_overlap = 0.0
+	); 
 
 	//! \brief Add a data set to the graph.
 	//! \param axis_number The number of the data set to add (starting from 0). This allows multiple data sets to be plotted against different
@@ -732,15 +753,14 @@ protected:
 	//! \brief Convert given coordinates to Cartesian coordinates for plotting.
 	//! 
 	//! \param point The data point to convert, in the original coordinates for the graph type.
-	//! \todo Convert this to a virtual function if needed for different graph types, when 
-	//! the conversion is not just from polar to Cartesian. For example, supporting
-	//! logarithmic axes or smith charts.
+	//! \return The converted data point in Cartesian coordinates.
 	const data_point_t convert_point(const data_point_t& point) const {
 		switch (graph_type_) {
 		case CARTESIAN:
 		case CARTESIAN_2Y:
 		case CART_OVERLAY:
 		case SMITH:
+		case BAR_VERT:
 			return point;
 		case POLAR: {
 			double r = point.first;
@@ -749,6 +769,11 @@ protected:
 			double y = r * sin(theta * zc::PI / 180.0);
 			return { x, y };
 		}
+		case BAR_HORIZ:
+			// point.x is the label index plus an offset.
+			// point.y is the data value
+			// Labels are printed on the y-axis, and values on the x-axis.
+			return { point.second, point.first };
 		default:
 			return point;
 		}
@@ -809,6 +834,12 @@ protected:
 	//! \brief Generate data lines for the data set associated with the specified axis number.
 	//! \param axis_number The number of the data set to generate lines for (starting from 0).
 	void generate_data_lines(
+		int axis_number
+	);
+
+	//! \brief Generate the polygons representing the bars for the data set associated with the specified axis number.
+	//! \param axis_number The number of the data set to generate bars for (starting from 0).
+	void generate_bar_polygons(
 		int axis_number
 	);
 
@@ -1270,4 +1301,76 @@ public:
 	//! Will be the same as Cartesian, but in addition, sets the density transformation schema for the Z axis.
 	void layout() override;
 
+};
+
+//! \brief Create a horiontal bar chart. 
+//! Axis 0 is the vertical (Y) axis and will plot the bar labels.
+//! Axis 1 is the horizontal (X) axis and will plot the values.
+//! Data items will be plotted as bars reaching rightward from the axis.
+class zc_graph_bar_horizontal : public zc_graph_ {
+
+public:
+	//! \brief constructor
+	zc_graph_bar_horizontal(int X, int Y, int W, int H, const char* L = nullptr) :
+		zc_graph_(X, Y, W, H, L)
+	{
+		set_type(BAR_HORIZ);
+		set_num_axes(2);
+		zoom_capability_ = ZOOM_ON_CURSOR;
+		scrollable_ = true;
+	}
+
+	//! \brief Layout the axis.
+	void layout() override;
+
+	//! \brief Add a marker to the graph at a specific value or range of values.
+	virtual void generate_value_marker(
+		int axis_number,
+		layer_t layer,
+		const value_marker_t& marker
+	) override;
+
+	virtual layout_area_t get_layout_area(int x, int y) const override;
+
+	virtual bool is_axis_horizontal(int axis_number) const override {
+		return axis_number == 1;
+	}
+
+	virtual void set_click_value(int x, int y) override;
+};
+
+//! \brief Create a vertical bar chart. 
+//! Axis 0 is the horizontal (X) axis and will plot the bar labels.
+//! Axis 1 is the vertical (Y) axis and will plot the values.
+//! Data items will be plotted as bars reaching upward from the axis.
+class zc_graph_bar_vertical : public zc_graph_ {
+
+public:
+	//! \brief constructor
+	zc_graph_bar_vertical(int X, int Y, int W, int H, const char* L = nullptr) :
+		zc_graph_(X, Y, W, H, L)
+	{
+		set_type(BAR_VERT);
+		set_num_axes(2);
+		zoom_capability_ = ZOOM_ON_CURSOR;
+		scrollable_ = true;
+	}
+
+	//! \brief Layout the axis.
+	void layout() override;
+
+	//! \brief Add a marker to the graph at a specific value or range of values.
+	virtual void generate_value_marker(
+		int axis_number,
+		layer_t layer,
+		const value_marker_t& marker
+	) override;
+
+	virtual layout_area_t get_layout_area(int x, int y) const override;
+
+	virtual bool is_axis_horizontal(int axis_number) const override {
+		return axis_number == 0;
+	}
+
+	virtual void set_click_value(int x, int y) override;
 };

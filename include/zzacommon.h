@@ -82,6 +82,12 @@ This is a set of FLTK extensions that provide additional functionality.
 - zc_graph_
 This is the base class for all graph types.
 See \ref zc_graph_. It has the following derived classes.
+  - zc_graph_bar_horizontal
+This class provides a horizontal bar graph and is derived from zc_graph_. 
+Labels are placed on the Y axis and the bars extend horizontally from the Y axis.
+  - zc_graph_bar_vertical
+This class provides a vertical bar graph and is derived from zc_graph_.
+Labels are placed on the X axis and the bars extend vertically from the X axis.
   - zc_graph_cartesian
 This class provides a Cartesian line graph and is derived from zc_graph_.
   - zc_graph_cartesian_2y
