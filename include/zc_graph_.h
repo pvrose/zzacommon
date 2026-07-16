@@ -18,6 +18,7 @@
 #pragma once
 
 #include "zc_line_style.h"
+#include "zc_range.h"
 #include "zc_text_style.h"
 #include "zc_utils.h"
 
@@ -140,84 +141,6 @@ public:
 		zc_line_style style;    //!< Line style to use for the lozenge marker
 	};
 
-	//! \brief Minimum and maximum values for data coordinates for an
-	//! individual coordinate.
-	//! 
-	//! Reset value indicates an empty range, which can be readily expanded.
-	struct range_t {
-		double min = DBL_MAX; //!< Minimum value for the coordinate
-		double max = -(DBL_MAX); //!< Maximum value for the coordinate
-
-		//! \brief Union assignment operator - expands this range to include another range.
-		//! \param other The other range to union with this range.
-		//! \return A reference to this range after the union operation.
-		range_t& operator|=(const range_t& other) {
-			min = std::min(min, other.min);
-			max = std::max(max, other.max);
-			return *this;
-		}
-
-		//! \brief Add a single \p value to this range, expanding the range if necessary to include the value.
-		range_t& operator|=(double value) {
-			min = std::min(min, value);
-			max = std::max(max, value);
-			return *this;
-		}
-
-		//! \brief Intersection assignment operator - narrows this range to the overlap with another range.
-		//! \param other The other range to intersect with this range.
-		//! \return A reference to this range after the intersection operation.
-		range_t& operator&=(const range_t& other) {
-			min = std::max(min, other.min);
-			max = std::min(max, other.max);
-			if (min > max) {
-				// No intersection - set to empty range
-				min = DBL_MAX;
-				max = -DBL_MAX;
-			}
-			return *this;
-		}
-
-		//! \brief Get the union of this range and another range, returning a new range object.
-		range_t operator|(const range_t& other) const {
-			range_t result = *this;
-			result |= other;
-			return result;
-		}
-
-		//! \brief Get the intersection of this range and another range, returning a new range object.
-		range_t operator&(const range_t& other) const {
-			range_t result = *this;
-			result &= other;
-			return result;
-		}
-
-		//! \brief Return true if ranges are equal (i.e. min and max are the same).
-		bool operator==(const range_t& other) const {
-			return min == other.min && max == other.max;
-		}
-
-		//! \brief Return true if ranges are not equal (i.e. min or max are different).
-		bool operator!=(const range_t& other) const {
-			return !(*this == other);
-		}
-
-		//! \brief Return true of other range is wholly contained within this range (i.e. this range is a superset of the other range).
-		bool contains(const range_t& other) const {
-			return min <= other.min && max >= other.max;
-		}
-
-		//! \brief Return true if the range contains a specific value.
-		bool contains(double value) const {
-			return min <= value && max >= value;
-		}
-
-		//! \brief Return that the range is valid (i.e. min is less than or equal to max).
-		bool is_valid() const {
-			return min <= max;
-		}
-	};
-
 	//! \brief Axis label modifier type. This indicates how the axis labels should be
 	//! modified to indicate the scale of the axis.
 	enum modifier_t : uint8_t {
@@ -249,10 +172,10 @@ public:
 
 	//! \brief Data required for each axis.
 	struct axis_data_t {
-		range_t outer_range;       //!< Range of data values for this axis
-		range_t inner_range;       //!< Range of data values currently displayed for this axis (may be zoomed or scrolled)
-		range_t default_range;     //!< Default range for this axis in the absence of data
-		range_t current_range;     //!< Current range for this axis (may be zoomed or scrolled)
+		zc_range outer_range;       //!< Range of data values for this axis
+		zc_range inner_range;       //!< Range of data values currently displayed for this axis (may be zoomed or scrolled)
+		zc_range default_range;     //!< Default range for this axis in the absence of data
+		zc_range current_range;     //!< Current range for this axis (may be zoomed or scrolled)
 		modifier_t modifier = NO_MODIFIER;  //!< Modifier for axis labels
 		std::string unit;          //!< Unit to display on the axis (e.g. "Hz")
 		std::string label;         //!< Base label for the axis (e.g. "Frequency")
@@ -539,13 +462,13 @@ public:
 	//! \param default_range Default range to use for this axis - resetting zoom will reset to this range.
 	void set_axis_ranges(
 		int axis_number,
-		const range_t& inner_range,
-		const range_t& outer_range,
-		const range_t& default_range
+		const zc_range& inner_range,
+		const zc_range& outer_range,
+		const zc_range& default_range
 	);
 
 	//! \brief Get the current range for an axis.
-	range_t get_axis_range(int axis_number) const;
+	zc_range get_axis_range(int axis_number) const;
 
 	//! \brief Set the parameters for the bar labels for a bar chart.
 	//! \param axis_number The number of the axis to set the bar labels for.

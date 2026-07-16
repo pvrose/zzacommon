@@ -170,6 +170,7 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_SOURCE_DIR}/include/zc_input_hierch.h
   ${ZZACOMMON_SOURCE_DIR}/include/zc_line_style.h
   ${ZZACOMMON_SOURCE_DIR}/include/zc_password_input.h
+  ${ZZACOMMON_SOURCE_DIR}/include/zc_range.h
   ${ZZACOMMON_SOURCE_DIR}/include/zc_rpc_data_item.h
   ${ZZACOMMON_SOURCE_DIR}/include/zc_rpc_handler.h
   ${ZZACOMMON_SOURCE_DIR}/include/zc_running_average.h

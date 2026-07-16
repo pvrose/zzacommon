@@ -104,9 +104,9 @@ void zc_graph_::set_axis_params(
 // Set the ranges for the axes for a data type.
 void zc_graph_::set_axis_ranges(
 	int axis_number,                    //!< Axis number to set the ranges for (e.g. 0 for X or R axis, 1 for Y or Theta axis)
-	const range_t& inner_range,              //!< Range of data values currently displayed for this axis (may be zoomed or scrolled)
-	const range_t& outer_range,              //!< Range of data values for this axis (absolute minimum and maximum for zooming)
-	const range_t& default_range             //!< Default range for this axis in the absence of data
+	const zc_range& inner_range,              //!< Range of data values currently displayed for this axis (may be zoomed or scrolled)
+	const zc_range& outer_range,              //!< Range of data values for this axis (absolute minimum and maximum for zooming)
+	const zc_range& default_range             //!< Default range for this axis in the absence of data
 ) {
 	// Check the axis data already exists for this axis number
 	if (axis_number >= static_cast<int>(axes_data_.size())) {
@@ -138,12 +138,12 @@ void zc_graph_::set_axis_ranges(
 }
 
 // Get axis current range for a specific axis number.
-zc_graph_::range_t zc_graph_::get_axis_range(int axis_number) const {
+zc_range zc_graph_::get_axis_range(int axis_number) const {
 	// Check the axis data already exists for this axis number
 	if (axis_number >= static_cast<int>(axes_data_.size())) {
 		// Axis data does not exist for this axis number, throw an error
 		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before getting axis range.");
-		return range_t();
+		return zc_range();
 	}
 	const axis_data_t& axis_data = axes_data_[axis_number];
 	return axis_data.current_range;
@@ -162,7 +162,7 @@ void zc_graph_::set_bar_labels(
 		return;
 	}
 	// Set the ranges to the number of labels.
-	const range_t range = { 0.0, static_cast<double>(labels.size() - 1) };
+	const zc_range range = { 0.0, static_cast<double>(labels.size() - 1) };
 	axis_data_t& axis_data = axes_data_[axis_number];
 	axis_data.is_bar_axis = true;
 	axis_data.bar_gap = bar_gap;
@@ -1109,17 +1109,17 @@ void zc_graph_::zoom_axis(int axis_number, int mouse_x, int mouse_y, int zoom_fa
 	// Set zoom factor
 	// Zoom change is 2^^(delta/10) - so every 10 units of delta doubles the zoom factor, every -10 units halves it.
 	double zoom_change = pow(2.0, (double)zoom_factor / 10.0);
-	range_t new_range;
+	zc_range new_range;
 	// Calculate the new range based on the zoom change and mouse position.
 	if (is_axis_horizontal(axis_number)) {
 		double new_min = mouse_position.first - (mouse_position.first - axis_data.current_range.min) * zoom_change;
 		double new_max = mouse_position.first + (axis_data.current_range.max - mouse_position.first) * zoom_change;
-		new_range = range_t{ new_min, new_max };
+		new_range = zc_range{ new_min, new_max };
 	}
 	else {
 		double new_min = mouse_position.second - (mouse_position.second - axis_data.current_range.min) * zoom_change;
 		double new_max = mouse_position.second + (axis_data.current_range.max - mouse_position.second) * zoom_change;
-		new_range = range_t{ new_min, new_max };
+		new_range = zc_range{ new_min, new_max };
 	}
 	if (axis_data.outer_range.is_valid()) {
 		new_range &= axis_data.outer_range;
@@ -1158,7 +1158,7 @@ void zc_graph_::scroll_axis(int axis_number, int scroll_offset) {
 	}
 	new_min = axis_data.current_range.min + scroll_amount;
 	new_max = axis_data.current_range.max + scroll_amount;
-	range_t new_range = axis_data.outer_range & range_t{ new_min, new_max };
+	zc_range new_range = axis_data.outer_range & zc_range{ new_min, new_max };
 	axis_data.current_range = new_range;
 	invalidate_layout();
 }
