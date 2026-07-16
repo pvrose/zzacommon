@@ -172,10 +172,10 @@ public:
 
 	//! \brief Data required for each axis.
 	struct axis_data_t {
-		zc_range outer_range;       //!< Range of data values for this axis
-		zc_range inner_range;       //!< Range of data values currently displayed for this axis (may be zoomed or scrolled)
-		zc_range default_range;     //!< Default range for this axis in the absence of data
-		zc_range current_range;     //!< Current range for this axis (may be zoomed or scrolled)
+		zc_range<double> outer_range;       //!< Range of data values for this axis
+		zc_range<double> inner_range;       //!< Range of data values currently displayed for this axis (may be zoomed or scrolled)
+		zc_range<double> default_range;     //!< Default range for this axis in the absence of data
+		zc_range<double> current_range;     //!< Current range for this axis (may be zoomed or scrolled)
 		modifier_t modifier = NO_MODIFIER;  //!< Modifier for axis labels
 		std::string unit;          //!< Unit to display on the axis (e.g. "Hz")
 		std::string label;         //!< Base label for the axis (e.g. "Frequency")
@@ -462,13 +462,13 @@ public:
 	//! \param default_range Default range to use for this axis - resetting zoom will reset to this range.
 	void set_axis_ranges(
 		int axis_number,
-		const zc_range& inner_range,
-		const zc_range& outer_range,
-		const zc_range& default_range
+		const zc_range<double>& inner_range,
+		const zc_range<double>& outer_range,
+		const zc_range<double>& default_range
 	);
 
 	//! \brief Get the current range for an axis.
-	zc_range get_axis_range(int axis_number) const;
+	zc_range<double> get_axis_range(int axis_number) const;
 
 	//! \brief Set the parameters for the bar labels for a bar chart.
 	//! \param axis_number The number of the axis to set the bar labels for.

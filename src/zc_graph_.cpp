@@ -19,6 +19,7 @@
 
 #include "zc_drawing.h"
 #include "zc_line_style.h"
+#include "zc_range.h"
 #include "zc_text_style.h"
 #include "zc_utils.h"
 
@@ -104,9 +105,9 @@ void zc_graph_::set_axis_params(
 // Set the ranges for the axes for a data type.
 void zc_graph_::set_axis_ranges(
 	int axis_number,                    //!< Axis number to set the ranges for (e.g. 0 for X or R axis, 1 for Y or Theta axis)
-	const zc_range& inner_range,              //!< Range of data values currently displayed for this axis (may be zoomed or scrolled)
-	const zc_range& outer_range,              //!< Range of data values for this axis (absolute minimum and maximum for zooming)
-	const zc_range& default_range             //!< Default range for this axis in the absence of data
+	const zc_range<double>& inner_range,              //!< Range of data values currently displayed for this axis (may be zoomed or scrolled)
+	const zc_range<double>& outer_range,              //!< Range of data values for this axis (absolute minimum and maximum for zooming)
+	const zc_range<double>& default_range             //!< Default range for this axis in the absence of data
 ) {
 	// Check the axis data already exists for this axis number
 	if (axis_number >= static_cast<int>(axes_data_.size())) {
@@ -138,12 +139,12 @@ void zc_graph_::set_axis_ranges(
 }
 
 // Get axis current range for a specific axis number.
-zc_range zc_graph_::get_axis_range(int axis_number) const {
+zc_range<double> zc_graph_::get_axis_range(int axis_number) const {
 	// Check the axis data already exists for this axis number
 	if (axis_number >= static_cast<int>(axes_data_.size())) {
 		// Axis data does not exist for this axis number, throw an error
 		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before getting axis range.");
-		return zc_range();
+		return zc_range<double>();
 	}
 	const axis_data_t& axis_data = axes_data_[axis_number];
 	return axis_data.current_range;
@@ -162,7 +163,7 @@ void zc_graph_::set_bar_labels(
 		return;
 	}
 	// Set the ranges to the number of labels.
-	const zc_range range = { 0.0, static_cast<double>(labels.size() - 1) };
+	const zc_range<double> range = { 0.0, static_cast<double>(labels.size() - 1) };
 	axis_data_t& axis_data = axes_data_[axis_number];
 	axis_data.is_bar_axis = true;
 	axis_data.bar_gap = bar_gap;
@@ -508,11 +509,11 @@ void zc_graph_::set_ticks(
 	grid_spacing_units = 2.0F * tick_spacing;
 	// Calculate the tick positions and labels based on the current range and tick spacing.
 	// Start at the first tick position less than or equal to the minimum of the current range.
-	float tick_value = floorf(axis_data.current_range.min / tick_spacing) * tick_spacing;
-	while (tick_value <= axis_data.current_range.max) {
+	float tick_value = floorf(axis_data.current_range.first / tick_spacing) * tick_spacing;
+	while (tick_value <= axis_data.current_range.second) {
 		bool is_major = (fabsf(fmodf(tick_value, grid_spacing_units)) < 1e-6F);
 		// Ignore tick_value less than the minimum.
-		if (tick_value < axis_data.current_range.min) {
+		if (tick_value < axis_data.current_range.first) {
 			tick_value += tick_spacing;
 			continue;
 		}
@@ -869,16 +870,16 @@ void zc_graph_::generate_point_markers(
 			// If the point is set to maximum for either axis, move it to the edge of the current range for that axis.
 			data_point_t position = point_datum.position;
 			if (position.second == -DBL_MAX) {
-				position.second = y_axis_data.current_range.min;
+				position.second = y_axis_data.current_range.first;
 			}
 			else if (position.second == DBL_MAX) {
-				position.second = y_axis_data.current_range.max;
+				position.second = y_axis_data.current_range.second;
 			} 
 			if (position.first == -DBL_MAX) {
-				position.first = x_axis_data.current_range.min;
+				position.first = x_axis_data.current_range.first;
 			}
 			else if (position.first == DBL_MAX) {
-				position.first = x_axis_data.current_range.max;
+				position.first = x_axis_data.current_range.second;
 			}
 			// If position is still outside the current range for either axis, skip it.
 			if (!x_axis_data.current_range.contains(position.first) ||
@@ -1109,17 +1110,17 @@ void zc_graph_::zoom_axis(int axis_number, int mouse_x, int mouse_y, int zoom_fa
 	// Set zoom factor
 	// Zoom change is 2^^(delta/10) - so every 10 units of delta doubles the zoom factor, every -10 units halves it.
 	double zoom_change = pow(2.0, (double)zoom_factor / 10.0);
-	zc_range new_range;
+	zc_range<double> new_range;
 	// Calculate the new range based on the zoom change and mouse position.
 	if (is_axis_horizontal(axis_number)) {
-		double new_min = mouse_position.first - (mouse_position.first - axis_data.current_range.min) * zoom_change;
-		double new_max = mouse_position.first + (axis_data.current_range.max - mouse_position.first) * zoom_change;
-		new_range = zc_range{ new_min, new_max };
+		double new_min = mouse_position.first - (mouse_position.first - axis_data.current_range.first) * zoom_change;
+		double new_max = mouse_position.first + (axis_data.current_range.second - mouse_position.first) * zoom_change;
+		new_range = zc_range<double>{ new_min, new_max };
 	}
 	else {
-		double new_min = mouse_position.second - (mouse_position.second - axis_data.current_range.min) * zoom_change;
-		double new_max = mouse_position.second + (axis_data.current_range.max - mouse_position.second) * zoom_change;
-		new_range = zc_range{ new_min, new_max };
+		double new_min = mouse_position.second - (mouse_position.second - axis_data.current_range.first) * zoom_change;
+		double new_max = mouse_position.second + (axis_data.current_range.second - mouse_position.second) * zoom_change;
+		new_range = zc_range<double>{ new_min, new_max };
 	}
 	if (axis_data.outer_range.is_valid()) {
 		new_range &= axis_data.outer_range;
@@ -1148,17 +1149,17 @@ void zc_graph_::scroll_axis(int axis_number, int scroll_offset) {
 	double new_min, new_max;
 	// Limit scroll amount if we are close to the outer limit.
 	if (scroll_amount > 0.0) {
-		if (axis_data.current_range.max + scroll_amount > axis_data.outer_range.max) {
-			scroll_amount = axis_data.outer_range.max - axis_data.current_range.max;
+		if (axis_data.current_range.second + scroll_amount > axis_data.outer_range.second) {
+			scroll_amount = axis_data.outer_range.second - axis_data.current_range.second;
 		}
 	} else {
-		if (axis_data.current_range.min + scroll_amount < axis_data.outer_range.min) {
-			scroll_amount = axis_data.outer_range.min - axis_data.current_range.min;
+		if (axis_data.current_range.first + scroll_amount < axis_data.outer_range.first) {
+			scroll_amount = axis_data.outer_range.first - axis_data.current_range.first;
 		}
 	}
-	new_min = axis_data.current_range.min + scroll_amount;
-	new_max = axis_data.current_range.max + scroll_amount;
-	zc_range new_range = axis_data.outer_range & zc_range{ new_min, new_max };
+	new_min = axis_data.current_range.first + scroll_amount;
+	new_max = axis_data.current_range.second + scroll_amount;
+	zc_range<double> new_range = axis_data.outer_range & zc_range<double>{ new_min, new_max };
 	axis_data.current_range = new_range;
 	invalidate_layout();
 }
@@ -1530,8 +1531,8 @@ Fl_Color zc_graph_::density_colour(double z_value) const {
 	}
 	// Find the first colour map entry with a z_value greater than the input z_value.
 	// Normalise Z between 0 and 1 within the current range of axis 2
-	double z_min = axes_data_.at(2).current_range.min;
-	double z_max = axes_data_.at(2).current_range.max / 4.0;
+	double z_min = axes_data_.at(2).current_range.first;
+	double z_max = axes_data_.at(2).current_range.second / 4.0;
 	double z;
 	if (z_max > z_min) {
 		if (z_value > z_max) {
@@ -1609,10 +1610,10 @@ void zc_graph_cartesian::layout() {
 	plot_y_ = y();
 	plot_w_ = w() - v_axis_width_;
 	plot_h_ = h() - axis_width_;
-	double x_min = axes_data_[0].current_range.min;
-	double x_max = axes_data_[0].current_range.max;
-	double y_min = axes_data_[1].current_range.min;
-	double y_max = axes_data_[1].current_range.max;
+	double x_min = axes_data_[0].current_range.first;
+	double x_max = axes_data_[0].current_range.second;
+	double y_min = axes_data_[1].current_range.first;
+	double y_max = axes_data_[1].current_range.second;
 	// data per pixel values
 	double dpp_x = (x_max - x_min) / plot_w_;
 	double dpp_y = (y_max - y_min) / plot_h_;
@@ -1689,13 +1690,13 @@ void zc_graph_cartesian::generate_value_marker(
 		marker_line.style = marker.style;
 		if (axis_number == 0) {
 			// Vertical line at X = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second)));
 		}
 		else {
 			// Horizontal line at Y = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_line);
 	}
@@ -1705,18 +1706,18 @@ void zc_graph_cartesian::generate_value_marker(
 		marker_shape.shape = POLYGON;
 		marker_shape.style = marker.style;
 		if (axis_number == 0) {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.first)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.second)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
 		}
 		else {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_shape);
 	}
@@ -1736,10 +1737,10 @@ void zc_graph_cartesian_2y::layout() {
 	plot_y_ = y();
 	plot_w_ = w() - 2 * v_axis_width_;
 	plot_h_ = h() - axis_width_;
-	double x_min = axes_data_[0].current_range.min;
-	double x_max = axes_data_[0].current_range.max;
-	double y_min = axes_data_[1].current_range.min;
-	double y_max = axes_data_[1].current_range.max;
+	double x_min = axes_data_[0].current_range.first;
+	double x_max = axes_data_[0].current_range.second;
+	double y_min = axes_data_[1].current_range.first;
+	double y_max = axes_data_[1].current_range.second;
 	// data per pixel values
 	double dpp_x = (x_max - x_min) / plot_w_;
 	double dpp_y = (y_max - y_min) / plot_h_;
@@ -1769,8 +1770,8 @@ void zc_graph_cartesian_2y::layout() {
 	axes_data_[1].label_position = { x_min - v_axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
 	axes_data_[1].label_angle = 90;
 	// Now set the transformation schema for the second Y axis to map its data range to the plot area dimensions.
-	double y2_min = axes_data_[2].current_range.min;
-	double y2_max = axes_data_[2].current_range.max;
+	double y2_min = axes_data_[2].current_range.first;
+	double y2_max = axes_data_[2].current_range.second;
 	double dpp_y2 = (y2_max - y2_min) / h();
 	plot_xform_t xform_schema_2;
 	xform_schema_2.x_min_ = x_min - v_axis_width_ * dpp_x;
@@ -1840,13 +1841,13 @@ void zc_graph_cartesian_2y::generate_value_marker(
 		marker_line.style = marker.style;
 		if (axis_number == 0) {
 			// Vertical line at X = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second)));
 		}
 		else {
 			// Horizontal line at Y = value_1 (for axis 1 or 2)
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_line);
 	}
@@ -1856,18 +1857,18 @@ void zc_graph_cartesian_2y::generate_value_marker(
 		marker_shape.shape = POLYGON;
 		marker_shape.style = marker.style;
 		if (axis_number == 0) {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.first)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.second)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
 		}
 		else {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_shape);
 	}
@@ -1888,10 +1889,10 @@ void zc_graph_cart_overlay::layout() {
 	plot_y_ = y();
 	plot_w_ = w();
 	plot_h_ = h();
-	double x_min = axes_data_[0].current_range.min;
-	double x_max = axes_data_[0].current_range.max;
-	double y_min = axes_data_[1].current_range.min;
-	double y_max = axes_data_[1].current_range.max;
+	double x_min = axes_data_[0].current_range.first;
+	double x_max = axes_data_[0].current_range.second;
+	double y_min = axes_data_[1].current_range.first;
+	double y_max = axes_data_[1].current_range.second;
 	// data per pixel values
 	double dpp_x = (x_max - x_min) / plot_w_;
 	double dpp_y = (y_max - y_min) / plot_h_;
@@ -1994,13 +1995,13 @@ void zc_graph_cart_overlay::generate_value_marker(
 		marker_line.style = marker.style;
 		if (axis_number == 0) {
 			// Vertical line at X = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second)));
 		}
 		else {
 			// Horizontal line at Y = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_line);
 	}
@@ -2010,18 +2011,18 @@ void zc_graph_cart_overlay::generate_value_marker(
 		marker_shape.shape = POLYGON;
 		marker_shape.style = marker.style;
 		if (axis_number == 0) {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.first)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.second)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
 		}
 		else {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_shape);
 	}
@@ -2042,7 +2043,7 @@ void zc_graph_polar::layout() {
 	plot_y_ = y() + axis_width_;
 	plot_w_ = w() - 2 * v_axis_width_;
 	plot_h_ = h() - 2 * axis_width_;
-	double r_max = axes_data_[0].current_range.max;
+	double r_max = axes_data_[0].current_range.second;
 	// data per pixel values
 	double radius_pixels = std::min(plot_w_, plot_h_) / 2.0;
 	double dpp_r = r_max / radius_pixels;
@@ -2117,7 +2118,7 @@ void zc_graph_polar::generate_value_marker(
 			// Radial line at Theta = value_1
 			plot_vertex_t origin(0.0, 0.0);
 			marker_line.segments.push_back(origin);
-			data_point_t point1(other_axis_data.outer_range.max, marker.value_1);
+			data_point_t point1(other_axis_data.outer_range.second, marker.value_1);
 			plot_vertex_t vertex1(convert_point(point1));
 			marker_line.segments.push_back(vertex1);
 		}
@@ -2143,7 +2144,7 @@ void zc_graph_polar::generate_value_marker(
 			marker_shape.shape = COMPLEX;
 			plot_vertex_t origin(0.0, 0.0);
 			marker_shape.segments.push_back(origin);
-			plot_arc_t arc = { 0, 0, other_axis_data.outer_range.max, marker.value_1, marker.value_2 };
+			plot_arc_t arc = { 0, 0, other_axis_data.outer_range.second, marker.value_1, marker.value_2 };
 			marker_shape.segments.push_back(plot_segment_t(arc));
 			// Add the origin again to create a closed shape for the sector.
 			marker_shape.segments.push_back(origin);
@@ -2531,11 +2532,11 @@ void zc_graph_bar_vertical::layout() {
 	plot_y_ = y();
 	plot_w_ = w() - v_axis_width_;
 	plot_h_ = h() - axis_width_;
-	double x_min = axes_data_[0].current_range.min;
+	double x_min = axes_data_[0].current_range.first;
 	// Add 1 to the maximum to allow the full bar width to be displayed.
-	double x_max = axes_data_[0].current_range.max + 1;
-	double y_min = axes_data_[1].current_range.min;
-	double y_max = axes_data_[1].current_range.max;
+	double x_max = axes_data_[0].current_range.second + 1;
+	double y_min = axes_data_[1].current_range.first;
+	double y_max = axes_data_[1].current_range.second;
 	// data per pixel values
 	double dpp_x = (x_max - x_min) / plot_w_;
 	double dpp_y = (y_max - y_min) / plot_h_;
@@ -2616,13 +2617,13 @@ void zc_graph_bar_vertical::generate_value_marker(
 		marker_line.style = marker.style;
 		if (axis_number == 0) {
 			// Vertical line at X = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second)));
 		}
 		else {
 			// Horizontal line at Y = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_line);
 	}
@@ -2632,18 +2633,18 @@ void zc_graph_bar_vertical::generate_value_marker(
 		marker_shape.shape = POLYGON;
 		marker_shape.style = marker.style;
 		if (axis_number == 0) {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.first)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.second)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
 		}
 		else {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_shape);
 	}
@@ -2665,11 +2666,11 @@ void zc_graph_bar_horizontal::layout() {
 	plot_y_ = y();
 	plot_w_ = w() - v_axis_width_;
 	plot_h_ = h() - axis_width_;
-	double x_min = axes_data_[0].current_range.min;
+	double x_min = axes_data_[0].current_range.first;
 	// Add 1 to the maximum to allow the full bar width to be displayed.
-	double x_max = axes_data_[0].current_range.max;
-	double y_min = axes_data_[1].current_range.min;
-	double y_max = axes_data_[1].current_range.max + 1;
+	double x_max = axes_data_[0].current_range.second;
+	double y_min = axes_data_[1].current_range.first;
+	double y_max = axes_data_[1].current_range.second + 1;
 	// data per pixel values
 	double dpp_x = (x_max - x_min) / plot_w_;
 	double dpp_y = (y_max - y_min) / plot_h_;
@@ -2750,13 +2751,13 @@ void zc_graph_bar_horizontal::generate_value_marker(
 		marker_line.style = marker.style;
 		if (axis_number == 0) {
 			// Vertical line at X = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second)));
 		}
 		else {
 			// Horizontal line at Y = value_1
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_line);
 	}
@@ -2766,18 +2767,18 @@ void zc_graph_bar_horizontal::generate_value_marker(
 		marker_shape.shape = POLYGON;
 		marker_shape.style = marker.style;
 		if (axis_number == 0) {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.min)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.max)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.min)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.first)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.second)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
 		}
 		else {
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.max, marker.value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_2)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.min, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_shape);
 	}

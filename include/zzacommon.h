@@ -111,8 +111,8 @@ This class and associated dialog zc_line_style_dialog allow an application to pr
 its user to select the drawing style, colour and thickness of lines. Drawing styles are 
 defined by FLTK such as FL_SOLID.
 - zc_range.h
-This provides a set of methods to control a pair of double representing the
-minimum and maximum values of a range. Methods include: uunion, intersection, etc.
+This provides a set of methods to control a std::pair<double, double> representing the
+minimum and maximum values of a range. Methods include: union, intersection, etc.
 - zc_rpc_handler
 This class provides a protocol handler for an XML-RPC inter-application interface.
 It converts between the XML passed over the interface and methods using the 
