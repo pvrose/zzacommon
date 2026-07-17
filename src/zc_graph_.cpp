@@ -168,12 +168,13 @@ void zc_graph_::set_bar_labels(
 	axis_data.is_bar_axis = true;
 	axis_data.bar_gap = bar_gap;
 	axis_data.bar_overlap = bar_overlap;
-	axis_data.inner_range = range;
+	axis_data.inner_range = zc_range<double>();
 	axis_data.outer_range = range;
 	axis_data.default_range = range;
+	axis_data.tick_orientation = TICK_DECREASING;
 	axis_data.ticks.clear();
 	for (size_t ix = 0; ix < labels.size(); ix++) {
-		axis_data.ticks.push_back({ static_cast<double>(ix), labels[ix], true });
+		axis_data.ticks.push_back({ static_cast<double>(ix), labels[ix], !labels[ix].empty()});
 	}
 }
 
@@ -189,6 +190,7 @@ void zc_graph_::add_data_set(
 		throw std::invalid_argument("Cannot add a data set to axis number 0. This axis is reserved for the primary coordinate (e.g. X or R axis).");
 		return;
 	}
+	if (data->empty()) return; // No data to add, just return.
 	// Extend the ranges to include the data.
 	for (const data_point_t& point : *data) {
 		if (axes_data_[axis_number].outer_range.contains(point.second)) {
@@ -321,10 +323,6 @@ void zc_graph_::start_config() {
 void zc_graph_::end_config() {
 	axis_width_ = default_text_size_ * 2; // Default width of the axes is twice the default text size.
 	v_axis_width_ = default_text_size_ * 3; // Default width of the vertical axis is thrice the default text size.
-	// Update the current ranges for each axis to include the default ranges, if they are not already included.
-	for (auto& axis_data : axes_data_) {
-		axis_data.current_range |= axis_data.default_range;
-	}
 	// Clear the plot data for all data types and layers.
 	clear_plot_data();
 
@@ -570,14 +568,20 @@ void zc_graph_::generate_axis_ticks(int axis_number) {
 		return;
 	}
 
-	set_ticks(axis_number, axis_data.tick_spacing_pixels, axis_data.inv_scale);
-
+	// We have already set the tick labels for bar charts.
+	if (!axis_data.is_bar_axis) {
+		set_ticks(axis_number, axis_data.tick_spacing_pixels, axis_data.inv_scale);
+	}
 	for (const auto& tick : axis_data.ticks) {
 		plot_object_t tick_mark;
 		tick_mark.shape = TICK;
 		tick_mark.style = zc_line_style({ FL_FOREGROUND_COLOR, 1, FL_SOLID });
 		tick_mark.text = tick.label;
 		tick_mark.text_style = zc_text_style({ FL_FOREGROUND_COLOR, textfont(), default_text_size_});
+		
+		// Do not process tick if it lies outwith the displayed range
+		if (!axis_data.current_range.contains(tick.value)) continue;
+		
 		if (axis_number == 0) {
 			axis_data_t& other_axis_data = axes_data_[1];
 			// Horizontal axis - generate vertical ticks
@@ -2620,9 +2624,6 @@ void zc_graph_bar_vertical::generate_value_marker(
 	if (!axis_data.current_range.contains(marker.value_1) || !axis_data.current_range.contains(marker.value_2)) {
 		return;
 	}
-
-	// Ignore for the bar axis
-	if (axis_data.is_bar_axis) return;
 
 	axis_data_t& other_axis_data = axes_data_[other_axis_number];
 
