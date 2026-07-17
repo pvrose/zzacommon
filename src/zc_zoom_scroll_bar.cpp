@@ -89,11 +89,18 @@ void zc_zoom_scroll_bar::update_slider_button() {
 
 //! \brief Handle mouse events for the zoom scroll bar, including dragging and mouse wheel zooming.
 int zc_zoom_scroll_bar::handle(int event) {
-	// Let the base class handle the event first for scrolling and dragging
-	// This will adjust the slider's value based on the mouse position
 	// First disable the slider from issuing the callback.
 	Fl_When old_when = when();
 	when(0); // Temporarily disable callbacks
+	// Check for double click - resets to 0 zoom
+	if (event == FL_PUSH && Fl::event_clicks()) {
+		value(bounds()); // Reset to full range
+		when(old_when); // Restore the original callback setting
+		if (when() & FL_WHEN_CHANGED) do_callback(FL_REASON_CHANGED);
+		return 1; // Event handled
+	}
+	// Let the base class handle the event first for scrolling and dragging
+	// This will adjust the slider's value based on the mouse position
 	if (Fl_Slider::handle(event)) {
 		double new_first = from_drawn(Fl_Slider::value());
 		if (new_first != value_.first) {
@@ -127,19 +134,28 @@ int zc_zoom_scroll_bar::handle(int event) {
 				mouse_pos = static_cast<double>((Fl::event_y() - y() - Fl::box_dy(box()))) / static_cast<double>((h() - Fl::box_dh(box())));
 			}
 			double mouse_value = minimum() + mouse_pos * bounds().size();
-			// Calculate new range size based on zoom factor and wheel delta
-			double range_size = value_.size();
-			double new_range_size = range_size * (1.0 - wheel_delta * zoom_factor);
-			new_range_size = std::clamp(new_range_size, 0.01, bounds().size()); // Prevent too small or too large
-			
-			// New first value is calculated to keep the mouse_value at the same relative position in the new range
-			// Old delta = mouse_value - value_.first
-			double old_delta = mouse_value - value_.first;
-			// New delta = old_delta * (new_range_size / range_size)
-			double new_delta = old_delta * (new_range_size / range_size);
-			double new_first = mouse_value - new_delta;
-			double new_second = new_first + new_range_size;
-			value(zc_range<double>(new_first, new_second));
+			// If zoom is centred outwith the current range - reset the range
+			// to include the zoom centre.
+			if (!value_.contains(mouse_value)) {
+				zc_range<double> new_value = value_;
+				new_value |= mouse_value;
+				value(new_value);
+			}
+			else {
+				// Calculate new range size based on zoom factor and wheel delta
+				double range_size = value_.size();
+				double new_range_size = range_size * (1.0 - wheel_delta * zoom_factor);
+				new_range_size = std::clamp(new_range_size, 0.01, bounds().size()); // Prevent too small or too large
+
+				// New first value is calculated to keep the mouse_value at the same relative position in the new range
+				// Old delta = mouse_value - value_.first
+				double old_delta = mouse_value - value_.first;
+				// New delta = old_delta * (new_range_size / range_size)
+				double new_delta = old_delta * (new_range_size / range_size);
+				double new_first = mouse_value - new_delta;
+				double new_second = new_first + new_range_size;
+				value(zc_range<double>(new_first, new_second));
+			}
 			when(old_when); // Restore the original callback setting
 			if (when() & FL_WHEN_CHANGED) do_callback(FL_REASON_CHANGED);
 			return 1; // Event handled

@@ -29,6 +29,8 @@
 //! and changes size as the range is zoomed in and out.
 //! - The slider button can be dragged to scroll the range.
 //! - The mouse wheel can be used to zoom in and out of the range.
+//! - Double clicking restores to full range (unzoomed).
+//! - Zooming centred outwith the current range changes the range to include the zoom point.
 //! The widget can be oriented horizontally or vertically using the Fl_Slider::type() method.
 
 class zc_zoom_scroll_bar : public Fl_Slider {
