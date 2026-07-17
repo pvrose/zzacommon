@@ -17,6 +17,7 @@
 */
 #pragma once
 
+#include <algorithm>
 #include <cfloat>
 #include <limits>
 #include <utility>
@@ -88,7 +89,7 @@ public:
 
 	//! \brief Return true if ranges are equal (i.e. first and second are the same).
 	bool operator==(const zc_range& other) const {
-		return first == other.first && second == other.second;
+		return this->first == other.first && this->second == other.second;
 	}
 
 	//! \brief Return true if ranges are not equal (i.e. first or second are different).
@@ -98,22 +99,22 @@ public:
 
 	//! \brief Return true of other range is wholly contained within this range (i.e. this range is a superset of the other range).
 	bool contains(const zc_range& other) const {
-		return first <= other.first && second >= other.second;
+		return this->first <= other.first && this->second >= other.second;
 	}
 
 	//! \brief Return true if the range contains a specific value.
 	bool contains(double value) const {
-		return first <= value && second >= value;
+		return this->first <= value && this->second >= value;
 	}
 
 	//! \brief Return that the range is valid (i.e. first is less than or equal to second).
 	bool is_valid() const {
-		return first <= second;
+		return this->first <= this->second;
 	}
 
 	//! \brief Return the size of the range (i.e. second - first).
 	T size() const {
-		return second - first;
+		return this->second - this->first;
 	}
 };
 
