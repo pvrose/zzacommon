@@ -1177,6 +1177,20 @@ void zc_graph_::reset_zoom(int axis_number) {
 	invalidate_layout();
 }
 
+// Set the current range for the specified axis number to the specified range.
+void zc_graph_::set_axis_range(int axis_number, const zc_range<double>& range) {
+	// Check the axis data already exists for this axis number
+	if (axis_number >= static_cast<int>(axes_data_.size())) {
+		// Axis data does not exist for this axis number, throw an error
+		throw std::invalid_argument("Axis number " + std::to_string(axis_number) + " does not exist. Set axis parameters before setting range.");
+		return;
+	}
+	axis_data_t& axis_data = axes_data_[axis_number];
+	// Set the current range to the specified range, but limit it to the outer and inner ranges.
+	axis_data.current_range = (range & axis_data.outer_range) | axis_data.inner_range;
+	invalidate_layout();
+}
+
 // Resize the widget - reset scaling factors
 void zc_graph_::resize(int X, int Y, int W, int H) {
 	// If we have actually resized...
@@ -1220,6 +1234,11 @@ void zc_graph_::draw() {
 		// Regenerate data for each data set.
 		for (auto& data_set_pair : data_sets_) {
 			generate_data_lines(data_set_pair.first);
+		}
+
+		// Regenerate bar polygons for each data set.
+		for (auto& data_set_pair : data_sets_) {
+			generate_bar_polygons(data_set_pair.first);
 		}
 
 		// Regenerate data for each 3D data set.

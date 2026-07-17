@@ -504,6 +504,11 @@ public:
 		colour_map_t colour_map
 	);
 
+	//! \brief Set the current range for an axis. This will update the zoom level for that axis.
+	//! \param axis_number The number of the axis to set the range for (starting from 0).
+	//! \param range The new range to set for the axis. It will be clamped to the inner and outer ranges for that axis.
+	void set_axis_range(int axis_number, const zc_range<double>& range);
+
 	//! \brief Add a marker to the graph at a specific value or range of values.
 	//! \param axis_number The number of the axis to add the marker for (starting from 0).
 	//! \param layer The layer to draw the marker on (e.g. foreground, background).
