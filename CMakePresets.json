@@ -39,8 +39,6 @@
       "binaryDir": "${sourceDir}/out/build/${presetName}",
       "installDir": "${sourceDir}/out/install/${presetName}",
       "cacheVariables": {
-        "CMAKE_C_COMPILER": "cl.exe",
-        "CMAKE_CXX_COMPILER": "cl.exe",
         "VCPKG_ROOT": "C:/Users/pvros/source/repos/vcpkg",
         "PORTAUDIO_ROOT": "C:/Users/pvros/source/repos/portaudio",
         "ZZACOMMON_DOX": "ON"

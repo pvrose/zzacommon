@@ -45,16 +45,17 @@ include(Gm3zzaVersioning)
 
 gm3zza_get_git_version(ZC_DYNAMIC_VERSION)
 
+# Language requirememnts
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 ## Library zzacommon. 
 project(ZZACOMMON VERSION ${ZC_DYNAMIC_VERSION}
   DESCRIPTION "Common utilities for GM3ZZA software"
 )
 set(ZZACOMMON_INCLUDE_DIR ${ZZACOMMON_SOURCE_DIR}/include)
 
-# Language requirememnts
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 
 ## Set home directory per OS.
 file(REAL_PATH "~" USER_HOME_PATH EXPAND_TILDE)
@@ -104,10 +105,10 @@ set(ZZAF_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_line_style.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_password_input.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_socket_server.cpp
-  
   ${ZZACOMMON_SOURCE_DIR}/src/zc_tabs_nonav.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_text_style.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_ticker.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_zoom_scroll_bar.cpp
 )
 
 # XML and URL components - require pugixml, libcurl, and zlib
@@ -143,6 +144,11 @@ set(ZZAD_CPPFILES
 # PortAudio component - requires PortAudio
 set(ZZAP_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_audio.cpp
+)
+
+# Test programs (not built by default)
+set(ZC_TEST_CPPFILES
+  ${ZZACOMMON_SOURCE_DIR}/tests/test_zoom_scroll_bar.cpp 
 )
 
 # Header files - used as dependencies for API documentation
@@ -183,7 +189,7 @@ set(ZZACOMMON_HPPFILES
   ${ZZACOMMON_SOURCE_DIR}/include/zc_ticker.h
   ${ZZACOMMON_SOURCE_DIR}/include/zc_url_handler.h
   ${ZZACOMMON_SOURCE_DIR}/include/zc_utils.h
-  ${ZZACOMMON_SOURCE_DIR}/include/zc_wheel_value_slider.h
+  ${ZZACOMMON_SOURCE_DIR}/include/zc_zoom_scroll_bar.h
   ${ZZACOMMON_SOURCE_DIR}/include/zzacommon.h
 )
 
@@ -971,6 +977,40 @@ if(NOT COMMAND zzacommon_copy_api_docs)
 
     message(STATUS "zzacommon: Copied API documentation from ${ZZACOMMON_API_HTML_DIR} to ${DESTINATION_DIR}")
   endfunction()
+endif()
+
+# Test applications (built only when explicitly requested with --target tests)
+if(PROJECT_IS_TOP_LEVEL)
+  # Create test executables (EXCLUDE_FROM_ALL means they won't build by default)
+  if(NOT ZZAF_INDEX EQUAL -1)
+    add_executable(test_zoom_scroll_bar EXCLUDE_FROM_ALL 
+      ${ZZACOMMON_SOURCE_DIR}/tests/test_zoom_scroll_bar.cpp
+    )
+    
+    # Link with zzaf component (which includes zc_zoom_scroll_bar)
+    target_link_libraries(test_zoom_scroll_bar PRIVATE zzaf)
+    
+    # Include directories
+    target_include_directories(test_zoom_scroll_bar PRIVATE 
+      ${ZZACOMMON_INCLUDE_DIR}
+      ${FLTK_INCLUDE_DIR}
+    )
+    
+    # Copy runtime DLLs if needed (Windows)
+    if(MSVC)
+      zzacommon_copy_runtime_dlls(test_zoom_scroll_bar)
+    endif()
+    
+    message(STATUS "Created test target: test_zoom_scroll_bar (build with --target tests)")
+  endif()
+  
+  # Create a 'tests' target that builds all test executables
+  add_custom_target(tests)
+  if(TARGET test_zoom_scroll_bar)
+    add_dependencies(tests test_zoom_scroll_bar)
+  endif()
+  
+  message(STATUS "Created target: tests (build all tests with: cmake --build . --target tests)")
 endif()
 
 # generate API documentation

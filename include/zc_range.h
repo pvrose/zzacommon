@@ -46,15 +46,15 @@ public:
 	//! \param other The other range to union with this range.
 	//! \return A reference to this range after the union operation.
 	zc_range& operator|=(const zc_range& other) {
-		first = std::min(first, other.first);
-		second = std::max(second, other.second);
+		this->first = std::min(this->first, other.first);
+		this->second = std::max(this->second, other.second);
 		return *this;
 	}
 
 	//! \brief Add a single \p value to this range, expanding the range if necessary to include the value.
 	zc_range& operator|=(double value) {
-		first = std::min(first, value);
-		second = std::max(second, value);
+		this->first = std::min(this->first, value);
+		this->second = std::max(this->second, value);
 		return *this;
 	}
 
@@ -62,12 +62,12 @@ public:
 	//! \param other The other range to intersect with this range.
 	//! \return A reference to this range after the intersection operation.
 	zc_range& operator&=(const zc_range& other) {
-		first = std::max(first, other.first);
-		second = std::min(second, other.second);
-		if (first > second) {
+		this->first = std::max(this->first, other.first);
+		this->second = std::min(this->second, other.second);
+		if (this->first > this->second) {
 			// No intersection - set to empty range
-			first = UPPER_BOUND;
-			second = LOWER_BOUND;
+			this->first = UPPER_BOUND;
+			this->second = LOWER_BOUND;
 		}
 		return *this;
 	}
@@ -109,6 +109,11 @@ public:
 	//! \brief Return that the range is valid (i.e. first is less than or equal to second).
 	bool is_valid() const {
 		return first <= second;
+	}
+
+	//! \brief Return the size of the range (i.e. second - first).
+	T size() const {
+		return second - first;
 	}
 };
 

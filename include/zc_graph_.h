@@ -397,7 +397,6 @@ public:
 	//! \brief Colour map specification
 	//! 
 	//! The colour look-up table will be generated from the provided parameters. 
-	//! (Algorithm courtesy Google Gemini AI).
 	//! Intensity I (between 1 and 0)
 	//! I < 1/3: R = 3I * 200, G = 0, B = 3I * 55.
 	//! 1/3 < I < 2/3: R = 200 + (3I - 1) * 55, G = (3I - 1) * 200. B = 50 + (3I - 1) * 20.
