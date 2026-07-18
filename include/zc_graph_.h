@@ -1284,6 +1284,11 @@ public:
 	}
 
 	virtual void set_click_value(int x, int y) override;
+
+	//! \brief The axes have already been swapped for bar charts, so no need to convert the axis points.
+	const virtual data_point_t convert_axis_point(const data_point_t& point) const override {
+		return point;
+	}
 };
 
 //! \brief Create a vertical bar chart. 
@@ -1320,4 +1325,5 @@ public:
 	}
 
 	virtual void set_click_value(int x, int y) override;
+
 };
