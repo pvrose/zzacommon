@@ -70,8 +70,6 @@ static std::map<int, uint32_t> SI_PREFIXES = {
 zc_graph_::zc_graph_(int x, int y, int w, int h, const char* label) :
 	Fl_Widget(x, y, w, h, label)
 {
-	// Default text size is set to 80% of the default ZZA app font size.
-	default_text_size_ = FL_NORMAL_SIZE;
 }
 
 // Destructor
@@ -321,8 +319,8 @@ void zc_graph_::start_config() {
 
 // Initiaite the plot data
 void zc_graph_::end_config() {
-	axis_width_ = default_text_size_ * 2; // Default width of the axes is twice the default text size.
-	v_axis_width_ = default_text_size_ * 3; // Default width of the vertical axis is thrice the default text size.
+	axis_width_ = textsize() * 2; // Default width of the axes is twice the default text size.
+	v_axis_width_ = textsize() * 3; // Default width of the vertical axis is thrice the default text size.
 	// Clear the plot data for all data types and layers.
 	clear_plot_data();
 
@@ -575,9 +573,9 @@ void zc_graph_::generate_axis_ticks(int axis_number) {
 	for (const auto& tick : axis_data.ticks) {
 		plot_object_t tick_mark;
 		tick_mark.shape = TICK;
-		tick_mark.style = zc_line_style({ FL_FOREGROUND_COLOR, 1, FL_SOLID });
+		tick_mark.style = zc_line_style({ textcolor(), 1, FL_SOLID});
 		tick_mark.text = tick.label;
-		tick_mark.text_style = zc_text_style({ FL_FOREGROUND_COLOR, textfont(), default_text_size_});
+		tick_mark.text_style = zc_text_style({ textcolor(), textfont(), textsize()});
 		
 		// Do not process tick if it lies outwith the displayed range
 		if (!axis_data.current_range.contains(tick.value)) continue;
@@ -634,7 +632,7 @@ void zc_graph_::generate_axis_label(int axis_number) {
 	plot_object_t label;
 	label.shape = TEXT_BOX;
 	label.text = axis_data.modified_label;
-	label.text_style = zc_text_style({ FL_BLACK, textfont(), default_text_size_});
+	label.text_style = zc_text_style({ textcolor(), textfont(), textsize()});
 	label.segments.push_back(plot_segment_t(plot_vertex_t(axis_data.label_position)));
 	label.text_angle = axis_data.label_angle;
 	label.text_alignment = ALIGN_CENTRE;

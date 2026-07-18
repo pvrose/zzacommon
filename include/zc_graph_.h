@@ -666,6 +666,7 @@ public:
 	//! is the colour for the maximum data value (as set in the Z-axis data).
 	void set_colour_mapping(colour_map_t colour_map);
 
+
 protected:
 
 	//! \brief Place the axes and plot areas. Define transformation schemata.
@@ -934,14 +935,14 @@ protected:
 	//! \brief Last clicked data point in data coordinates, used in value() callback for getting the data coordinates of mouse clicks.
 	data_point_t value_;
 
-	//! \brief Default text size
-	Fl_Fontsize default_text_size_;
+	//! \brief Default text size - use FLTK default
+	Fl_Fontsize default_text_size_ = FL_NORMAL_SIZE;
 
 	//! \brief Default text colour
-	Fl_Color default_text_colour_ = FL_BLACK;
+	Fl_Color default_text_colour_ = FL_FOREGROUND_COLOR;
 
-	//! \brief Default text font
-	Fl_Font default_text_font_ = FL_HELVETICA;
+	//! \brief Default text font - use FLTK default
+	Fl_Font default_text_font_ = 0;
 
 	//! \brief Saved mouse positions for handling dragging to scroll.
 	int last_mouse_x_ = 0;
