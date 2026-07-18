@@ -1217,14 +1217,18 @@ void zc_graph_::clear_plot_data() {
 // draw the widget
 void zc_graph_::draw() {
 
+	if (damage() & FL_DAMAGE_ALL) {
+		draw_box();
+		draw_label();
+	}
+
 	// Clear the plot layer data for all data types and layers.
 	clear_plot_data();
 	// Set out the positions of the axes and plot area, set the 
 	// drawing transformation schemata.
 	// Only recalculate layout if it's been invalidated.
-	if (layout_dirty_) {
+	if (damage() & (DAMAGE_LAYOUT | FL_DAMAGE_ALL)) {
 		layout();
-		layout_dirty_ = false;
 	}
 
 	if (active()) {
@@ -1256,9 +1260,9 @@ void zc_graph_::draw() {
 		}
 
 		// Clear the drawing area
-		fl_push_clip(x(), y(), w(), h());
+		fl_push_clip(draw_x_, draw_y_, draw_w_, draw_h_);
 		fl_color(color());
-		fl_rectf(x(), y(), w(), h());
+		fl_rectf(draw_x_, draw_y_, draw_w_, draw_h_);
 		// For each of the layers....
 		for (layer_t layer = BACKGROUND; layer <= MASK; ((uint8_t&)layer)++) {
 			bool tighter_clip = false;
@@ -1291,9 +1295,9 @@ void zc_graph_::draw() {
 	}
 	else {
 		// Clear the drawing area
-		fl_push_clip(x(), y(), w(), h());
+		fl_push_clip(draw_x_, draw_y_, draw_w_, draw_h_);
 		fl_color(FL_BACKGROUND_COLOR);
-		fl_rectf(x(), y(), w(), h());
+		fl_rectf(draw_x_, draw_y_, draw_w_, draw_h_);
 		fl_pop_clip();
 	}
 }
@@ -1302,10 +1306,10 @@ void zc_graph_::draw() {
 void zc_graph_::apply_transformations(const plot_xform_t& schema) {
 	// Calculate the scaling factors and origin for the transformation.
 	// I think this is how the transformation should work.
-	double scale_x = w() / (schema.x_max_ - schema.x_min_);
-	double scale_y = h() / (schema.y_min_ - schema.y_max_);
-	double origin_x = x() - schema.x_min_ * scale_x;
-	double origin_y = y() + h() - schema.y_min_ * scale_y;
+	double scale_x = draw_w_ / (schema.x_max_ - schema.x_min_);
+	double scale_y = draw_h_ / (schema.y_min_ - schema.y_max_);
+	double origin_x = draw_x_ - schema.x_min_ * scale_x;
+	double origin_y = draw_y_ + draw_h_ - schema.y_min_ * scale_y;
 	fl_translate(origin_x, origin_y);
 	fl_scale(scale_x, scale_y);
 }
@@ -1323,8 +1327,8 @@ zc_graph_::data_point_t zc_graph_::pixel_to_data(int axis_number, int pixel_x, i
 #endif
 	const plot_xform_t& xform_schema = plot_data_[drawing_axis_number].xform_schema;
 	// Use pre-calculated inverse scales
-	double data_x = xform_schema.x_min_ + (pixel_x - x()) * xform_schema.inv_scale_x_;
-	double data_y = xform_schema.y_max_ + (pixel_y - y()) * xform_schema.inv_scale_y_;
+	double data_x = xform_schema.x_min_ + (pixel_x - draw_x_) * xform_schema.inv_scale_x_;
+	double data_y = xform_schema.y_max_ + (pixel_y - draw_y_) * xform_schema.inv_scale_y_;
 	return { data_x, data_y };
 }
 
@@ -1341,8 +1345,8 @@ void zc_graph_::data_to_pixel(int axis_number, int& pixel_x, int& pixel_y, const
 	}
 #endif
 	const plot_xform_t& xform_schema = plot_data_[drawing_axis_number].xform_schema;
-	pixel_x = x() + (data.first - xform_schema.x_min_) * xform_schema.scale_x_;
-	pixel_y = y() + h() - (data.second - xform_schema.y_min_) * xform_schema.scale_y_;
+	pixel_x = draw_x_ + (data.first - xform_schema.x_min_) * xform_schema.scale_x_;
+	pixel_y = draw_y_ + draw_h_ - (data.second - xform_schema.y_min_) * xform_schema.scale_y_;
 }
 
 //! \brief Draw a plot object using the FLTK drawing functions based on its shape and style.
@@ -1625,14 +1629,53 @@ void zc_graph_::set_colour_mapping(colour_map_t colour_map) {
 	}
 }
 
+// Set the drawing and plot areas
+void zc_graph_::set_plot_area(
+	bool has_left_axis,
+	bool has_right_axis,
+	bool has_top_axis,
+	bool has_bottom_axis
+) {
+	draw_x_ = x() + Fl::box_dx(box());
+	draw_y_ = y() + Fl::box_dy(box());
+	draw_w_ = w() - Fl::box_dw(box());
+	draw_h_ = h() - Fl::box_dh(box());
+	if (has_left_axis) {
+		plot_x_ = draw_x_ + v_axis_width_;
+		plot_w_ = draw_w_ - v_axis_width_;
+	}
+	else {
+		plot_x_ = draw_x_;
+		plot_w_ = draw_w_;
+	}
+	if (has_right_axis) {
+		plot_w_ -= v_axis_width_;
+	}
+	if (has_top_axis) {
+		plot_y_ = draw_y_ + axis_width_;
+		plot_h_ = draw_h_ - axis_width_;
+	}
+	else {
+		plot_y_ = draw_y_;
+		plot_h_ = draw_h_;
+	}
+	if (has_bottom_axis) {
+		plot_h_ -= axis_width_;
+	}
+}
+
+
+//////////////////////////////////////////////////////////////////////
+// Below here are the extensions.
+//////////////////////////////////////////////////////////////////////
+
+
+
 // Layout cartesian 2-axis graph
 void zc_graph_cartesian::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
 	// calculate pixel dimensions for the plot area.
-	plot_x_ = x() + v_axis_width_;
-	plot_y_ = y();
-	plot_w_ = w() - v_axis_width_;
-	plot_h_ = h() - axis_width_;
+	set_plot_area(true, false, false, true);
 	double x_min = axes_data_[0].current_range.first;
 	double x_max = axes_data_[0].current_range.second;
 	double y_min = axes_data_[1].current_range.first;
@@ -1647,8 +1690,8 @@ void zc_graph_cartesian::layout() {
 	xform_schema.y_min_ = y_min - axis_width_ * dpp_y;
 	xform_schema.y_max_ = y_max;
 	// Pre-calculate inverse scales for pixel_to_data conversion
-	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
-	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
+	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / draw_w_;
+	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / draw_h_;
 	xform_schema.scale_x_ = 1.0 / xform_schema.inv_scale_x_;
 	xform_schema.scale_y_ = 1.0 / xform_schema.inv_scale_y_;
 	plot_data_[1].xform_schema = xform_schema;
@@ -1679,7 +1722,7 @@ zc_graph_::layout_area_t zc_graph_cartesian::get_layout_area(int mouse_x, int mo
 		result = { true, -1 };
 	}
 	// Check if the mouse is over either of the axes.
-	else if (mouse_x >= x() && mouse_x < plot_x_) {
+	else if (mouse_x >= draw_x_ && mouse_x < plot_x_) {
 		result = { false, 1 };
 	}
 	else if (mouse_y >plot_y_ && mouse_y <= plot_y_ + plot_h_) {
@@ -1748,18 +1791,15 @@ void zc_graph_cartesian::generate_value_marker(
 
 void zc_graph_cartesian::set_click_value(int mouse_x, int mouse_y) {
 	// Convert the mouse coordinates to data coordinates
-	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - x()) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / w();
-	double cy = plot_data_[1].xform_schema.y_max_ + (y() - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / h();
+	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - draw_x_) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / draw_w_;
+	double cy = plot_data_[1].xform_schema.y_max_ + (draw_y_ - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / draw_h_;
 	// Store the click values
 	value_ = { cx, cy };
 }
 
 void zc_graph_cartesian_2y::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
-	plot_x_ = x() + v_axis_width_;
-	plot_y_ = y();
-	plot_w_ = w() - 2 * v_axis_width_;
-	plot_h_ = h() - axis_width_;
+	set_plot_area(true, true, false, true);
 	double x_min = axes_data_[0].current_range.first;
 	double x_max = axes_data_[0].current_range.second;
 	double y_min = axes_data_[1].current_range.first;
@@ -1774,8 +1814,8 @@ void zc_graph_cartesian_2y::layout() {
 	xform_schema.y_min_ = y_min - axis_width_ * dpp_y;
 	xform_schema.y_max_ = y_max;
 	// Pre-calculate inverse scales for pixel_to_data conversion
-	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
-	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
+	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / draw_w_;
+	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / draw_h_;
 	xform_schema.scale_x_ = 1.0 / xform_schema.inv_scale_x_;
 	xform_schema.scale_y_ = 1.0 / xform_schema.inv_scale_y_;
 	plot_data_[1].xform_schema = xform_schema;
@@ -1795,15 +1835,15 @@ void zc_graph_cartesian_2y::layout() {
 	// Now set the transformation schema for the second Y axis to map its data range to the plot area dimensions.
 	double y2_min = axes_data_[2].current_range.first;
 	double y2_max = axes_data_[2].current_range.second;
-	double dpp_y2 = (y2_max - y2_min) / h();
+	double dpp_y2 = (y2_max - y2_min) / draw_h_;
 	plot_xform_t xform_schema_2;
 	xform_schema_2.x_min_ = x_min - v_axis_width_ * dpp_x;
 	xform_schema_2.x_max_ = x_max + v_axis_width_ * dpp_x;
 	xform_schema_2.y_min_ = y2_min - axis_width_ * dpp_y2;
 	xform_schema_2.y_max_ = y2_max;
 	// Pre-calculate inverse scales for pixel_to_data conversion
-	xform_schema_2.inv_scale_x_ = (xform_schema_2.x_max_ - xform_schema_2.x_min_) / w();
-	xform_schema_2.inv_scale_y_ = (xform_schema_2.y_min_ - xform_schema_2.y_max_) / h();
+	xform_schema_2.inv_scale_x_ = (xform_schema_2.x_max_ - xform_schema_2.x_min_) / draw_w_;
+	xform_schema_2.inv_scale_y_ = (xform_schema_2.y_min_ - xform_schema_2.y_max_) / draw_h_;
 	xform_schema_2.scale_x_ = 1.0 / xform_schema_2.inv_scale_x_;
 	xform_schema_2.scale_y_ = 1.0 / xform_schema_2.inv_scale_y_;
 	plot_data_[2].xform_schema = xform_schema_2;
@@ -1826,14 +1866,14 @@ zc_graph_::layout_area_t zc_graph_cartesian_2y::get_layout_area(int mouse_x, int
 		result = { true, -1 };
 	}
 	// Check if the mouse is over either of the axes.
-	else if (mouse_x >= x() && mouse_x < plot_x_) {
+	else if (mouse_x >= draw_x_ && mouse_x < plot_x_) {
 		result = { false, 1 };
 	}
 	// Check if the mouse is over either of the axes.
-	else if (mouse_x >= plot_x_ + plot_w_ && mouse_x < x() + w()) {
+	else if (mouse_x >= plot_x_ + plot_w_ && mouse_x < draw_x_ + draw_w_) {
 		result = { false, 2 };
 	}
-	else if (mouse_y > plot_y_ && mouse_y <= y() + h()) {
+	else if (mouse_y > plot_y_ && mouse_y <= draw_y_ + draw_h_) {
 		result = { false, 0 };
 	}
 	return result;
@@ -1898,8 +1938,8 @@ void zc_graph_cartesian_2y::generate_value_marker(
 }
 
 void zc_graph_cartesian_2y::set_click_value(int mouse_x, int mouse_y) {
-	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - x()) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / w();
-	double cy = plot_data_[1].xform_schema.y_max_ + (y() - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / h();
+	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - draw_x_) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / draw_w_;
+	double cy = plot_data_[1].xform_schema.y_max_ + (draw_y_ - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / draw_h_;
 	// Store the click values
 	value_ = { cx, cy };
 }
@@ -1908,10 +1948,7 @@ void zc_graph_cartesian_2y::set_click_value(int mouse_x, int mouse_y) {
 // Cartesian overlay layout
 void zc_graph_cart_overlay::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
-	plot_x_ = x();
-	plot_y_ = y();
-	plot_w_ = w();
-	plot_h_ = h();
+	set_plot_area(false, false, false, false);
 	double x_min = axes_data_[0].current_range.first;
 	double x_max = axes_data_[0].current_range.second;
 	double y_min = axes_data_[1].current_range.first;
@@ -1926,8 +1963,8 @@ void zc_graph_cart_overlay::layout() {
 	xform_schema.y_min_ = y_min;
 	xform_schema.y_max_ = y_max;
 	// Pre-calculate inverse scales for pixel_to_data conversion
-	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
-	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
+	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / draw_w_;
+	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / draw_h_;
 	xform_schema.scale_x_ = 1.0 / xform_schema.inv_scale_x_;
 	xform_schema.scale_y_ = 1.0 / xform_schema.inv_scale_y_;
 	plot_data_[1].xform_schema = xform_schema;
@@ -2053,8 +2090,8 @@ void zc_graph_cart_overlay::generate_value_marker(
 
 void zc_graph_cart_overlay::set_click_value(int mouse_x, int mouse_y) {
 	// Convert the mouse coordinates to data coordinates
-	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - x()) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / w();
-	double cy = plot_data_[1].xform_schema.y_max_ + (y() - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / h();
+	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - draw_x_) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / draw_w_;
+	double cy = plot_data_[1].xform_schema.y_max_ + (draw_y_ - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / draw_h_;
 	// Store the click values
 	value_ = { cx, cy };
 }
@@ -2062,23 +2099,20 @@ void zc_graph_cart_overlay::set_click_value(int mouse_x, int mouse_y) {
 // Polar layout
 void zc_graph_polar::layout() {
 	// For polar coordinates, we will set the transformation schema to map the R and Theta ranges to the plot area dimensions.
-	plot_x_ = x() + v_axis_width_;
-	plot_y_ = y() + axis_width_;
-	plot_w_ = w() - 2 * v_axis_width_;
-	plot_h_ = h() - 2 * axis_width_;
+	set_plot_area(true, true, true, true);
 	double r_max = axes_data_[0].current_range.second;
 	// data per pixel values
 	double radius_pixels = std::min(plot_w_, plot_h_) / 2.0;
 	double dpp_r = r_max / radius_pixels;
 	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
 	plot_xform_t xform_schema;
-	xform_schema.x_min_ = -(w() * dpp_r / 2.0);
-	xform_schema.x_max_ = (w() * dpp_r / 2.0);
-	xform_schema.y_min_ = -(h() * dpp_r / 2.0);
-	xform_schema.y_max_ = (h() * dpp_r / 2.0);
+	xform_schema.x_min_ = -(draw_w_ * dpp_r / 2.0);
+	xform_schema.x_max_ = (draw_w_ * dpp_r / 2.0);
+	xform_schema.y_min_ = -(draw_h_ * dpp_r / 2.0);
+	xform_schema.y_max_ = (draw_h_ * dpp_r / 2.0);
 	// Pre-calculate inverse scales for pixel_to_data conversion
-	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
-	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
+	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / draw_w_;
+	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / draw_h_;
 	xform_schema.scale_x_ = 1.0 / xform_schema.inv_scale_x_;
 	xform_schema.scale_y_ = 1.0 / xform_schema.inv_scale_y_;
 	plot_data_[1].xform_schema = xform_schema;
@@ -2205,8 +2239,8 @@ int zc_graph_polar::get_tick_angle(
 
 void zc_graph_polar::set_click_value(int mouse_x, int mouse_y) {
 	// Convert the mouse coordinates to cartesian coordinates
-	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - x()) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / w();
-	double cy = plot_data_[1].xform_schema.y_max_ + (y() - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / h();
+	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - draw_x_) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / draw_w_;
+	double cy = plot_data_[1].xform_schema.y_max_ + (draw_y_ - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / draw_h_;
 	// Convert the cartesian coordinates to polar coordinates
 	double r = std::sqrt(cx * cx + cy * cy);
 	double theta = std::atan2(cy, cx) * 180.0 / zc::PI; // Convert to degrees
@@ -2220,23 +2254,20 @@ void zc_graph_smith::layout() {
 	// and override the current_data values to set the display range to -1.0 to 1.0.
 	// Axes and grid-lines will be drawn at the lines of constant resistance
 	// and reactance.
-	plot_x_ = x() + v_axis_width_;
-	plot_y_ = y() + axis_width_;
-	plot_w_ = w() - 2 * v_axis_width_;
-	plot_h_ = h() - 2 * axis_width_;
+	set_plot_area(true, true, true, true);
 	double s11_max = 1.0; // The maximum value for the S11 parameter in the Smith chart is 1.0, which corresponds to total reflection.
 	// data per pixel values
 	double radius_pixels = std::min(plot_w_, plot_h_) / 2.0;
 	double dpp_r = s11_max / radius_pixels;
 	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
 	plot_xform_t xform_schema;
-	xform_schema.x_min_ = -(w() * dpp_r / 2.0);
-	xform_schema.x_max_ = (w() * dpp_r / 2.0);
-	xform_schema.y_min_ = -(h() * dpp_r / 2.0);
-	xform_schema.y_max_ = (h() * dpp_r / 2.0);
+	xform_schema.x_min_ = -(draw_w_ * dpp_r / 2.0);
+	xform_schema.x_max_ = (draw_w_ * dpp_r / 2.0);
+	xform_schema.y_min_ = -(draw_h_ * dpp_r / 2.0);
+	xform_schema.y_max_ = (draw_h_ * dpp_r / 2.0);
 	// Pre-calculate inverse scales for pixel_to_data conversion
-	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
-	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
+	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / draw_w_;
+	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / draw_h_;
 	xform_schema.scale_x_ = 1.0 / xform_schema.inv_scale_x_;
 	xform_schema.scale_y_ = 1.0 / xform_schema.inv_scale_y_;
 	plot_data_[1].xform_schema = xform_schema;
@@ -2456,8 +2487,8 @@ zc_graph_::data_point_t zc_graph_smith::gamma(double value_r, double value_x) co
 
 void zc_graph_smith::set_click_value(int mouse_x, int mouse_y) {
 	// Convert the mouse coordinates to data coordinates
-	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - x()) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / w();
-	double cy = plot_data_[1].xform_schema.y_max_ + (y() - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / h();
+	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - draw_x_) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / draw_w_;
+	double cy = plot_data_[1].xform_schema.y_max_ + (draw_y_ - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / draw_h_;
 	// Store the click values
 	value_ = { cx, cy };
 }
@@ -2551,10 +2582,7 @@ void zc_graph_density::layout() {
 void zc_graph_bar_vertical::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
 	// calculate pixel dimensions for the plot area.
-	plot_x_ = x() + v_axis_width_;
-	plot_y_ = y();
-	plot_w_ = w() - v_axis_width_;
-	plot_h_ = h() - axis_width_;
+	set_plot_area(true, false, false, true);
 	double x_min = axes_data_[0].current_range.first;
 	// Add 1 to the maximum to allow the full bar width to be displayed.
 	double x_max = axes_data_[0].current_range.second + 1;
@@ -2570,8 +2598,8 @@ void zc_graph_bar_vertical::layout() {
 	xform_schema.y_min_ = y_min - axis_width_ * dpp_y;
 	xform_schema.y_max_ = y_max;
 	// Pre-calculate inverse scales for pixel_to_data conversion
-	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
-	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
+	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / draw_w_;
+	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / draw_h_;
 	xform_schema.scale_x_ = 1.0 / xform_schema.inv_scale_x_;
 	xform_schema.scale_y_ = 1.0 / xform_schema.inv_scale_y_;
 	plot_data_[1].xform_schema = xform_schema;
@@ -2602,7 +2630,7 @@ zc_graph_::layout_area_t zc_graph_bar_vertical::get_layout_area(int mouse_x, int
 		result = { true, -1 };
 	}
 	// Check if the mouse is over either of the axes.
-	else if (mouse_x >= x() && mouse_x < plot_x_) {
+	else if (mouse_x >= draw_x_ && mouse_x < plot_x_) {
 		result = { false, 1 };
 	}
 	else if (mouse_y > plot_y_ && mouse_y <= plot_y_ + plot_h_) {
@@ -2672,8 +2700,8 @@ void zc_graph_bar_vertical::generate_value_marker(
 
 void zc_graph_bar_vertical::set_click_value(int mouse_x, int mouse_y) {
 	// Convert the mouse coordinates to data coordinates
-	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - x()) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / w();
-	double cy = plot_data_[1].xform_schema.y_max_ + (y() - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / h();
+	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - draw_x_) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / draw_w_;
+	double cy = plot_data_[1].xform_schema.y_max_ + (draw_y_ - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / draw_h_;
 	// Store the click values
 	value_ = { std::floor(cx), cy };
 }
@@ -2682,10 +2710,7 @@ void zc_graph_bar_vertical::set_click_value(int mouse_x, int mouse_y) {
 void zc_graph_bar_horizontal::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
 	// calculate pixel dimensions for the plot area.
-	plot_x_ = x() + v_axis_width_;
-	plot_y_ = y();
-	plot_w_ = w() - v_axis_width_;
-	plot_h_ = h() - axis_width_;
+	set_plot_area(true, false, false, true);
 	double x_min = axes_data_[0].current_range.first;
 	// Add 1 to the maximum to allow the full bar width to be displayed.
 	double x_max = axes_data_[0].current_range.second;
@@ -2701,8 +2726,8 @@ void zc_graph_bar_horizontal::layout() {
 	xform_schema.y_min_ = y_min - axis_width_ * dpp_y;
 	xform_schema.y_max_ = y_max;
 	// Pre-calculate inverse scales for pixel_to_data conversion
-	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / w();
-	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / h();
+	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / draw_w_;
+	xform_schema.inv_scale_y_ = (xform_schema.y_min_ - xform_schema.y_max_) / draw_h_;
 	xform_schema.scale_x_ = 1.0 / xform_schema.inv_scale_x_;
 	xform_schema.scale_y_ = 1.0 / xform_schema.inv_scale_y_;
 	plot_data_[1].xform_schema = xform_schema;
@@ -2733,7 +2758,7 @@ zc_graph_::layout_area_t zc_graph_bar_horizontal::get_layout_area(int mouse_x, i
 		result = { true, -1 };
 	}
 	// Check if the mouse is over either of the axes.
-	else if (mouse_x >= x() && mouse_x < plot_x_) {
+	else if (mouse_x >= draw_x_ && mouse_x < plot_x_) {
 		result = { false, 1 };
 	}
 	else if (mouse_y > plot_y_ && mouse_y <= plot_y_ + plot_h_) {
@@ -2806,8 +2831,8 @@ void zc_graph_bar_horizontal::generate_value_marker(
 
 void zc_graph_bar_horizontal::set_click_value(int mouse_x, int mouse_y) {
 	// Convert the mouse coordinates to data coordinates
-	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - x()) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / w();
-	double cy = plot_data_[1].xform_schema.y_max_ + (y() - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / h();
+	double cx = plot_data_[1].xform_schema.x_min_ + (mouse_x - draw_x_) * (plot_data_[1].xform_schema.x_max_ - plot_data_[1].xform_schema.x_min_) / draw_w_;
+	double cy = plot_data_[1].xform_schema.y_max_ + (draw_y_ - mouse_y) * (plot_data_[1].xform_schema.y_max_ - plot_data_[1].xform_schema.y_min_) / draw_h_;
 	// Store the click values
 	value_ = { std::floor(cy), cx };
 }

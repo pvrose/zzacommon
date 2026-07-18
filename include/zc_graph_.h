@@ -954,19 +954,35 @@ protected:
 	int plot_w_ = 0;
 	int plot_h_ = 0;
 
+	//! \brief Internal drawing area in pixel coordinates after taking the
+	//! box into account.
+	int draw_x_ = 0;
+	int draw_y_ = 0;
+	int draw_w_ = 0;
+	int draw_h_ = 0;
+
+	//! \brief Set the drawing and plot area.
+	//! \param has_left_axis Leave room for a axis on the left
+	//! \param has_right_axis Leave room for the axis on the right
+	//! \param has_top_axis Leave room for an axis at the top
+	//! \param has_bottom_axis Leave room for an axis atthe bottom
+	void set_plot_area(bool has_left_axis, bool has_right_axis, bool has_top_axis, bool has_bottom_axis);
+
 	//! \brief Z-value colour map.
 	std::vector<Fl_Color> colour_map_;
 	//! \brief Z-value colour trigger levels. 
 	std::vector<double> colour_triggers_;
 
-	//! \brief Layout dirty flag - true if layout needs recalculation.
-	//! Set to true when widget dimensions, axis ranges, or axis parameters change.
-	bool layout_dirty_ = true;
-
+	static constexpr Fl_Damage DAMAGE_LAYOUT = FL_DAMAGE_USER1;
 	//! \brief Invalidate the current layout, forcing recalculation on next draw.
 	//! Call this when any layout-affecting parameter changes (dimensions, ranges, parameters).
+	//! \todo This was introduced to avoid executing the time-expensive layout
+	//! code every redraw using a separate flag. Using the FLTK damage() 
+	//! method, now will recalculate the layout on every redraw(). I can't
+	//! find a case where redraw() is called without invalidate layout.
+	//! If it is needed then add FL_DAMAGE_USER2 to redraw without calling layout.
 	void invalidate_layout() {
-		layout_dirty_ = true;
+		damage(DAMAGE_LAYOUT);
 	}
 
 	//! \brief The bitmap to be drawn for the density plot. 
