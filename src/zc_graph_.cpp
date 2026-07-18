@@ -319,8 +319,10 @@ void zc_graph_::start_config() {
 
 // Initiaite the plot data
 void zc_graph_::end_config() {
-	axis_width_ = textsize() * 2; // Default width of the axes is twice the default text size.
-	v_axis_width_ = textsize() * 3; // Default width of the vertical axis is thrice the default text size.
+	// Update the current ranges for each axis to include the default ranges, if they are not already included.
+	for (auto& axis_data : axes_data_) {
+		axis_data.current_range |= axis_data.default_range;
+	}
 	// Clear the plot data for all data types and layers.
 	clear_plot_data();
 
@@ -580,44 +582,52 @@ void zc_graph_::generate_axis_ticks(int axis_number) {
 		// Do not process tick if it lies outwith the displayed range
 		if (!axis_data.current_range.contains(tick.value)) continue;
 		
-		if (axis_number == 0) {
-			axis_data_t& other_axis_data = axes_data_[1];
+		if (is_axis_horizontal(axis_number)) {
 			// Horizontal axis - generate vertical ticks
 			// Get the pixel coords of the tick mark start.
 			plot_vertex_t start(convert_axis_point({tick.value, axis_data.position}));
 			tick_mark.segments.push_back(plot_segment_t(start));
 			tick_mark.tick_angle = get_tick_angle(axis_number, axis_data.tick_orientation, tick.value);
-			if (tick_mark.tick_angle == 0)
-				tick_mark.text_alignment = ALIGN_RIGHT;
-			else if (tick_mark.tick_angle < 90)
-				tick_mark.text_alignment = ALIGN_RIGHT | ALIGN_ABOVE;
-			else if (tick_mark.tick_angle == 90)
-				tick_mark.text_alignment = ALIGN_ABOVE;
-			else if (tick_mark.tick_angle < 180)	
-				tick_mark.text_alignment = ALIGN_LEFT | ALIGN_ABOVE;
-			else if (tick_mark.tick_angle == 180) 
-				tick_mark.text_alignment = ALIGN_LEFT;
-			else if (tick_mark.tick_angle < 270) 
-				tick_mark.text_alignment = ALIGN_LEFT | ALIGN_BELOW;
-			else if (tick_mark.tick_angle == 270)
-				tick_mark.text_alignment = ALIGN_BELOW;
-			else
+			if (axis_data.is_bar_axis) {
 				tick_mark.text_alignment = ALIGN_RIGHT | ALIGN_BELOW;
+			}
+			else {
+				if (tick_mark.tick_angle == 0)
+					tick_mark.text_alignment = ALIGN_RIGHT;
+				else if (tick_mark.tick_angle < 90)
+					tick_mark.text_alignment = ALIGN_RIGHT | ALIGN_ABOVE;
+				else if (tick_mark.tick_angle == 90)
+					tick_mark.text_alignment = ALIGN_ABOVE;
+				else if (tick_mark.tick_angle < 180)
+					tick_mark.text_alignment = ALIGN_LEFT | ALIGN_ABOVE;
+				else if (tick_mark.tick_angle == 180)
+					tick_mark.text_alignment = ALIGN_LEFT;
+				else if (tick_mark.tick_angle < 270)
+					tick_mark.text_alignment = ALIGN_LEFT | ALIGN_BELOW;
+				else if (tick_mark.tick_angle == 270)
+					tick_mark.text_alignment = ALIGN_BELOW;
+				else
+					tick_mark.text_alignment = ALIGN_RIGHT | ALIGN_BELOW;
+			}
 		}
 		else {
-			axis_data_t& other_axis_data = axes_data_[0];
 			// Vertical axis - generate horizontal ticks
 			plot_vertex_t start(convert_axis_point({axis_data.position, tick.value}));
 			tick_mark.segments.push_back(plot_segment_t(start));
 			tick_mark.tick_angle = get_tick_angle(axis_number, axis_data.tick_orientation, tick.value);
-			if (tick_mark.tick_angle == 90)
-				tick_mark.text_alignment = ALIGN_ABOVE;
-			else if (tick_mark.tick_angle == 270)
-				tick_mark.text_alignment = ALIGN_BELOW;
-			else if (tick_mark.tick_angle < 90 || tick_mark.tick_angle > 270)
-				tick_mark.text_alignment = ALIGN_RIGHT;
-			else
-				tick_mark.text_alignment = ALIGN_LEFT;
+			if (axis_data.is_bar_axis) {
+				tick_mark.text_alignment = ALIGN_LEFT | ALIGN_ABOVE;
+			}
+			else {
+				if (tick_mark.tick_angle == 90)
+					tick_mark.text_alignment = ALIGN_ABOVE;
+				else if (tick_mark.tick_angle == 270)
+					tick_mark.text_alignment = ALIGN_BELOW;
+				else if (tick_mark.tick_angle < 90 || tick_mark.tick_angle > 270)
+					tick_mark.text_alignment = ALIGN_RIGHT;
+				else
+					tick_mark.text_alignment = ALIGN_LEFT;
+			}
 		}
 		int plot_number = (axis_number == 0) ? 1 : axis_number; // The axis number to draw the ticks along is the other axis
 		plot_data_[plot_number].layer_data[AXES].push_back(tick_mark);
@@ -1629,37 +1639,37 @@ void zc_graph_::set_colour_mapping(colour_map_t colour_map) {
 
 // Set the drawing and plot areas
 void zc_graph_::set_plot_area(
-	bool has_left_axis,
-	bool has_right_axis,
-	bool has_top_axis,
-	bool has_bottom_axis
+	int left_axis,
+	int right_axis,
+	int top_axis,
+	int bottom_axis
 ) {
 	draw_x_ = x() + Fl::box_dx(box());
 	draw_y_ = y() + Fl::box_dy(box());
 	draw_w_ = w() - Fl::box_dw(box());
 	draw_h_ = h() - Fl::box_dh(box());
-	if (has_left_axis) {
-		plot_x_ = draw_x_ + v_axis_width_;
-		plot_w_ = draw_w_ - v_axis_width_;
+	plot_x_ = draw_x_ + axis_width(left_axis);
+	plot_w_ = draw_w_ - axis_width(left_axis) - axis_width(right_axis);
+	plot_y_ = draw_y_ + axis_width(top_axis);
+	plot_h_ = draw_h_ - axis_width(top_axis) - axis_width(bottom_axis);
+}
+
+// Return the width of the axis in pixels for the specified axis number.
+int zc_graph_::axis_width(int axis_number) const {
+	if (axis_number < 0 || axis_number >= static_cast<int>(axes_data_.size())) {
+		return 0;
 	}
-	else {
-		plot_x_ = draw_x_;
-		plot_w_ = draw_w_;
+	const axis_data_t& axis_data = axes_data_[axis_number];
+	int width = TICK_LENGTH;
+	if (is_axis_horizontal(axis_number)) {
+		width += textsize() + 2; // Add 1 pixel for padding
+	} else {
+		width += 2 * textsize(); // Add 1 pixel for padding
 	}
-	if (has_right_axis) {
-		plot_w_ -= v_axis_width_;
+	if (!axis_data.label.empty()) {
+		width += textsize() + 1; // Add 1 pixel for padding
 	}
-	if (has_top_axis) {
-		plot_y_ = draw_y_ + axis_width_;
-		plot_h_ = draw_h_ - axis_width_;
-	}
-	else {
-		plot_y_ = draw_y_;
-		plot_h_ = draw_h_;
-	}
-	if (has_bottom_axis) {
-		plot_h_ -= axis_width_;
-	}
+	return width;
 }
 
 
@@ -1673,7 +1683,7 @@ void zc_graph_::set_plot_area(
 void zc_graph_cartesian::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
 	// calculate pixel dimensions for the plot area.
-	set_plot_area(true, false, false, true);
+	set_plot_area(1, -1, -1, 0);
 	double x_min = axes_data_[0].current_range.first;
 	double x_max = axes_data_[0].current_range.second;
 	double y_min = axes_data_[1].current_range.first;
@@ -1683,9 +1693,9 @@ void zc_graph_cartesian::layout() {
 	double dpp_y = (y_max - y_min) / plot_h_;
 	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
 	plot_xform_t xform_schema;
-	xform_schema.x_min_ = x_min - v_axis_width_ * dpp_x;
+	xform_schema.x_min_ = x_min - axis_width(1) * dpp_x;
 	xform_schema.x_max_ = x_max;
-	xform_schema.y_min_ = y_min - axis_width_ * dpp_y;
+	xform_schema.y_min_ = y_min - axis_width(0) * dpp_y;
 	xform_schema.y_max_ = y_max;
 	// Pre-calculate inverse scales for pixel_to_data conversion
 	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / draw_w_;
@@ -1702,12 +1712,12 @@ void zc_graph_cartesian::layout() {
 	// Position the label in the middle of the axis, offset by 0.5 times the axis width in the appropriate direction.
 	// This is because the axis width is two text heights, so 0.5 times the axis width is 1 text height, 
 	// which should give a good distance between the label and the axis.
-	axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, y_min - axis_width_ * dpp_y * 0.5 };
+	axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, y_min - axis_width(0) * dpp_y * 0.5 };
 	axes_data_[0].label_angle = 0;
 	axes_data_[1].position = x_min;
 	axes_data_[1].tick_orientation = TICK_DECREASING;
 	axes_data_[1].inv_scale = dpp_y;
-	axes_data_[1].label_position = { x_min - v_axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
+	axes_data_[1].label_position = { x_min - axis_width(1) * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
 	axes_data_[1].label_angle = 90;
 }
 
@@ -1797,7 +1807,7 @@ void zc_graph_cartesian::set_click_value(int mouse_x, int mouse_y) {
 
 void zc_graph_cartesian_2y::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
-	set_plot_area(true, true, false, true);
+	set_plot_area(1, 2, -1, 0);
 	double x_min = axes_data_[0].current_range.first;
 	double x_max = axes_data_[0].current_range.second;
 	double y_min = axes_data_[1].current_range.first;
@@ -1807,9 +1817,9 @@ void zc_graph_cartesian_2y::layout() {
 	double dpp_y = (y_max - y_min) / plot_h_;
 	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
 	plot_xform_t xform_schema;
-	xform_schema.x_min_ = x_min - v_axis_width_ * dpp_x;
-	xform_schema.x_max_ = x_max + v_axis_width_ * dpp_x;
-	xform_schema.y_min_ = y_min - axis_width_ * dpp_y;
+	xform_schema.x_min_ = x_min - axis_width(1) * dpp_x;
+	xform_schema.x_max_ = x_max + axis_width(2) * dpp_x;
+	xform_schema.y_min_ = y_min - axis_width(0) * dpp_y;
 	xform_schema.y_max_ = y_max;
 	// Pre-calculate inverse scales for pixel_to_data conversion
 	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / draw_w_;
@@ -1823,21 +1833,21 @@ void zc_graph_cartesian_2y::layout() {
 	axes_data_[0].position = y_min;
 	axes_data_[0].tick_orientation = TICK_DECREASING;
 	axes_data_[0].inv_scale = dpp_x;
-	axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, y_min - axis_width_ * dpp_y * 0.5 };
+	axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, y_min - axis_width(0) * dpp_y * 0.5 };
 	axes_data_[0].label_angle = 0;
 	axes_data_[1].position = x_min;
 	axes_data_[1].tick_orientation = TICK_DECREASING;
 	axes_data_[1].inv_scale = dpp_y;
-	axes_data_[1].label_position = { x_min - v_axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
+	axes_data_[1].label_position = { x_min - axis_width(1) * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
 	axes_data_[1].label_angle = 90;
 	// Now set the transformation schema for the second Y axis to map its data range to the plot area dimensions.
 	double y2_min = axes_data_[2].current_range.first;
 	double y2_max = axes_data_[2].current_range.second;
 	double dpp_y2 = (y2_max - y2_min) / draw_h_;
 	plot_xform_t xform_schema_2;
-	xform_schema_2.x_min_ = x_min - v_axis_width_ * dpp_x;
-	xform_schema_2.x_max_ = x_max + v_axis_width_ * dpp_x;
-	xform_schema_2.y_min_ = y2_min - axis_width_ * dpp_y2;
+	xform_schema_2.x_min_ = x_min - axis_width(1) * dpp_x;
+	xform_schema_2.x_max_ = x_max + axis_width(2) * dpp_x;
+	xform_schema_2.y_min_ = y2_min - axis_width(0) * dpp_y2;
 	xform_schema_2.y_max_ = y2_max;
 	// Pre-calculate inverse scales for pixel_to_data conversion
 	xform_schema_2.inv_scale_x_ = (xform_schema_2.x_max_ - xform_schema_2.x_min_) / draw_w_;
@@ -1851,7 +1861,7 @@ void zc_graph_cartesian_2y::layout() {
 	axes_data_[2].position = x_max;
 	axes_data_[2].tick_orientation = TICK_INCREASING;
 	axes_data_[2].inv_scale = dpp_y2;
-	axes_data_[2].label_position = { x_max + v_axis_width_ * dpp_x * 0.5, y2_min + (y2_max - y2_min) / 2.0F };
+	axes_data_[2].label_position = { x_max + axis_width(2) * dpp_x * 0.5, y2_min + (y2_max - y2_min) / 2.0F };
 	axes_data_[2].label_angle = 90;
 }
 
@@ -1946,7 +1956,7 @@ void zc_graph_cartesian_2y::set_click_value(int mouse_x, int mouse_y) {
 // Cartesian overlay layout
 void zc_graph_cart_overlay::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
-	set_plot_area(false, false, false, false);
+	set_plot_area(1, -1, -1, 0);
 	double x_min = axes_data_[0].current_range.first;
 	double x_max = axes_data_[0].current_range.second;
 	double y_min = axes_data_[1].current_range.first;
@@ -1981,17 +1991,17 @@ void zc_graph_cart_overlay::layout() {
 	}
 	axes_data_[1].inv_scale = dpp_y;
 	// Set the tick orientation down unless the axis width precludes it.
-	if (x_min > -(v_axis_width_ * dpp_x)) {
+	if (x_min > -(axis_width(1) * dpp_x)) {
 		axes_data_[1].tick_orientation = TICK_DECREASING;
 	}
 	else {
 		axes_data_[1].tick_orientation = TICK_INCREASING;
 	}
 	if (axes_data_[1].tick_orientation == TICK_DECREASING) {
-		axes_data_[1].label_position = { axes_data_[1].position - v_axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
+		axes_data_[1].label_position = { axes_data_[1].position - axis_width(1) * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
 	}
 	else {
-	    axes_data_[1].label_position = { axes_data_[1].position + v_axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
+	    axes_data_[1].label_position = { axes_data_[1].position + axis_width(1) * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
 	}
 	axes_data_[1].label_angle = 90;
 	// And repeat for the X axis.
@@ -2004,7 +2014,7 @@ void zc_graph_cart_overlay::layout() {
 	else {
 		axes_data_[0].position = y_max;
 	}
-	if (y_min > -(axis_width_ * dpp_y)) {
+	if (y_min > -(axis_width(0) * dpp_y)) {
 		axes_data_[0].tick_orientation = TICK_INCREASING;
 	}
 	else {
@@ -2012,10 +2022,10 @@ void zc_graph_cart_overlay::layout() {
 	}
 	axes_data_[0].inv_scale = dpp_x;
 	if (axes_data_[0].tick_orientation == TICK_INCREASING) {
-		axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, axes_data_[0].position + axis_width_ * dpp_y * 0.5 };
+		axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, axes_data_[0].position + axis_width(0) * dpp_y * 0.5 };
 	}
 	else {
-		axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, axes_data_[0].position - axis_width_ * dpp_y * 0.5 };
+		axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, axes_data_[0].position - axis_width(0) * dpp_y * 0.5 };
 	}
 	axes_data_[0].label_angle = 0;
 }
@@ -2097,7 +2107,7 @@ void zc_graph_cart_overlay::set_click_value(int mouse_x, int mouse_y) {
 // Polar layout
 void zc_graph_polar::layout() {
 	// For polar coordinates, we will set the transformation schema to map the R and Theta ranges to the plot area dimensions.
-	set_plot_area(true, true, true, true);
+	set_plot_area(0, 0, 0, 0);
 	double r_max = axes_data_[0].current_range.second;
 	// data per pixel values
 	double radius_pixels = std::min(plot_w_, plot_h_) / 2.0;
@@ -2123,7 +2133,7 @@ void zc_graph_polar::layout() {
 	axes_data_[0].position = 0.0;
 	axes_data_[0].tick_orientation = TICK_DECREASING;
 	axes_data_[0].inv_scale = dpp_r;
-	axes_data_[0].label_position = { r_max / 2.0F, -axis_width_ * dpp_r * 0.5 };
+	axes_data_[0].label_position = { r_max / 2.0F, -axis_width(0) * dpp_r * 0.5 };
 	axes_data_[0].label_angle = 0;
 	// Theta axis at rmax 
 	// data per pixel treated the number of degrees per circumferential pixel.
@@ -2131,7 +2141,7 @@ void zc_graph_polar::layout() {
 	axes_data_[1].position = r_max;
 	axes_data_[1].tick_orientation = TICK_INCREASING;
 	axes_data_[1].inv_scale = dpp_theta;
-	axes_data_[1].label_position = { 0.0, -r_max - axis_width_ * dpp_r * 0.5 };
+	axes_data_[1].label_position = { 0.0, -r_max - axis_width(1) * dpp_r * 0.5 };
 	axes_data_[1].label_angle = 0;
 }
 
@@ -2252,7 +2262,7 @@ void zc_graph_smith::layout() {
 	// and override the current_data values to set the display range to -1.0 to 1.0.
 	// Axes and grid-lines will be drawn at the lines of constant resistance
 	// and reactance.
-	set_plot_area(true, true, true, true);
+	set_plot_area(0, 0, 0, 0);
 	double s11_max = 1.0; // The maximum value for the S11 parameter in the Smith chart is 1.0, which corresponds to total reflection.
 	// data per pixel values
 	double radius_pixels = std::min(plot_w_, plot_h_) / 2.0;
@@ -2280,7 +2290,7 @@ void zc_graph_smith::layout() {
 	axes_data_[0].position = 0.0;
 	axes_data_[0].tick_orientation = TICK_DECREASING;
 	axes_data_[0].inv_scale = dpp_r;
-	axes_data_[0].label_position = { 0.0, -axis_width_ * dpp_r * 0.5 };
+	axes_data_[0].label_position = { 0.0, -axis_width(0) * dpp_r * 0.5 };
 	axes_data_[0].label_angle = 0;
 	// Theta axis at rmax 
 	// data per pixel treated the number of degrees per circumferential pixel.
@@ -2288,7 +2298,7 @@ void zc_graph_smith::layout() {
 	axes_data_[1].position = 0.0;
 	axes_data_[1].tick_orientation = TICK_INCREASING;
 	axes_data_[1].inv_scale = dpp_theta;
-	axes_data_[1].label_position = { 0.0, -s11_max - axis_width_ * dpp_r * 0.5 };
+	axes_data_[1].label_position = { 0.0, -s11_max - axis_width(1) * dpp_r * 0.5 };
 	axes_data_[1].label_angle = 0;
 }
 
@@ -2580,7 +2590,7 @@ void zc_graph_density::layout() {
 void zc_graph_bar_vertical::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
 	// calculate pixel dimensions for the plot area.
-	set_plot_area(true, false, false, true);
+	set_plot_area(1, -1, -1, 0);
 	double x_min = axes_data_[0].current_range.first;
 	// Add 1 to the maximum to allow the full bar width to be displayed.
 	double x_max = axes_data_[0].current_range.second + 1;
@@ -2591,9 +2601,9 @@ void zc_graph_bar_vertical::layout() {
 	double dpp_y = (y_max - y_min) / plot_h_;
 	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
 	plot_xform_t xform_schema;
-	xform_schema.x_min_ = x_min - v_axis_width_ * dpp_x;
+	xform_schema.x_min_ = x_min - axis_width(1) * dpp_x;
 	xform_schema.x_max_ = x_max;
-	xform_schema.y_min_ = y_min - axis_width_ * dpp_y;
+	xform_schema.y_min_ = y_min - axis_width(0) * dpp_y;
 	xform_schema.y_max_ = y_max;
 	// Pre-calculate inverse scales for pixel_to_data conversion
 	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / draw_w_;
@@ -2610,12 +2620,12 @@ void zc_graph_bar_vertical::layout() {
 	// Position the label in the middle of the axis, offset by 0.5 times the axis width in the appropriate direction.
 	// This is because the axis width is two text heights, so 0.5 times the axis width is 1 text height, 
 	// which should give a good distance between the label and the axis.
-	axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, y_min - axis_width_ * dpp_y * 0.5 };
+	axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, y_min - axis_width(0) * dpp_y * 0.5 };
 	axes_data_[0].label_angle = 0;
 	axes_data_[1].position = x_min;
 	axes_data_[1].tick_orientation = TICK_DECREASING;
 	axes_data_[1].inv_scale = dpp_y;
-	axes_data_[1].label_position = { x_min - v_axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
+	axes_data_[1].label_position = { x_min - axis_width(1) * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
 	axes_data_[1].label_angle = 90;
 }
 
@@ -2661,15 +2671,16 @@ void zc_graph_bar_vertical::generate_value_marker(
 		plot_object_t marker_line;
 		marker_line.shape = LINE_STRIP;
 		marker_line.style = marker.style;
+		// \note the markers must extend beyond the last value to include the whole set of bars.
 		if (axis_number == 0) {
 			// Vertical line at X = value_1
 			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second + 1.0)));
 		}
 		else {
 			// Horizontal line at Y = value_1
 			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second + 1.0, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_line);
 	}
@@ -2678,17 +2689,18 @@ void zc_graph_bar_vertical::generate_value_marker(
 		plot_object_t marker_shape;
 		marker_shape.shape = POLYGON;
 		marker_shape.style = marker.style;
+		// \note the markers must extend beyond the last value to include the whole set of bars.
 		if (axis_number == 0) {
 			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
 			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.first)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.second)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.second + 1.0)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second + 1.0)));
 			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
 		}
 		else {
 			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second + 1.0, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second + 1.0, marker.value_2)));
 			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_2)));
 			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
 		}
@@ -2708,7 +2720,7 @@ void zc_graph_bar_vertical::set_click_value(int mouse_x, int mouse_y) {
 void zc_graph_bar_horizontal::layout() {
 	// This is the default layout for Cartesian coordinates, so we can just call the general layout function.
 	// calculate pixel dimensions for the plot area.
-	set_plot_area(true, false, false, true);
+	set_plot_area(1, -1, -1, 0);
 	double x_min = axes_data_[0].current_range.first;
 	// Add 1 to the maximum to allow the full bar width to be displayed.
 	double x_max = axes_data_[0].current_range.second;
@@ -2719,9 +2731,9 @@ void zc_graph_bar_horizontal::layout() {
 	double dpp_y = (y_max - y_min) / plot_h_;
 	// Set the transformation schema for this data type to map the data ranges to the plot area dimensions.
 	plot_xform_t xform_schema;
-	xform_schema.x_min_ = x_min - v_axis_width_ * dpp_x;
+	xform_schema.x_min_ = x_min - axis_width(1) * dpp_x;
 	xform_schema.x_max_ = x_max;
-	xform_schema.y_min_ = y_min - axis_width_ * dpp_y;
+	xform_schema.y_min_ = y_min - axis_width(0) * dpp_y;
 	xform_schema.y_max_ = y_max;
 	// Pre-calculate inverse scales for pixel_to_data conversion
 	xform_schema.inv_scale_x_ = (xform_schema.x_max_ - xform_schema.x_min_) / draw_w_;
@@ -2738,12 +2750,12 @@ void zc_graph_bar_horizontal::layout() {
 	// Position the label in the middle of the axis, offset by 0.5 times the axis width in the appropriate direction.
 	// This is because the axis width is two text heights, so 0.5 times the axis width is 1 text height, 
 	// which should give a good distance between the label and the axis.
-	axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, y_min - axis_width_ * dpp_y * 0.5 };
+	axes_data_[0].label_position = { x_min + (x_max - x_min) / 2.0F, y_min - axis_width(0) * dpp_y * 0.5 };
 	axes_data_[0].label_angle = 0;
 	axes_data_[1].position = x_min;
 	axes_data_[1].tick_orientation = TICK_DECREASING;
 	axes_data_[1].inv_scale = dpp_y;
-	axes_data_[1].label_position = { x_min - v_axis_width_ * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
+	axes_data_[1].label_position = { x_min - axis_width(1) * dpp_x * 0.5, y_min + (y_max - y_min) / 2.0F };
 	axes_data_[1].label_angle = 90;
 }
 
@@ -2795,12 +2807,12 @@ void zc_graph_bar_horizontal::generate_value_marker(
 		if (axis_number == 0) {
 			// Vertical line at X = value_1
 			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second + 1.0)));
 		}
 		else {
 			// Horizontal line at Y = value_1
 			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
-			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_1)));
+			marker_line.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second + 1.0, marker.value_1)));
 		}
 		plot_data_[plot_number].layer_data[layer].push_back(marker_line);
 	}
@@ -2812,14 +2824,14 @@ void zc_graph_bar_horizontal::generate_value_marker(
 		if (axis_number == 0) {
 			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
 			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.first)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.second)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_2, other_axis_data.current_range.second + 1.0)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.second + 1.0)));
 			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(marker.value_1, other_axis_data.current_range.first)));
 		}
 		else {
 			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_1)));
-			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second, marker.value_2)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second + 1.0, marker.value_1)));
+			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.second + 1.0, marker.value_2)));
 			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_2)));
 			marker_shape.segments.push_back(plot_segment_t(plot_vertex_t(other_axis_data.current_range.first, marker.value_1)));
 		}

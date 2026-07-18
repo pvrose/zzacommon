@@ -310,6 +310,8 @@ public:
 						//!< \note The bitmap data is *pixel* data, not data coordinates. Position and size are in data coordinates.
 	};
 
+	static constexpr int TICK_LENGTH = 5; //!< Default length of tick marks in pixels.
+
 	//! \brief Type of data to plot for one object.
 	struct plot_object_t {
 		shape_t shape = LINE_STRIP;           //!< The shape of the object
@@ -320,7 +322,7 @@ public:
 		int text_angle = 0;                   //!< Angle to draw text at in degrees (only used if shape is TEXT or TEXT_BOX)
 		text_alignment_t text_alignment = ALIGN_CENTRE; //!< Alignment of text with respect to the specified position (only used if shape is TICK, TEXT or TEXT_BOX)
 		int tick_angle = 0;                   //!< Angle to draw tick mark at in degrees (only used if shape is TICK)
-		int tick_length = 5;                  //!< Length of tick mark in pixels (only used if shape is TICK)
+		int tick_length = TICK_LENGTH;        //!< Length of tick mark in pixels (only used if shape is TICK)
 	};
 
 	//! \brief Transformation for density data.
@@ -878,6 +880,18 @@ protected:
 	//! \return False if the point needs to be added to the plot data, true if it is a duplicate.
 	bool duplicate_point(int axis_number, const data_point_t& point, const data_point_t& last_point) const;
 
+	//! \brief Set the drawing and plot area.
+	//! \param left_axis Leave room for a axis on the left. -1 for no axis, 0 for first axis, 1 for second axis etc.
+	//! \param right_axis Leave room for the axis on the right. -1 for no axis, 0 for first axis, 1 for second axis etc.
+	//! \param top_axis Leave room for an axis at the top. -1 for no axis, 0 for first axis, 1 for second axis etc.
+	//! \param bottom_axis Leave room for an axis at the bottom. -1 for no axis, 0 for first axis, 1 for second axis etc.
+	void set_plot_area(int left_axis, int right_axis, int top_axis, int bottom_axis);
+
+	//! \brief Return the width of the axes in pixels. This is used to calculate the dimensions of the plot area and the transformation schema for the data points.
+	//! \param axis_number The number of the axis to get the width for (starting from 0).
+	//! \return The width of the axis in pixels. (return 0 if axis_number is invalid).
+	int axis_width(int axis_number) const;
+
 	//! \brief The number of axes supported
 	int num_axes_ = 0;
 
@@ -922,10 +936,6 @@ protected:
 	//! parameters every time the widget needs to be redrawn.
 	std::vector<plot_data_t> plot_data_; //!< Vector of data sets to plot, indexed by axis number (starting from 1).
 
-	//! \brief The width of the axes in pixels. This is used to calculate the dimensions of the plot area and the transformation schema for the data points.
-	int axis_width_ = 50;
-	int v_axis_width_ = 50;
-
 	//! \brief Zoom capability for the axes.
 	zoom_capability_t zoom_capability_ = ZOOM_ON_CURSOR;
 
@@ -961,13 +971,6 @@ protected:
 	int draw_y_ = 0;
 	int draw_w_ = 0;
 	int draw_h_ = 0;
-
-	//! \brief Set the drawing and plot area.
-	//! \param has_left_axis Leave room for a axis on the left
-	//! \param has_right_axis Leave room for the axis on the right
-	//! \param has_top_axis Leave room for an axis at the top
-	//! \param has_bottom_axis Leave room for an axis atthe bottom
-	void set_plot_area(bool has_left_axis, bool has_right_axis, bool has_top_axis, bool has_bottom_axis);
 
 	//! \brief Z-value colour map.
 	std::vector<Fl_Color> colour_map_;
