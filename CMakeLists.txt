@@ -205,9 +205,9 @@ if(NOT DEFINED ZZACOMMON_BUILD_COMPONENTS OR "${ZZACOMMON_BUILD_COMPONENTS}" STR
 endif()
 
 if(PROJECT_IS_TOP_LEVEL)
-  message(STATUS "ZZACOMMON build mode: top-level project")
+  message(STATUS "ZZACOMMON ${ZC_DYNAMIC_VERSION} build mode: top-level project")
 else()
-  message(STATUS "ZZACOMMON build mode: subproject (included via FetchContent or add_subdirectory)")
+  message(STATUS "ZZACOMMON ${ZC_DYNAMIC_VERSION} build mode: subproject (included via FetchContent or add_subdirectory)")
 endif()
 
 message(STATUS "Building ZZACOMMON components: ${ZZACOMMON_BUILD_COMPONENTS}")
