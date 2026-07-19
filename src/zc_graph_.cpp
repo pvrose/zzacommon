@@ -1666,12 +1666,51 @@ int zc_graph_::axis_width(int axis_number) const {
 	const axis_data_t& axis_data = axes_data_[axis_number];
 	int width = TICK_LENGTH;
 	if (is_axis_horizontal(axis_number)) {
+		// Add sufficient for 1 line of text
 		width += textsize() + 2; // Add 1 pixel for padding
 	} else {
-		width += 2 * textsize(); // Add 1 pixel for padding
+		std::string max_value = "";
+		if (axis_data.ticks.empty()) {
+			if (axis_data.modifier == NO_MODIFIER) {
+				if (axis_data.current_range.is_valid()) {
+					double max_dval = axis_data.current_range.second;
+					double min_dval = axis_data.current_range.first;
+					if (std::abs(min_dval) >= std::abs(max_dval)) max_dval = min_dval;
+					std::string format;
+					// An approximation of the algorithm in set_ticks()
+					if (std::abs(max_dval) >= 100.0) format = "%0.0F";
+					else if (std::abs(max_dval) >= 10.0) format = "%0.1F";
+					else if (std::abs(max_dval) >= 1.0) format = "%0.2F";
+					else format = "%g";
+					char text[10];
+					std::snprintf(text, sizeof(text), format.c_str(), max_dval);
+					max_value = text;
+				}
+				else {
+					max_value = "9999"; // Placeholder for modified value
+				}
+			}
+			else {
+				max_value = "99.99"; // Placeholder for modified value
+			}
+		}
+		else {
+			for (const auto& tick : axis_data.ticks) {
+				if (tick.label.length() > max_value.length()) {
+					max_value = tick.label;
+				}
+			}
+		}
+		int w = 0, h = 0;
+		Fl_Font old_font = fl_font();
+		Fl_Fontsize old_size = fl_size();
+		fl_font(textfont(), textsize());
+		fl_measure(max_value.c_str(), w, h);
+		fl_font(old_font, old_size);
+		width += w + 1; // Add 1 pixel for padding
 	}
 	if (!axis_data.label.empty()) {
-		width += textsize() + 1; // Add 1 pixel for padding
+		width += (textsize() / 2 + 1); // Add 1 pixel for padding
 	}
 	return width;
 }
