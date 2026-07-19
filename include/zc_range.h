@@ -33,10 +33,13 @@ class zc_range : public std::pair<T, T> {
 
 public:
 
+	//! Represents the highest value number for the type T.
 	static constexpr T UPPER_BOUND = std::numeric_limits<T>::max();
+	//! Represents the lowest value number for the type T.
 	static constexpr T LOWER_BOUND = std::numeric_limits<T>::lowest();
 
-	//! \brief Default constructor - initializes the range to an empty range with first = DBL_MAX and second = -DBL_MAX.
+	//! \brief Default constructor - initializes the range to an empty range with 
+	//! first set the upper bound and second = lower bound.
 	zc_range() : std::pair<T, T>(UPPER_BOUND, LOWER_BOUND) {}
 
 	//! \brief Constructor with specified minimum and maximum values.
@@ -55,7 +58,7 @@ public:
 	}
 
 	//! \brief Add a single \p value to this range, expanding the range if necessary to include the value.
-	zc_range& operator|=(double value) {
+	zc_range& operator|=(T value) {
 		this->first = std::min(this->first, value);
 		this->second = std::max(this->second, value);
 		return *this;
@@ -89,12 +92,12 @@ public:
 		return result;
 	}
 
-	//! \brief Return true if ranges are equal (i.e. first and second are the same).
+	//! \brief Return true if ranges are equal (i.e. both first and second are the same).
 	bool operator==(const zc_range& other) const {
 		return this->first == other.first && this->second == other.second;
 	}
 
-	//! \brief Return true if ranges are not equal (i.e. first or second are different).
+	//! \brief Return true if ranges are not equal (i.e. eitherfirst or second are different).
 	bool operator!=(const zc_range& other) const {
 		return !(*this == other);
 	}
@@ -109,7 +112,9 @@ public:
 		return this->first <= value && this->second >= value;
 	}
 
-	//! \brief Return that the range is valid (i.e. first is less than or equal to second).
+	//! \brief Return that the range is valid (i.e. first is less than or
+	//! equal to second). It also returns false if either value does not 
+	//! represent a valid number for type T.
 	bool is_valid() const {
 		if constexpr (std::is_floating_point_v<T>) {
 			if (std::isnan(this->first) || std::isnan(this->second)) {

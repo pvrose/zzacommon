@@ -151,5 +151,6 @@ This is a set of standard utility methods.
 - zc_wheel_value_slider.h
 A version of Fl_Value_Slider that accepts mousewheel events to adjust the value
 up or down one Fl_Value_Slider::step() unit per mousewheel click.
-
+- zc_zoom_scroll_bar.h
+A version of Fl_Slider that allows the user to zoom into a range of values and scroll within that range.
 */
