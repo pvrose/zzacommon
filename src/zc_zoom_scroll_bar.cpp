@@ -115,9 +115,9 @@ int zc_zoom_scroll_bar::handle(int event) {
 			value_.second = new_second;
 			// Reflect the changes in the slider button
 			update_slider_button();
+			if (old_when & FL_WHEN_CHANGED) do_callback(FL_REASON_CHANGED);
 		}
 		when(old_when); // Restore the original callback setting
-		if (when() & FL_WHEN_CHANGED) do_callback(FL_REASON_CHANGED);
 		return 1; // Event handled
 	}
 	else {
