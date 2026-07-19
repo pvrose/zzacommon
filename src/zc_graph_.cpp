@@ -160,8 +160,10 @@ void zc_graph_::set_bar_labels(
 		throw std::invalid_argument("Bar chart parameters can only be applied to axis 0");
 		return;
 	}
-	// Set the ranges to the number of labels.
-	const zc_range<double> range = { 0.0, static_cast<double>(labels.size() - 1) };
+	// An empty label set means the axis is not ready yet.
+	const zc_range<double> range = labels.empty()
+		? zc_range<double>()
+		: zc_range<double>(0.0, static_cast<double>(labels.size() - 1));
 	axis_data_t& axis_data = axes_data_[axis_number];
 	axis_data.is_bar_axis = true;
 	axis_data.bar_gap = bar_gap;
@@ -169,11 +171,21 @@ void zc_graph_::set_bar_labels(
 	axis_data.inner_range = zc_range<double>();
 	axis_data.outer_range = range;
 	axis_data.default_range = range;
+	axis_data.current_range = range;
 	axis_data.tick_orientation = TICK_DECREASING;
 	axis_data.ticks.clear();
 	for (size_t ix = 0; ix < labels.size(); ix++) {
 		axis_data.ticks.push_back({ static_cast<double>(ix), labels[ix], !labels[ix].empty()});
 	}
+}
+
+// Return whether the axis has been fully configured with valid bounds.
+bool zc_graph_::can_set_axis_range(int axis_number) const {
+	if (axis_number < 0 || axis_number >= static_cast<int>(axes_data_.size())) {
+		return false;
+	}
+	const axis_data_t& axis_data = axes_data_[axis_number];
+	return axis_data.outer_range.is_valid() && axis_data.default_range.is_valid();
 }
 
 
@@ -393,7 +405,8 @@ void zc_graph_::generate_axis_line(int axis_number) {
 // Generate grid_lines
 void zc_graph_::generate_grid_lines(int axis_number) {
 	// Generate the grid lines for this axis number based on the current ranges and tick spacing
-	zc_line_style grid_line_style({ FL_LIGHT2, 1, FL_DOT });
+	Fl_Color grid_colour = fl_color_average(color(), textcolor(), 0.8F);
+	zc_line_style grid_line_style({ grid_colour, 1, FL_DOT });
 	for (auto& tick : axes_data_[axis_number].ticks) {
 		if (tick.is_major) {
 			value_marker_t marker;
@@ -1144,7 +1157,7 @@ void zc_graph_::zoom_axis(int axis_number, int mouse_x, int mouse_y, int zoom_fa
 	if (axis_data.inner_range.is_valid()) {
 		new_range |= axis_data.inner_range;
 	}
-	axis_data.current_range = new_range;
+	set_axis_range(axis_number, new_range);
 	invalidate_layout();
 }
 
@@ -1176,7 +1189,7 @@ void zc_graph_::scroll_axis(int axis_number, int scroll_offset) {
 	new_min = axis_data.current_range.first + scroll_amount;
 	new_max = axis_data.current_range.second + scroll_amount;
 	zc_range<double> new_range = axis_data.outer_range & zc_range<double>{ new_min, new_max };
-	axis_data.current_range = new_range;
+	set_axis_range(axis_number, new_range);
 	invalidate_layout();
 }
 
@@ -1189,7 +1202,7 @@ void zc_graph_::reset_zoom(int axis_number) {
 		return;
 	}
 	axis_data_t& axis_data = axes_data_[axis_number];
-	axis_data.current_range = axis_data.default_range;
+	set_axis_range(axis_number, axis_data.default_range);
 	invalidate_layout();
 }
 
@@ -1202,8 +1215,22 @@ void zc_graph_::set_axis_range(int axis_number, const zc_range<double>& range) {
 		return;
 	}
 	axis_data_t& axis_data = axes_data_[axis_number];
-	// Set the current range to the specified range, but limit it to the outer and inner ranges.
+	// If the axis has not been configured yet, ignore range updates until it is ready.
+	if (!can_set_axis_range(axis_number) || !range.is_valid()) {
+		return;
+	}
+	// Set the current range to the specified range, but limit it to the outer and inner ranges
 	axis_data.current_range = (range & axis_data.outer_range) | axis_data.inner_range;
+	
+	double minimum_range_size =  1e-6; // Define a minimum range size to prevent the current range from being too small.
+
+	if (axis_data.current_range.size() < minimum_range_size) {	
+		printf("Warning: Current range for axis %d is too small (current: [%g, %g], minimum: %g). Adjusting to minimum range size.\n",
+			axis_number, axis_data.current_range.first, axis_data.current_range.second, minimum_range_size);
+		axis_data.current_range.second = axis_data.current_range.first + minimum_range_size;
+	}
+	// Clamp it again to the outer range in case we adjusted it.
+	axis_data.current_range &= axis_data.outer_range;
 	invalidate_layout();
 }
 
@@ -1240,6 +1267,13 @@ void zc_graph_::draw() {
 	// drawing transformation schemata.
 	// Only recalculate layout if it's been invalidated.
 	if (damage() & (DAMAGE_LAYOUT | FL_DAMAGE_ALL)) {
+		// Only continue if all axes have valid current ranges. 
+		for (int axis_number = 0; axis_number < num_axes_; ++axis_number) {
+			axis_data_t& axis_data = axes_data_[axis_number];
+			if (!axis_data.current_range.is_valid()) {
+				return; // Do not draw if any axis has an invalid current range.
+			}
+		}
 		layout();
 	}
 

@@ -471,6 +471,9 @@ public:
 	//! \brief Get the current range for an axis.
 	zc_range<double> get_axis_range(int axis_number) const;
 
+	//! \brief Return true if the axis has valid bounds and can accept range updates.
+	bool can_set_axis_range(int axis_number) const;
+
 	//! \brief Set the parameters for the bar labels for a bar chart.
 	//! \param axis_number The number of the axis to set the bar labels for.
 	//!        Axis 0 is the X axis for vertical bars, and the Y axis for horizontal bars.

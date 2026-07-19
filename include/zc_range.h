@@ -19,7 +19,9 @@
 
 #include <algorithm>
 #include <cfloat>
+#include <cmath>
 #include <limits>
+#include <type_traits>
 #include <utility>
 
 //! \brief Minimum and maximum values for data coordinates for an
@@ -109,6 +111,11 @@ public:
 
 	//! \brief Return that the range is valid (i.e. first is less than or equal to second).
 	bool is_valid() const {
+		if constexpr (std::is_floating_point_v<T>) {
+			if (std::isnan(this->first) || std::isnan(this->second)) {
+				return false;
+			}
+		}
 		return this->first <= this->second;
 	}
 
