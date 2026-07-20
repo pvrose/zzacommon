@@ -42,14 +42,17 @@
 zc_file_holder* file_holder_ = nullptr;
 uint32_t DEBUG_RESET_CONFIG = 0;
 extern std::string APP_VENDOR;
+extern std::string APP_VERSION;
 extern std::string APP_NAME;
 extern std::string APP_SOURCE_DIR;
 extern debug_flag DEBUG_DEVELOPMENT;
+extern debug_flag DEBUG_TEST_PRODUCT;
 //! File control datra
 
 
-zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_control_t>& control) {
-	control_data_ = control;
+zc_file_holder::zc_file_holder(const char* arg0, 
+	const std::map<uint8_t, file_control_t>& control
+) : control_data_(control) {
 	char pwd[1024];
 	fl_getcwd(pwd, sizeof(pwd));
 	std::string run_dir = zc::directory(arg0);
@@ -71,6 +74,7 @@ zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_co
 	Fl_RGB_Image* ilog = new Fl_PNG_Image(logo.c_str());
 	if (ilog && !ilog->fail()) {
 		zc_app::set_debug(DEBUG_DEVELOPMENT);
+		APP_VERSION += " DEVT";
 	} else {
 		zc_app::clear_debug(DEBUG_DEVELOPMENT);
 #ifdef _WIN32
@@ -89,12 +93,13 @@ zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_co
 		}
 	}
 	Fl_Window::default_icon(ilog);
-
+	std::string app_dir_name = APP_NAME;
+	if (zc_app::debug(DEBUG_DEVELOPMENT) && !zc_app::debug(DEBUG_TEST_PRODUCT)) app_dir_name += "_DEVT";
 #ifdef _WIN32
 	default_html_directory_ = default_source_directory_;
 	// Working directory
 	default_ref_directory_ =
-		std::string(getenv("APPDATA")) + "\\" + APP_VENDOR + "\\" + APP_NAME + "\\";
+		std::string(getenv("APPDATA")) + "\\" + APP_VENDOR + "\\" + app_dir_name + "\\";
 	// Create the working directory
 	std::string unixified = default_ref_directory_;
 	for (size_t pos = 0; pos < unixified.length(); pos++) {
@@ -106,7 +111,7 @@ zc_file_holder::zc_file_holder(const char* arg0, const std::map<uint8_t, file_co
 	default_html_directory_ = default_source_directory_;
 	// Working directory
 	default_ref_directory_ =
-		std::string(getenv("HOME")) + "/.config/" + APP_VENDOR + "/" + APP_NAME + "/";
+		std::string(getenv("HOME")) + "/.config/" + APP_VENDOR + "/" + app_dir_name + "/";
 	// Create the working directory
 	fl_make_path(default_ref_directory_.c_str());
 #endif
