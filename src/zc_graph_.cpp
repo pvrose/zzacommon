@@ -200,16 +200,17 @@ void zc_graph_::add_data_set(
 		throw std::invalid_argument("Cannot add a data set to axis number 0. This axis is reserved for the primary coordinate (e.g. X or R axis).");
 		return;
 	}
-	if (data->empty()) return; // No data to add, just return.
-	// Extend the ranges to include the data.
-	for (const data_point_t& point : *data) {
-		if (axes_data_[axis_number].outer_range.contains(point.second)) {
-			axes_data_[axis_number].current_range |= point.second;
-			axes_data_[axis_number].default_range |= point.second;
-		}
-		if (axes_data_[0].outer_range.contains(point.first)) {
-			axes_data_[0].current_range |= point.first;
-			axes_data_[0].default_range |= point.first;
+	if (!data->empty()) {
+		// Extend the ranges to include the data.
+		for (const data_point_t& point : *data) {
+			if (axes_data_[axis_number].outer_range.contains(point.second)) {
+				axes_data_[axis_number].current_range |= point.second;
+				axes_data_[axis_number].default_range |= point.second;
+			}
+			if (axes_data_[0].outer_range.contains(point.first)) {
+				axes_data_[0].current_range |= point.first;
+				axes_data_[0].default_range |= point.first;
+			}
 		}
 	}
 	data_set_t data_set = { data, style };
