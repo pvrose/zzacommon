@@ -20,6 +20,7 @@
 #include <queue>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
 //! \brief A thread-safe queue for asynchronous communication between threads.
 template<typename T>
@@ -30,8 +31,8 @@ class zc_async_queue {
 	mutable std::mutex mutex_;
 	//! \brief Condition variable to notify waiting threads when new data is available.
 	std::condition_variable cond_;
-	//! \brief Flag to indicate that the queue is being shut down.
-	bool shutdown_ = false;
+	//! \brief Atomic flag to indicate that the queue is being shut down.
+	std::atomic<bool> shutdown_ = false;
 
 
 public:
@@ -42,12 +43,13 @@ public:
 
 	//! \brief Shutdown the queue and wake up all waiting threads
 	void shutdown() {
+		shutdown_.store(true, std::memory_order_release);
 		std::lock_guard<std::mutex> lock(mutex_);
-		shutdown_ = true;
 		cond_.notify_all(); // Wake up all waiting threads
 	}
 	//! \brief Push a new value into the queue and notify one waiting thread.
 	void push(T value) {
+		if (shutdown_.load(std::memory_order_acquire)) return;
 		std::lock_guard<std::mutex> lock(mutex_);
 		queue_.push(std::move(value));
 		cond_.notify_one();
@@ -55,6 +57,7 @@ public:
 
 	//! \brief Try to pop a value from the queue without blocking. Returns true if successful.
 	bool try_pop(T& value) {
+		if (shutdown_.load(std::memory_order_acquire)) return false;
 		std::lock_guard<std::mutex> lock(mutex_);
 		if (queue_.empty()) return false;
 		value = std::move(queue_.front());
@@ -73,15 +76,15 @@ public:
 		std::lock_guard<std::mutex> lock(mutex_);
 		queue_.pop();
 	}
-	
+
 	//! \brief Wait until the queue is not empty and pop the front element.
 	//! \return false if the queue is shutting down, true if a value was successfully popped
 	bool wait_and_pop(T& value) {
 		std::unique_lock<std::mutex> lock(mutex_);
-		while (queue_.empty() && !shutdown_) {
+		while (queue_.empty() && !shutdown_.load(std::memory_order_acquire)) {
 			cond_.wait(lock);  // Wait until notified by push() or shutdown()
 		}
-		if (shutdown_ && queue_.empty()) {
+		if (shutdown_.load(std::memory_order_acquire) && queue_.empty()) {
 			return false; // Queue is shutting down and empty
 		}
 		value = std::move(queue_.front());
