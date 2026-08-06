@@ -45,6 +45,7 @@ extern std::string APP_VENDOR;
 extern std::string APP_VERSION;
 extern std::string APP_NAME;
 extern std::string APP_SOURCE_DIR;
+extern std::string APP_CONFIG_NAME;
 extern debug_flag DEBUG_DEVELOPMENT;
 extern debug_flag DEBUG_TEST_PRODUCT;
 //! File control datra
@@ -94,6 +95,7 @@ zc_file_holder::zc_file_holder(const char* arg0,
 	}
 	Fl_Window::default_icon(ilog);
 	std::string app_dir_name = APP_NAME;
+	if (!APP_CONFIG_NAME.empty()) app_dir_name += APP_CONFIG_NAME;
 	if (zc_app::debug(DEBUG_DEVELOPMENT) && !zc_app::debug(DEBUG_TEST_PRODUCT)) app_dir_name += "_DEVT";
 #ifdef _WIN32
 	default_html_directory_ = default_source_directory_;
