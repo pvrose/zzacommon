@@ -393,16 +393,35 @@ void zc_file_holder::remember_timestamp(uint8_t type, const std::string& filenam
 	}
 }
 
+// Return the true top-level storage root for Windows or Linux. This is used to determine if a file is on a different drive.
+boost::filesystem::path zc_file_holder::storage_root(const boost::filesystem::path& path) const {
+	boost::system::error_code ec;
+	
+	// Resolve absolute path, symlinks, and relative dots (e.g. "./")
+	boost::filesystem::path abs_path = boost::filesystem::canonical(path, ec);
+	if (ec) {
+		abs_path = boost::filesystem::absolute(path, ec);
+	}
+
+	// Grab the first element (e.g., "C:" on Windows, or "/" on Linux)
+	boost::filesystem::path::iterator it = abs_path.begin();
+	boost::filesystem::path root = *it;
+
+	// On Linux/POSIX, "/" is universal. We need the next layer (e.g., "/home" vs "/cloud")
+#ifndef _WIN32
+	if (root == "/") {
+		++it;
+		if (it != abs_path.end()) {
+			root /= *it; // Combines "/" and "home" into "/home"
+		}
+	}
+#endif
+	return root;
+}
+
 // File is on a different drive than the executable
 bool zc_file_holder::on_different_drive(const std::string& filename) const {
-	boost::filesystem::path exec_path(exec_directory_);
+	boost::filesystem::path exec_path = boost::filesystem::current_path();
 	boost::filesystem::path file_path(filename);
-	while (exec_path.parent_path() != exec_path.root_path()) exec_path = exec_path.parent_path();
-	while (file_path.parent_path() != file_path.root_path()) file_path = file_path.parent_path();
-	if (exec_path == file_path) {
-		return false;
-	}
-	else {
-		return true;
-	}
+	return storage_root(exec_path) != storage_root(file_path);
 }

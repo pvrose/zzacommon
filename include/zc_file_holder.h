@@ -24,6 +24,7 @@
 #include <map>
 #include <ostream>
 #include <string>
+#include <boost/filesystem.hpp>
 
 //! Reset configuration files
 extern uint32_t DEBUG_RESET_CONFIG;
@@ -183,7 +184,6 @@ public:
 	//! \brief File \p filename is on a different drive from executable.
 	//! This algorithm tends towards providing false positives. 
 	//! Linux:  /home will be considered different from /usr as well as /cloud.
-	//! Windows: C:\\Users is different fron C:\\Program Data as well as Z:\\Data.
 	bool on_different_drive(const std::string& filename) const;
 
 protected:
@@ -196,6 +196,9 @@ protected:
 	//! \param filename Name of the file to save the timestamp of.
 	//! \param overwrite Replace the existing timestamp.
 	void remember_timestamp(uint8_t type, const std::string& filename, bool overwrite = false);
+
+	//! Return the true top-level storage root for Windows or Linux. This is used to determine if a file is on a different drive.
+	boost::filesystem::path storage_root(const boost::filesystem::path& path) const;
 	
 	//! Default location for configuration files, and HTML files.
 	std::string default_ref_directory_;
