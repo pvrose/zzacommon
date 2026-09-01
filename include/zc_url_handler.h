@@ -97,6 +97,9 @@
 			std::vector<std::string> to_list, std::vector<std::string> cc_list, std::vector<std::string> bcc_list,
 			std::string subject, std::string payload, std::vector<std::string> attachments, std::vector<std::string> formats);
 
+		//! Get the last error message from a curl operation.
+		const char* error_msg() const { return error_msg_; }
+
 	protected:
 		//! Output the associated data to the stream for debugging purposes.
 		
@@ -120,6 +123,9 @@
 		
 		//! Lock to ensure only 1 CURL operation at once
 		static std::recursive_mutex lock_;
+
+		//! Error buffer for curl operations
+		char error_msg_[CURL_ERROR_SIZE];
 	};
 
 

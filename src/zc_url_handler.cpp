@@ -112,8 +112,7 @@ bool zc_url_handler::read_url(std::string url, std::ostream* os) {
 	field, so we provide one */
 	curl_easy_setopt(curl_, CURLOPT_USERAGENT, USER_AGENT.c_str());
 	// Error buffer
-	char* error_msg = new char[CURL_ERROR_SIZE];
-	curl_easy_setopt(curl_, CURLOPT_ERRORBUFFER, error_msg);
+	curl_easy_setopt(curl_, CURLOPT_ERRORBUFFER, error_msg_);
 
 	if (zc_app::debug(DEBUG_CURL)) {
 		// Add extra verbosity
@@ -125,7 +124,7 @@ bool zc_url_handler::read_url(std::string url, std::ostream* os) {
 
 	/* check for errors */
 	if (result != CURLE_OK) {
-		printf("ERROR - URL_HANDLER: %s\n", error_msg);
+		printf("ERROR - URL_HANDLER: %s\n", error_msg_);
 		curl_easy_cleanup(curl_);
 		lock_.unlock();
 		return false;
@@ -180,8 +179,7 @@ bool zc_url_handler::post_url(std::string url, std::string resource, std::istrea
 	field, so we provide one */
 	curl_easy_setopt(curl_, CURLOPT_USERAGENT, USER_AGENT.c_str());
 	// Error buffer
-	char* error_msg = new char[CURL_ERROR_SIZE];
-	curl_easy_setopt(curl_, CURLOPT_ERRORBUFFER, error_msg);
+	curl_easy_setopt(curl_, CURLOPT_ERRORBUFFER, error_msg_);
 
 	if (zc_app::debug(DEBUG_CURL)) {
 		// Add extra verbosity
@@ -195,7 +193,7 @@ bool zc_url_handler::post_url(std::string url, std::string resource, std::istrea
 	if (result != CURLE_OK) {
 		char msg[256];
 		memset(msg, 0, sizeof(msg));
-		printf(msg, sizeof(msg), "URL_HANDLER: ERROR %s\n", error_msg);
+		printf(msg, sizeof(msg), "URL_HANDLER: ERROR %s\n", error_msg_);
 		// Reset the operation and clean up
 
 		curl_easy_reset(curl_);
@@ -382,15 +380,14 @@ bool zc_url_handler::send_email(std::string url, std::string user, std::string p
 	curl_easy_setopt(curl_, CURLOPT_MIMEPOST, mime);
 
 	// Add debug and error stuff
-	char* error_msg = new char[CURL_ERROR_SIZE];
-	curl_easy_setopt(curl_, CURLOPT_ERRORBUFFER, error_msg);
+	curl_easy_setopt(curl_, CURLOPT_ERRORBUFFER, error_msg_);
 
 	// Now send the e-mail
 	result = curl_easy_perform(curl_);
 
 	/* check for errors */
 	if (result != CURLE_OK) {
-		printf("URL_HANDLER: ERROR - %s", error_msg);
+		printf("URL_HANDLER: ERROR - %s", error_msg_);
 		// Reset the operation and clean up
 
 		curl_slist_free_all(recipients);
