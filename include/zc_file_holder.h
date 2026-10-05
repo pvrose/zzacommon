@@ -179,7 +179,7 @@ public:
 	void display_info() const;
 
 	//! \brief Get timestamp for the file \p type.
-	std::chrono::system_clock::time_point timestamp(uint8_t type) const;
+	std::chrono::system_clock::time_point timestamp(uint8_t type);
 
 	//! \brief File \p filename is on a different drive from executable.
 	//! This algorithm tends towards providing false positives. 

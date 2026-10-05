@@ -371,11 +371,23 @@ void zc_file_holder::display_info() const {
 }
 
 // Get timestamp for file type
-std::chrono::system_clock::time_point zc_file_holder::timestamp(uint8_t type) const {
+std::chrono::system_clock::time_point zc_file_holder::timestamp(uint8_t type) {
 	if (timestamps_.find(type) != timestamps_.end()) {
 		return timestamps_.at(type);
 	} else {
-		// Return the earliest it can be
+		// This may be because we haven't read it
+		std::string filename = get_filename(type);
+		boost::system::error_code ec;
+		std::time_t ts = boost::filesystem::last_write_time(filename.c_str(), ec);
+		if (!ec) {
+			timestamps_[type] = std::chrono::system_clock::from_time_t(ts);
+		}
+		else {
+			status_->misc_status(ST_WARNING, "FILE: Cannot get timestamp for %s - error %s", filename.c_str(), ec.message().c_str());
+		}
+		if (timestamps_.find(type) != timestamps_.end()) {
+			return timestamps_.at(type);
+		}
 		return std::chrono::system_clock::time_point::min();
 	}
 }
