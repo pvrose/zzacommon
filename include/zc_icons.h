@@ -82,6 +82,7 @@ enum class zc_icon_t : uint8_t {
 	ICON_LOCATION,         //!< Display location
 	ICON_KEEP,             //!< Keep item
 	ICON_REFRESH,          //!< Refresh item
+	ICON_QUERY,            //!< Query item
 
 
 };
@@ -168,7 +169,9 @@ const std::map<zc_icon_t, std::string> zc_icon_data = {
 	{ zc_icon_t::ICON_KEEP,
 	"<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewBox=\"0 -960 960 960\" width=\"24px\" fill=\"#e3e3e3\"><path d=\"m640-480 80 80v80H520v240l-40 40-40-40v-240H240v-80l80-80v-280h-40v-80h400v80h-40v280Zm-286 80h252l-46-46v-314H400v314l-46 46Zm126 0Z\"/></svg>" },
 	{ zc_icon_t::ICON_REFRESH,
-	"<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewBox=\"0 -960 960 960\" width=\"24px\" fill=\"#e3e3e3\"><path d=\"M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z\"/></svg>"}
+	"<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewBox=\"0 -960 960 960\" width=\"24px\" fill=\"#e3e3e3\"><path d=\"M480-160q-134 0-227-93t-93-227q0-134 93-227t227-93q69 0 132 28.5T720-690v-110h80v280H520v-80h168q-32-56-87.5-88T480-720q-100 0-170 70t-70 170q0 100 70 170t170 70q77 0 139-44t87-116h84q-28 106-114 173t-196 67Z\"/></svg>"},
+	{ zc_icon_t::ICON_QUERY,
+	"<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewBox=\"0 -960 960 960\" width=\"24px\" fill=\"#e3e3e3\"><path d=\"M424-320q0-81 14.5-116.5T500-514q41-36 62.5-62.5T584-637q0-41-27.5-68T480-732q-51 0-77.5 31T365-638l-103-44q21-64 77-111t141-47q105 0 161.5 58.5T698-641q0 50-21.5 85.5T609-475q-49 47-59.5 71.5T539-320H424Zm56 240q-33 0-56.5-23.5T400-160q0-33 23.5-56.5T480-240q33 0 56.5 23.5T560-160q0 33-23.5 56.5T480-80Z\"/></svg>"},
 };
 //! \endcond
 
@@ -233,4 +236,22 @@ static bool zc_add_icon_to_widget(Fl_Widget* widget, zc_icon_t icon) {
 	Fl_Image* inactive_icon_image = zc_icon(icon, min_size, min_size, inactive_fill_colour);
 	widget->bind_deimage(inactive_icon_image);
 	return true;
+}
+
+static std::string zc_icon(zc_icon_t icon, Fl_Color fill_colour) {
+	if (icon == zc_icon_t::ICON_NONE) return "";
+	auto it = zc_icon_data.find(icon);
+	if (it == zc_icon_data.end()) return "";
+	std::string svg_data = it->second;
+	// Replace the fill colour in the SVG data
+	std::string fill_str = "#e3e3e3";
+	uint8_t r, g, b;
+	Fl::get_color(fill_colour, r, g, b);
+	char new_fill_str[8];
+	snprintf(new_fill_str, sizeof(new_fill_str), "#%02X%02X%02X", r, g, b);
+	size_t pos = svg_data.find(fill_str);
+	if (pos != std::string::npos) {
+		svg_data.replace(pos, fill_str.length(), new_fill_str);
+	}
+	return svg_data;
 }
