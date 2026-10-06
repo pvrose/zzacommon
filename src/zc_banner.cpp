@@ -83,18 +83,6 @@ zc_banner::~zc_banner() {
 	save_settings();
 }
 
-int zc_banner::handle(int event) {
-	if (event == FL_SHORTCUT) {
-		int key = Fl::event_key();
-		if (key == 'b' && Fl::event_state() & FL_ALT) {
-			if (visible()) hide();
-			else show();
-			return 1;
-		}
-	}
-	return Fl_Double_Window::handle(event);
-}
-
 void zc_banner::create_form() {
 	const int HMULT = 2 * HBUTTON;
 	const int HICON = HMULT * 2 + GAP;

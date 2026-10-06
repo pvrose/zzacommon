@@ -57,9 +57,6 @@ public:
 	//! Destructor
 	virtual ~zc_banner();
 
-	//! Overload handle() to handle ALT-b to toggle the banner display.
-	virtual int handle(int event) override;
-
 	//! This method builds the banner object from the component widgets.
 	void create_form();
 
