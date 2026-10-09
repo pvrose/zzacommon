@@ -73,6 +73,8 @@ namespace zc {
 	std::string to_upper(const std::string& data);
 	//! Returns \p data in lower case.
 	std::string to_lower(const std::string& data);
+	//! Returns \p data in mixed case - first letter of each word in upper case, the rest in lower case.
+	std::string to_mixed(const std::string& data);
 
 	//! Customise the look and feel of GM3ZZA's FLTK applications.
 	void customise_fltk(int base_size = DEFAULT_DEFAULT_SIZE);

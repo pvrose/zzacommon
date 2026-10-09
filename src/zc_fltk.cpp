@@ -122,6 +122,55 @@ std::string zc::to_lower(const std::string& data) {
 	return ret_value;
 }
 
+// Create a mixed-case version of a string
+std::string zc::to_mixed(const std::string& data) {
+	bool mixed_upper = true;
+	bool prev_upper = true;
+	size_t len = data.length();
+	char* result = new char[3 * len + 1];
+	memset(result, 0, 3 * len + 1);
+	char* temp = result;
+	// TODO move this to utils as replicated from log_table
+	for (unsigned int i = 0; i < (unsigned)len; ) {
+		int num_utf8_bytes;
+		// Get the next UTF-8 character 
+		unsigned int ucs = fl_utf8decode(data.c_str() + i, data.c_str() + len, &num_utf8_bytes);
+		// Step to the next UTF-8 character
+		i += num_utf8_bytes;
+		// Convert case
+		unsigned int new_ucs;
+		if (mixed_upper) {
+			new_ucs = fl_toupper(ucs);
+		}
+		else {
+			new_ucs = fl_tolower(ucs);
+		}
+		// Convert UTF-8 character to bytes, store it and step destination pointer
+		temp += fl_utf8encode(new_ucs, temp);
+		switch (ucs) {
+		case ' ':
+		case '-':
+		case '.':
+			// Force upper case after some punctuation
+			prev_upper = mixed_upper;
+			mixed_upper = true;
+			break;
+		case '\'':
+			// Keep case prior to apostrophe
+			mixed_upper = prev_upper;
+			break;
+		default:
+			// Force lower case
+			prev_upper = mixed_upper;
+			mixed_upper = false;
+			break;
+		}
+	}
+	std::string ret_value(result);
+	delete[] result;
+	return ret_value;
+}
+
 // Customise FLTK feature
 void zc::customise_fltk(int base_size) {
 	set_base_size(base_size);
