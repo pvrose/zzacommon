@@ -35,6 +35,7 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <type_traits>
 #include <vector>
 
 extern double DEFAULT_SAMPLE_RATE;
@@ -42,25 +43,23 @@ extern int BUFFER_DEPTH;
 
 //! \brief Constructor.
 //! \param app_audio generated audio data queue
-zc_audio::zc_audio(
+zc_audio_base::zc_audio_base(
     zc_audio_direction direction,
     int channels,
     double sample_rate,
-    zc_async_queue<double>* audio_data,
-    zc_async_queue<double>* monitor_data
+    PaSampleFormat format
 ) {
     direction_ = direction;
     channels_ = channels;
-    app_audio_ = audio_data;
-    monitor_audio_ = monitor_data;
     sample_rate_ = sample_rate;
+    sample_format_ = format;
     buffer_depth_ = BUFFER_DEPTH;
     idle_ = true;
     reset();
 }
 
 //! Start
-bool zc_audio::enable() {
+bool zc_audio_base::enable() {
     if (state_ != STATE_DISCONNECTED) return false;
 	state_ = STATE_CONNECTING;
     if (port_ids_.find(port_index_) == port_ids_.end() || !use_port(port_ids_.at(port_index_))) {
@@ -75,12 +74,12 @@ bool zc_audio::enable() {
 }
 
 //! Destructor
-zc_audio::~zc_audio() {
+zc_audio_base::~zc_audio_base() {
     if (state_ == STATE_CONNECTED) disconnect_port();
 }
 
 //! Reset
-bool zc_audio::reset() {
+bool zc_audio_base::reset() {
     if (state_ == STATE_DISCONNECTED) return false;
     if (state_ == STATE_CONNECTED) {
         state_ = STATE_DISCONNECTING;
@@ -118,14 +117,34 @@ bool zc_audio::reset() {
 //! \param timeInfo ?
 //! \param statusFlags ?
 //! \param userData pointer to  the zc_audio instance
-int zc_audio::cb_pa_stream(const void* input,
+int zc_audio_base::cb_pa_stream(const void* input,
     void* output,
     unsigned long frameCount,
     const PaStreamCallbackTimeInfo* timeInfo,
     PaStreamCallbackFlags statusFlags,
     void* userData) {
-    zc_audio* that = (zc_audio*)userData;
+    zc_audio_base* that = (zc_audio_base*)userData;
     return that->pa_stream(input, output, frameCount, timeInfo, statusFlags);
+}
+
+//! Constructor
+template <typename T>
+zc_audio<T>::zc_audio(
+    zc_audio_direction direction,
+    int channels,
+    double sample_rate,
+    zc_async_queue<T>* audio_data,
+    zc_async_queue<T>* monitor_data
+) : zc_audio_base(direction, channels, sample_rate,
+        std::is_same_v<T, int16_t> ? paInt16 : paFloat32) {
+    app_audio_ = audio_data;
+    monitor_audio_ = monitor_data;
+}
+
+//! Destructor - stop the stream before the queues' owner-facing members go away
+template <typename T>
+zc_audio<T>::~zc_audio() {
+    if (state_ == STATE_CONNECTED) disconnect_port();
 }
 
 //! \brief instance specific version of callback
@@ -133,22 +152,25 @@ int zc_audio::cb_pa_stream(const void* input,
 //! \param frame_count Number of frames per buffer
 //! \param time_info ?
 //! \param status_flags ?
-int zc_audio::pa_stream(const void* input,
+template <typename T>
+int zc_audio<T>::pa_stream(const void* input,
     void* output,
     unsigned long frame_count,
     const PaStreamCallbackTimeInfo* time_info,
     PaStreamCallbackFlags status_flags) {
+    // PortAudio buffer type: int16_t natively, double is carried as float32.
+    using pa_t = std::conditional_t<std::is_same_v<T, int16_t>, int16_t, float>;
     if (direction_ == zc_audio_direction::AUDIO_OUT && output) {
-        float* out = (float*)output;
+        pa_t* out = (pa_t*)output;
         unsigned long samples_to_send = frame_count;
         while (samples_to_send) {
             // Channel data is interleaved in both app and portaudio.
             for (int i = 0; i < channels_; i++) {
-                double sample;
+                T sample;
                 if (!app_audio_->try_pop(sample)) {
-                    sample = 0.0;
+                    sample = T(0);
                 }
-                *(out++) = static_cast<float>(sample);
+                *(out++) = static_cast<pa_t>(sample);
                 if (monitor_audio_) {
                     monitor_audio_->push(sample);
                 }
@@ -160,12 +182,12 @@ int zc_audio::pa_stream(const void* input,
         }
     }
     else if (direction_ == zc_audio_direction::AUDIO_IN && input) {
-        float* in = (float*)input;
+        const pa_t* in = (const pa_t*)input;
         unsigned long samples_to_receive = frame_count;
         while (samples_to_receive) {
             // Channel data is interleaved in bot app and port.
             for (int i = 0; i < channels_; i++) {
-                app_audio_->push(static_cast<double>(*(in++)));
+                app_audio_->push(static_cast<T>(*(in++)));
             }
             samples_to_receive--;
         }
@@ -176,8 +198,11 @@ int zc_audio::pa_stream(const void* input,
     return paContinue;
 }
 
+template class zc_audio<double>;
+template class zc_audio<int16_t>;
+
 //! Initialise portaudio
-bool zc_audio::initialise_port() {
+bool zc_audio_base::initialise_port() {
     if (state_ != STATE_DISCONNECTED && state_ != STATE_CONNECTING) return false;
     state_ = STATE_CONNECTING;
     PaError err;
@@ -242,20 +267,20 @@ bool zc_audio::initialise_port() {
 
 }
 
-bool zc_audio::idle() const {
+bool zc_audio_base::idle() const {
     return idle_;
 }
 
-bool zc_audio::ready() const {
+bool zc_audio_base::ready() const {
     return state_ != STATE_RESET;
 
 }
 
-bool zc_audio::enabled() const {
+bool zc_audio_base::enabled() const {
     return state_ == STATE_CONNECTED;
 }
 
-bool zc_audio::disconnect_port() {
+bool zc_audio_base::disconnect_port() {
 	if (state_ == STATE_DISCONNECTED) return false;
 	state_ = STATE_DISCONNECTING;
     port_id current_port = port_ids_.at(port_index_);
@@ -282,7 +307,7 @@ bool zc_audio::disconnect_port() {
     }
 }
 
-bool zc_audio::close_pa() {
+bool zc_audio_base::close_pa() {
     PaError err = paNoError;
     err = Pa_Terminate();
     if (err != paNoError) {
@@ -295,7 +320,7 @@ bool zc_audio::close_pa() {
     return true;
 }
 
-const std::list<zc_audio::port_id> zc_audio::get_ports() {
+const std::list<zc_audio_base::port_id> zc_audio_base::get_ports() {
     std::list<port_id> result;
     for (auto& id : port_ids_) {
         result.push_back(id.second);
@@ -303,7 +328,7 @@ const std::list<zc_audio::port_id> zc_audio::get_ports() {
     return result;
 }
 
-void zc_audio::enumerate_ports() {
+void zc_audio_base::enumerate_ports() {
     // If neither ready nor enabled return an empty list
     if (state_ == STATE_RESET) return;
     // Now enumerate all the ports
@@ -327,7 +352,7 @@ void zc_audio::enumerate_ports() {
             PaStreamParameters parameters;
             parameters.device = ix;   // \todo set up from settings
             parameters.channelCount = channels_;       
-            parameters.sampleFormat = paFloat32;    // double
+            parameters.sampleFormat = sample_format_;
             parameters.suggestedLatency =
                 info->defaultHighOutputLatency;
 #ifdef _WIN32
@@ -366,7 +391,7 @@ void zc_audio::enumerate_ports() {
     }
 }
 
-bool zc_audio::use_port(const zc_audio::port_id& id) {
+bool zc_audio_base::use_port(const zc_audio_base::port_id& id) {
     // We have no portaudio
     if (state_ == STATE_RESET) return false;
     // We have another port currently connected
@@ -395,7 +420,7 @@ bool zc_audio::use_port(const zc_audio::port_id& id) {
     const PaHostApiInfo* api_info = Pa_GetHostApiInfo(info->hostApi);
     parameters_.device = port_index_;   // 
     parameters_.channelCount = channels_;       
-    parameters_.sampleFormat = paFloat32;    // double
+    parameters_.sampleFormat = sample_format_;
     parameters_.suggestedLatency =
         info->defaultHighOutputLatency;
 #ifdef _WIN32
@@ -418,26 +443,26 @@ bool zc_audio::use_port(const zc_audio::port_id& id) {
     return initialise_port();
 }
 
-void zc_audio::buffer_depth(int d) {
+void zc_audio_base::buffer_depth(int d) {
     // Only change the buffer depth when not active
     if (state_ != STATE_DISCONNECTED) return;
     buffer_depth_ = d;
 }
 
-int zc_audio::buffer_depth() const {
+int zc_audio_base::buffer_depth() const {
     return buffer_depth_;
 }
 
-void zc_audio::volume(double v) {
+void zc_audio_base::volume(double v) {
     volume_ = v;
     vol_xier_ = v2x(v);
 }
 
-double zc_audio::volume() const {
+double zc_audio_base::volume() const {
     return volume_;
 }
 
-double zc_audio::v2x(double v) {
+double zc_audio_base::v2x(double v) {
     if (v == MINIMUM_VOLUME) return 0.0;
     else {
         // Voltage ratio.
@@ -447,7 +472,7 @@ double zc_audio::v2x(double v) {
 }
 
 // Get the index of the defined id
-PaDeviceIndex zc_audio::get_index(zc_audio::port_id id) {
+PaDeviceIndex zc_audio_base::get_index(zc_audio_base::port_id id) {
     for (auto& idr : port_ids_) {
         if (id.audio_host == idr.second.audio_host &&
             id.port_name == idr.second.port_name) {

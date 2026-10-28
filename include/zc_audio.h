@@ -33,6 +33,7 @@
 #include <queue>
 #include <string>
 #include <thread>
+#include <type_traits>
 #include <vector>
 
 //! Minimum speech volume (dB relative to full-scale) 
@@ -47,38 +48,12 @@ enum zc_audio_direction : uint8_t {
 
 //! \brief This class provides a wrapper for the Portaudio interface.
 //! It supports either output (speaker) or input (microphone).
-class zc_audio {
+//! This is the sample-type independent part; use zc_audio<T> to instantiate.
+class zc_audio_base {
 
 public:
-    //! \brief Constructor.
-    //! \param direction Input or output
-    //! \param channels Number of audio channels (Mono = 1, Stereo = 2 etc.)
-    //! \param sample_rate Number of audio samples per second.
-    //! \param audio_data Audio data stream
-    //! \param monitor_data Monitored data stream (Output only)
-    zc_audio(
-        zc_audio_direction direction,
-        int channels,
-        double sample_rate,
-        zc_async_queue<double>* audio_data,
-        zc_async_queue<double>* monitor_data = nullptr
-    );
-
-    //! \brief Legacy constructor (without sample rate)
-    //! \param direction Input or output
-    //! \param channels Number of audio channels (Mono = 1, Stereo = 2 etc.)
-    //! \param audio_data Audio data stream
-    //! \param monitor_data Monitored data stream (Output only)
-    zc_audio(
-        zc_audio_direction direction,
-        int channels,
-        zc_async_queue<double>* audio_data,
-        zc_async_queue<double>* monitor_data = nullptr
-    ) : zc_audio(direction, channels, DEFAULT_SAMPLE_RATE, audio_data, monitor_data) {
-    };
-
     //! Destructor
-    ~zc_audio();
+    virtual ~zc_audio_base();
 
     //! Internal state
     enum state_t : uint8_t {
@@ -164,17 +139,29 @@ public:
 
 protected:
 
+    //! \brief Constructor.
+    //! \param direction Input or output
+    //! \param channels Number of audio channels (Mono = 1, Stereo = 2 etc.)
+    //! \param sample_rate Number of audio samples per second.
+    //! \param format PortAudio sample format used for the stream
+    zc_audio_base(
+        zc_audio_direction direction,
+        int channels,
+        double sample_rate,
+        PaSampleFormat format
+    );
+
     //! \brief instance specific version of callback
     //! \param input Unused input buffer
     //! \param output buffer to receive audio data
     //! \param frameCount Number of frames per buffer
     //! \param timeInfo Timing information
     //! \param statusFlags Stream callback flags
-    int pa_stream(const void* input,
+    virtual int pa_stream(const void* input,
         void* output,
         unsigned long frameCount,
         const PaStreamCallbackTimeInfo* timeInfo,
-        PaStreamCallbackFlags statusFlags);
+        PaStreamCallbackFlags statusFlags) = 0;
 
     //! \brief Initialise specific port
     bool initialise_port();
@@ -202,10 +189,8 @@ protected:
     //! \return -1 if fail
     PaDeviceIndex get_index(port_id id);
 
-    //! Audio stream to/from user.
-    zc_async_queue<double>* app_audio_ = nullptr;
-    //! Montored audio to user
-    zc_async_queue<double>* monitor_audio_ = nullptr;
+    //! PortAudio sample format
+    PaSampleFormat sample_format_ = paFloat32;
 
     //! Audio output stream
     PaStream* stream_ = nullptr;
@@ -246,4 +231,51 @@ protected:
     //! Number of channels
     int channels_ = 0;
 
+};
+
+//! \brief Audio input/output with a specific sample type.
+//! \tparam T Sample type: double (converted to/from float32) or int16_t.
+template <typename T = double>
+class zc_audio : public zc_audio_base {
+    static_assert(std::is_same_v<T, double> || std::is_same_v<T, int16_t>,
+        "zc_audio supports only double or int16_t samples");
+
+public:
+    //! \brief Constructor.
+    //! \param direction Input or output
+    //! \param channels Number of audio channels (Mono = 1, Stereo = 2 etc.)
+    //! \param sample_rate Number of audio samples per second.
+    //! \param audio_data Audio data stream
+    //! \param monitor_data Monitored data stream (Output only)
+    zc_audio(
+        zc_audio_direction direction,
+        int channels,
+        double sample_rate,
+        zc_async_queue<T>* audio_data,
+        zc_async_queue<T>* monitor_data = nullptr
+    );
+
+    //! \brief Legacy constructor (without sample rate)
+    zc_audio(
+        zc_audio_direction direction,
+        int channels,
+        zc_async_queue<T>* audio_data,
+        zc_async_queue<T>* monitor_data = nullptr
+    ) : zc_audio(direction, channels, DEFAULT_SAMPLE_RATE, audio_data, monitor_data) {
+    }
+
+    //! Destructor
+    ~zc_audio() override;
+
+protected:
+    int pa_stream(const void* input,
+        void* output,
+        unsigned long frameCount,
+        const PaStreamCallbackTimeInfo* timeInfo,
+        PaStreamCallbackFlags statusFlags) override;
+
+    //! Audio stream to/from user.
+    zc_async_queue<T>* app_audio_ = nullptr;
+    //! Monitored audio to user
+    zc_async_queue<T>* monitor_audio_ = nullptr;
 };

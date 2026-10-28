@@ -13,8 +13,7 @@
         "type": "equals",
         "lhs": "${hostSystemName}",
         "rhs": "Linux"
-      },
-      "vendor": { "microsoft.com/VisualStudioRemoteSettings/CMake/2.0": { "remoteSourceRootDir": "$env{HOME}/.vs/$ms{projectDirName}" } }
+      }
     },
     {
       "name": "macos-debug",
@@ -28,8 +27,7 @@
         "type": "equals",
         "lhs": "${hostSystemName}",
         "rhs": "Darwin"
-      },
-      "vendor": { "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": { "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}" } }
+      }
     },
     {
       "name": "windows-base",
@@ -39,8 +37,7 @@
       "binaryDir": "${sourceDir}/out/build/${presetName}",
       "installDir": "${sourceDir}/out/install/${presetName}",
       "cacheVariables": {
-        "VCPKG_ROOT": "C:/Users/pvros/source/repos/vcpkg",
-        "PORTAUDIO_ROOT": "C:/Users/pvros/source/repos/portaudio",
+        "PORTAUDIO_ROOT": "$env{PORTAUDIO_ROOT}",
         "ZZACOMMON_DOX": "ON"
       },
       "condition": {
@@ -60,7 +57,7 @@
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "FLTK_DIR": "C:/Users/pvros/source/repos/fltk/out/build/x64-Debug"
+        "FLTK_DIR": "$env{FLTK_ROOT}/out/build/x64-Debug"
       }
     },
     {
@@ -70,7 +67,7 @@
       "inherits": "x64-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "FLTK_DIR": "C:/Users/pvros/source/repos/fltk/out/build/x64-Release"
+        "FLTK_DIR": "$env{FLTK_ROOT}/out/build/x64-Release"
       }
     },
     {
@@ -91,5 +88,27 @@
       "inherits": "x86-debug",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
     }
+  ],
+  "buildPresets": [
+    { "name": "linux-debug", "configurePreset": "linux-debug" },
+    { "name": "macos-debug", "configurePreset": "macos-debug" },
+    { "name": "x64-debug", "configurePreset": "x64-debug" },
+    { "name": "x64-release", "configurePreset": "x64-release" },
+    { "name": "x86-debug", "configurePreset": "x86-debug" },
+    { "name": "x86-release", "configurePreset": "x86-release" }
+  ],
+  "testPresets": [
+    {
+      "name": "test-base",
+      "hidden": true,
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "ignore", "stopOnFailure": false }
+    },
+    { "name": "linux-debug", "configurePreset": "linux-debug", "inherits": "test-base" },
+    { "name": "macos-debug", "configurePreset": "macos-debug", "inherits": "test-base" },
+    { "name": "x64-debug", "configurePreset": "x64-debug", "inherits": "test-base" },
+    { "name": "x64-release", "configurePreset": "x64-release", "inherits": "test-base" },
+    { "name": "x86-debug", "configurePreset": "x86-debug", "inherits": "test-base" },
+    { "name": "x86-release", "configurePreset": "x86-release", "inherits": "test-base" }
   ]
 }
