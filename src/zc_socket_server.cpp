@@ -39,7 +39,6 @@
 
 #endif
 
-#include <FL/Fl.H>
 #include <cstdio>
 #include <thread>
 #include <istream>

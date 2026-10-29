@@ -104,7 +104,6 @@ set(ZZAF_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_input_hierch.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_line_style.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_password_input.cpp
-  ${ZZACOMMON_SOURCE_DIR}/src/zc_socket_server.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_tabs_nonav.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_text_style.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_ticker.cpp
@@ -134,6 +133,7 @@ set(ZZAFB_CPPFILES
 set(ZZAM_CPPFILES 
   ${ZZACOMMON_SOURCE_DIR}/src/zc_settings.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_utils.cpp
+  ${ZZACOMMON_SOURCE_DIR}/src/zc_socket_server.cpp
 )
 
 # App metadata component (no external dependencies)
