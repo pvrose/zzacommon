@@ -73,6 +73,7 @@ bool baud_rate_to_speed(int baud_rate, speed_t& speed) {
 	default: return false;
 	}
 }
+}
 #endif
 
 namespace {
