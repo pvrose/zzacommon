@@ -19,7 +19,6 @@
 #include "zc_audio.h"
 
 #include "zc_async_queue.h"
-#include "zc_status.h"
 
 #include "portaudio.h"
 #ifdef _WIN32
@@ -27,6 +26,7 @@
 #endif
 
 #include <cmath>
+#include <cstdarg>
 #include <cstdio>
 #include <iostream>
 #include <list>
@@ -40,6 +40,37 @@
 
 extern double DEFAULT_SAMPLE_RATE;
 extern int BUFFER_DEPTH;
+
+namespace {
+    zc_audio_base::logger_t g_logger = nullptr;
+
+    constexpr auto ST_ERROR = zc_audio_base::log_level_t::Error;
+    constexpr auto ST_OK = zc_audio_base::log_level_t::Ok;
+    constexpr auto ST_NOTE = zc_audio_base::log_level_t::Note;
+
+    // Printf-style reporter; keeps the status_->misc_status(...) call shape used below
+    struct audio_status {
+        void misc_status(zc_audio_base::log_level_t level, const char* format, ...) {
+            char message[1024];
+            va_list args;
+            va_start(args, format);
+            vsnprintf(message, sizeof(message), format, args);
+            va_end(args);
+            if (g_logger) {
+                g_logger(level, message);
+            }
+            else {
+                fprintf(level == zc_audio_base::log_level_t::Error ? stderr : stdout, "%s\n", message);
+            }
+        }
+    };
+    audio_status audio_status_instance;
+    audio_status* status_ = &audio_status_instance;
+}
+
+void zc_audio_base::set_logger(logger_t logger) {
+    g_logger = logger;
+}
 
 //! \brief Constructor.
 //! \param app_audio generated audio data queue

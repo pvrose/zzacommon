@@ -52,6 +52,19 @@ enum zc_audio_direction : uint8_t {
 class zc_audio_base {
 
 public:
+
+    //! Severity of a message reported by the audio classes.
+    enum class log_level_t {
+        Error,   //!< Failure
+        Ok,      //!< Successful milestone
+        Note     //!< Informational
+    };
+    //! Function to report a message.
+    typedef void (*logger_t)(log_level_t level, const char* message);
+    //! Set the function used to report messages (all instances).
+    //! The default writes to stdout/stderr.
+    static void set_logger(logger_t logger);
+
     //! Destructor
     virtual ~zc_audio_base();
 
