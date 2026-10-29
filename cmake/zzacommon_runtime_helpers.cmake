@@ -60,52 +60,6 @@ function(zzacommon_find_zlib_dlls VCPKG_ROOT_DIR)
     endif()
 endfunction()
 
-# Function to detect Boost DLL paths from vcpkg
-# Sets: ZZACOMMON_BOOST_DLLS_RELEASE, ZZACOMMON_BOOST_DLLS_DEBUG
-function(zzacommon_find_boost_dlls VCPKG_ROOT_DIR)
-    if(NOT MSVC)
-        return()
-    endif()
-
-    if(NOT VCPKG_ROOT_DIR OR NOT EXISTS "${VCPKG_ROOT_DIR}")
-        return()
-    endif()
-
-    set(VCPKG_BIN_DIR "${VCPKG_ROOT_DIR}/installed/x64-windows/bin")
-    set(VCPKG_DEBUG_BIN_DIR "${VCPKG_ROOT_DIR}/installed/x64-windows/debug/bin")
-
-    set(_BOOST_DLLS_RELEASE "")
-    set(_BOOST_DLLS_DEBUG "")
-
-    # Find release Boost DLLs
-    if(EXISTS "${VCPKG_BIN_DIR}")
-        file(GLOB BOOST_FILESYSTEM_RELEASE_DLLS "${VCPKG_BIN_DIR}/boost_filesystem*.dll")
-        file(GLOB BOOST_SYSTEM_RELEASE_DLLS "${VCPKG_BIN_DIR}/boost_system*.dll")
-        file(GLOB BOOST_ASIO_RELEASE_DLLS "${VCPKG_BIN_DIR}/boost_asio*.dll")
-        list(APPEND _BOOST_DLLS_RELEASE ${BOOST_FILESYSTEM_RELEASE_DLLS} ${BOOST_SYSTEM_RELEASE_DLLS} ${BOOST_ASIO_RELEASE_DLLS})
-        if(_BOOST_DLLS_RELEASE)
-            list(REMOVE_DUPLICATES _BOOST_DLLS_RELEASE)
-            set(ZZACOMMON_BOOST_DLLS_RELEASE "${_BOOST_DLLS_RELEASE}" PARENT_SCOPE)
-            set(ZZACOMMON_BOOST_DLLS_RELEASE "${_BOOST_DLLS_RELEASE}" CACHE INTERNAL "zzacommon boost release dlls" FORCE)
-            message(STATUS "zzacommon: Found Boost release DLLs: ${_BOOST_DLLS_RELEASE}")
-        endif()
-    endif()
-
-    # Find debug Boost DLLs
-    if(EXISTS "${VCPKG_DEBUG_BIN_DIR}")
-        file(GLOB BOOST_FILESYSTEM_DEBUG_DLLS "${VCPKG_DEBUG_BIN_DIR}/boost_filesystem*.dll")
-        file(GLOB BOOST_SYSTEM_DEBUG_DLLS "${VCPKG_DEBUG_BIN_DIR}/boost_system*.dll")
-        file(GLOB BOOST_ASIO_DEBUG_DLLS "${VCPKG_DEBUG_BIN_DIR}/boost_asio*.dll")
-        list(APPEND _BOOST_DLLS_DEBUG ${BOOST_FILESYSTEM_DEBUG_DLLS} ${BOOST_SYSTEM_DEBUG_DLLS} ${BOOST_ASIO_DEBUG_DLLS})
-        if(_BOOST_DLLS_DEBUG)
-            list(REMOVE_DUPLICATES _BOOST_DLLS_DEBUG)
-            set(ZZACOMMON_BOOST_DLLS_DEBUG "${_BOOST_DLLS_DEBUG}" PARENT_SCOPE)
-            set(ZZACOMMON_BOOST_DLLS_DEBUG "${_BOOST_DLLS_DEBUG}" CACHE INTERNAL "zzacommon boost debug dlls" FORCE) 
-            message(STATUS "zzacommon: Found Boost debug DLLs: ${_BOOST_DLLS_DEBUG}")       
-        endif()
-    endif()
-endfunction()
-
 # Function to detect CURL DLL paths from vcpkg
 # Sets: ZZACOMMON_CURL_DLL_RELEASE, ZZACOMMON_CURL_DLL_DEBUG
 function(zzacommon_find_curl_dlls VCPKG_ROOT_DIR)
@@ -149,8 +103,6 @@ function(_zzacommon_restore_runtime_dll_vars_from_cache)
         ZZACOMMON_ZLIB_DLL_DEBUG
         ZZACOMMON_CURL_DLL_RELEASE
         ZZACOMMON_CURL_DLL_DEBUG
-        ZZACOMMON_BOOST_DLLS_RELEASE
-        ZZACOMMON_BOOST_DLLS_DEBUG
     )
         if((NOT DEFINED ${_v}) OR ("${${_v}}" STREQUAL ""))
             get_property(_cached CACHE ${_v} PROPERTY VALUE)
@@ -171,12 +123,6 @@ function(_zzacommon_collect_explicit_runtime_dlls OUT_VAR)
     if(ZZACOMMON_CURL_DLL_DEBUG AND EXISTS "${ZZACOMMON_CURL_DLL_DEBUG}")
         list(APPEND _dlls "$<$<CONFIG:Debug>:${ZZACOMMON_CURL_DLL_DEBUG}>")
     endif()
-    foreach(DLL ${ZZACOMMON_BOOST_DLLS_DEBUG})
-        if(EXISTS "${DLL}")
-            list(APPEND _dlls "$<$<CONFIG:Debug>:${DLL}>")
-        endif()
-    endforeach()
-
     # Non-Debug configs (Release/RelWithDebInfo/MinSizeRel)
     if(ZZACOMMON_ZLIB_DLL_RELEASE AND EXISTS "${ZZACOMMON_ZLIB_DLL_RELEASE}")
         list(APPEND _dlls "$<$<NOT:$<CONFIG:Debug>>:${ZZACOMMON_ZLIB_DLL_RELEASE}>")
@@ -184,12 +130,6 @@ function(_zzacommon_collect_explicit_runtime_dlls OUT_VAR)
     if(ZZACOMMON_CURL_DLL_RELEASE AND EXISTS "${ZZACOMMON_CURL_DLL_RELEASE}")
         list(APPEND _dlls "$<$<NOT:$<CONFIG:Debug>>:${ZZACOMMON_CURL_DLL_RELEASE}>")
     endif()
-    foreach(DLL ${ZZACOMMON_BOOST_DLLS_RELEASE})
-        if(EXISTS "${DLL}")
-            list(APPEND _dlls "$<$<NOT:$<CONFIG:Debug>>:${DLL}>")
-        endif()
-    endforeach()
-
     list(REMOVE_DUPLICATES _dlls)
     set(${OUT_VAR} "${_dlls}" PARENT_SCOPE)
 endfunction()

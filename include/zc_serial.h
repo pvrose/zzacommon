@@ -20,15 +20,12 @@
 
 
 #include <set>
+#include <cstdint>
 #include <string>
-
-#include <boost/asio.hpp>
-
 
 	//! \brief This class provides utilities to support serial port access.
 	//! 
-	//! It provides a lightweight wrapper around boost::asio::serial_port to
-	//! provide a simple API for reading and writing to a serial port.
+	//! It provides a lightweight cross-platform API for reading and writing to a serial port.
 	//! It also allows the user to query the available serial ports on the system.
 	class zc_serial
 	{
@@ -59,9 +56,7 @@
 		bool write_line(const std::string& line);
 
 		//! Check if the serial port is open and ready for communication.
-		bool is_connected() const {
-			return serial_port_ && serial_port_->is_open();
-		}
+		bool is_connected() const;
 
 		//! Provides a set of all available ports
 		
@@ -76,7 +71,7 @@
 		static std::set<std::string> available_ports(bool all_ports);
 
 	private:
-		boost::asio::serial_port* serial_port_ = nullptr;
+		std::intptr_t serial_port_ = -1;
 
 	};
 

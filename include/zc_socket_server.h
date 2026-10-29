@@ -51,6 +51,24 @@
 			HTTP,
 			UDP
 		};
+		//! Severity of a message reported by the server.
+		enum class log_level_t {
+			Error,   //!< Failure
+			Ok,      //!< Successful milestone
+			Info     //!< Diagnostic information
+		};
+		//! Function to report a message.
+		typedef void (*logger_t)(log_level_t level, const char* message);
+		//! Function to schedule \p fn(\p data) to run on another thread (e.g. Fl::awake).
+		typedef void (*dispatcher_t)(void (*fn)(void*), void* data);
+
+		//! Set the function used to report messages (all instances).
+		//! The default writes to stdout/stderr.
+		static void set_logger(logger_t logger);
+		//! Set the function used to hand received packets to the application thread.
+		//! The default (nullptr) calls the request callback directly on the socket thread.
+		static void set_dispatcher(dispatcher_t dispatcher);
+
 		//! Constructor
 		 
 		//! \param protocol Create serverfor this protocol.
@@ -93,6 +111,8 @@
 
 		//! Open socket and create server
 		int create_server();
+		//! Report a message through the logger.
+		static void report(log_level_t level, const char* message);
 		//! Print diagnostic data
 		void dump(std::string line);
 		//! Callback from server thread to handle packet.

@@ -18,7 +18,6 @@
 #include "zc_socket_server.h"
 
 #include "zc_debug.h"
-#include "zc_status.h"
 
 #include <stdio.h>
 #include <sstream>
@@ -52,6 +51,25 @@
 extern debug_flag DEBUG_THREADS;
 extern debug_flag DEBUG_SOCKET;
 
+namespace {
+	zc_socket_server::logger_t g_logger = nullptr;
+	zc_socket_server::dispatcher_t g_dispatcher = nullptr;
+}
+
+void zc_socket_server::set_logger(logger_t logger) { g_logger = logger; }
+
+void zc_socket_server::set_dispatcher(dispatcher_t dispatcher) { g_dispatcher = dispatcher; }
+
+void zc_socket_server::report(log_level_t level, const char* message)
+{
+	if (g_logger) {
+		g_logger(level, message);
+	}
+	else {
+		fprintf(level == log_level_t::Error ? stderr : stdout, "%s\n", message);
+	}
+}
+
 // Constructor
 zc_socket_server::zc_socket_server(protocol_t protocol, const std::string& address, int port_num) : 
 	server_(INVALID_SOCKET),
@@ -84,10 +102,10 @@ void zc_socket_server::run_server()
 		switch (protocol_)
 		{
 		case UDP:
-			status_->misc_status(ST_ERROR, "SOCKET: Unable to listen for WSJT-X datagrams");
+			report(log_level_t::Error, "SOCKET: Unable to listen for WSJT-X datagrams");
 			break;
 		case HTTP:
-			status_->misc_status(ST_ERROR, "SOCKET: Unable to listen for FLDIGI XML-RPC requests");
+			report(log_level_t::Error, "SOCKET: Unable to listen for FLDIGI XML-RPC requests");
 			break;
 		}
 	}
@@ -122,7 +140,7 @@ void zc_socket_server::close_server(bool external)
 		char message[256];
 		getsockname(server_, (SOCKADDR *)&server_addr, &len_server_addr);
 		snprintf(message, 256, "SOCKET: Closing socket %s:%d", inet_ntoa(server_addr.sin_addr), htons(server_addr.sin_port));
-		status_->misc_status(ST_OK, message);
+		report(log_level_t::Ok, message);
 #ifdef _WIN32
 		closesocket(server_);
 		WSACleanup();
@@ -151,7 +169,7 @@ int zc_socket_server::create_server()
 	}
 	else
 	{
-		status_->misc_status(ST_LOG, "SOCKET: Initialised winsock.");
+		report(log_level_t::Info, "SOCKET: Initialised winsock.");
 	}
 	// Check the version of winsock loaded is 2.2
 	if (ws_data.wVersion != MAKEWORD(2, 2))
@@ -191,10 +209,10 @@ int zc_socket_server::create_server()
 		switch (protocol_)
 		{
 		case UDP:
-			status_->misc_status(ST_LOG, "SOCKET: Created UDP socket");
+			report(log_level_t::Info, "SOCKET: Created UDP socket");
 			break;
 		case HTTP:
-			status_->misc_status(ST_LOG, "SOCKET: Created HTTP socket");
+			report(log_level_t::Info, "SOCKET: Created HTTP socket");
 			break;
 		}
 	}
@@ -275,7 +293,7 @@ int zc_socket_server::create_server()
 	}
 //	getsockname(server_, (SOCKADDR *)&server_addr, &len_server_addr);
 	snprintf(message, 256, "SOCKET: Connected socket %s:%d", inet_ntoa(server_addr.sin_addr), htons(server_addr.sin_port));
-	status_->misc_status(ST_OK, message);
+	report(log_level_t::Ok, message);
 
  #ifdef _WIN32
 	// Windows way of supporting non-blocking operations
@@ -300,7 +318,7 @@ int zc_socket_server::create_server()
 		{
 			getsockname(server_, (SOCKADDR *)&server_addr, &len_server_addr);
 			snprintf(message, 256, "SOCKET: Listening socket %s:%d", inet_ntoa(server_addr.sin_addr), htons(server_addr.sin_port));
-			status_->misc_status(ST_OK, message);
+			report(log_level_t::Ok, message);
 		}
 
  #ifdef _WIN32
@@ -400,7 +418,12 @@ int zc_socket_server::rcv_packet()
 			std::string s = std::string(buffer, bytes_rcvd);
 			q_packet_.push(s);
 			mu_packet_.unlock();
-			Fl::awake(cb_th_packet, this);
+			if (g_dispatcher) {
+				g_dispatcher(cb_th_packet, this);
+			}
+			else {
+				cb_th_packet(this);
+			}
 		}
 #ifdef _WIN32
 		else {
@@ -498,7 +521,7 @@ void zc_socket_server::handle_error(const char *phase)
 	char* error_msg = strerror(errno);
 	snprintf(message, 1028, "SOCKET: %s %s(%d): %s", phase, address_.c_str(), port_num_, error_msg);
 #endif
-	status_->misc_status(ST_ERROR, message);
+	report(log_level_t::Error, message);
 	close_server(false);
 }
 

@@ -1,14 +1,14 @@
 # Using zzacommon with Runtime DLLs
 
-When using zzacommon components that depend on external libraries (zlib, Boost), you need to ensure that the required DLLs are available:
+When using zzacommon components that depend on external libraries, you need to ensure that the required DLLs are available:
 1. In your application's **build directory** during development
 2. In your application's **installation directory** when deploying
 
 ## Components and Their DLL Dependencies
 
 - **zzax**: Requires `zlib1.dll` (or `zlib1d.dll` for debug)
-- **zzab**: Requires Boost DLLs (`boost_filesystem*.dll`, `boost_system*.dll`)
-- **zzafb**: Requires both FLTK and Boost DLLs
+- **zzab**: Uses native serial-port APIs and has no external runtime DLL dependency
+- **zzafb**: Requires FLTK DLLs
 
 ## Build-Time: Copying DLLs to Build Directory
 
@@ -17,12 +17,12 @@ zzacommon provides helper functions to automatically copy runtime DLLs to your a
 ### Quick Start - Copy All DLLs (Recommended)
 
 ```cmake
-find_package(zzacommon REQUIRED COMPONENTS zzax zzab)
+find_package(zzacommon REQUIRED COMPONENTS zzax)
 
 add_executable(myapp main.cpp)
-target_link_libraries(myapp PRIVATE zzacommon::zzax zzacommon::zzab)
+target_link_libraries(myapp PRIVATE zzacommon::zzax)
 
-# Automatically copy ALL required DLLs to build directory (zlib + Boost)
+# Automatically copy required DLLs to build directory
 zzacommon_copy_runtime_dlls(myapp)
 ```
 
@@ -31,16 +31,14 @@ zzacommon_copy_runtime_dlls(myapp)
 If you only want to copy specific DLLs during build:
 
 ```cmake
-find_package(zzacommon REQUIRED COMPONENTS zzax zzab)
+find_package(zzacommon REQUIRED COMPONENTS zzax)
 
 add_executable(myapp main.cpp)
-target_link_libraries(myapp PRIVATE zzacommon::zzax zzacommon::zzab)
+target_link_libraries(myapp PRIVATE zzacommon::zzax)
 
 # Copy only zlib DLL
 zzacommon_copy_zlib_dll(myapp)
 
-# Copy only Boost DLLs
-zzacommon_copy_boost_dlls(myapp)
 ```
 
 ## Install-Time: Installing DLLs with Your Application
@@ -50,10 +48,10 @@ When you install your application (via `cmake --install` or CPack), you also nee
 ### Quick Start - Install All DLLs (Recommended)
 
 ```cmake
-find_package(zzacommon REQUIRED COMPONENTS zzax zzab)
+find_package(zzacommon REQUIRED COMPONENTS zzax)
 
 add_executable(myapp main.cpp)
-target_link_libraries(myapp PRIVATE zzacommon::zzax zzacommon::zzab)
+target_link_libraries(myapp PRIVATE zzacommon::zzax)
 
 # Copy DLLs to build directory
 zzacommon_copy_runtime_dlls(myapp)
@@ -128,10 +126,6 @@ When using components with external dependencies, the following variables are ex
 - `ZZACOMMON_ZLIB_DLL_RELEASE` - Path to the release version of zlib1.dll
 - `ZZACOMMON_ZLIB_DLL_DEBUG` - Path to the debug version of zlib1d.dll (if available)
 
-### Boost (zzab, zzafb components)
-- `ZZACOMMON_BOOST_DLLS_RELEASE` - List of paths to release Boost DLLs
-- `ZZACOMMON_BOOST_DLLS_DEBUG` - List of paths to debug Boost DLLs (if available)
-
 ## Manual DLL Location
 
 If you prefer to manage DLLs manually, you can find them in your vcpkg installation:
@@ -139,10 +133,6 @@ If you prefer to manage DLLs manually, you can find them in your vcpkg installat
 ### zlib DLLs
 - **Release**: `${VCPKG_ROOT}/installed/x64-windows/bin/zlib1.dll`
 - **Debug**: `${VCPKG_ROOT}/installed/x64-windows/debug/bin/zlib1d.dll`
-
-### Boost DLLs
-- **Release**: `${VCPKG_ROOT}/installed/x64-windows/bin/boost_*.dll`
-- **Debug**: `${VCPKG_ROOT}/installed/x64-windows/debug/bin/boost_*.dll`
 
 ## Troubleshooting
 
@@ -152,15 +142,12 @@ If DLLs are not being copied:
 2. Check that `VCPKG_ROOT` is set correctly
 3. Ensure dependencies are installed via vcpkg:
    - `vcpkg install zlib:x64-windows` (for zzax)
-   - `vcpkg install boost-filesystem:x64-windows boost-system:x64-windows` (for zzab/zzafb)
 4. Check the CMake configuration output for messages about DLL detection
 
 The configuration process will output messages like:
 ```
 -- zzacommon: Found ZLIB release DLL: C:/path/to/vcpkg/installed/x64-windows/bin/zlib1.dll
--- zzacommon: Found Boost release DLLs: ...boost_filesystem-vc143-mt-x64-1_85.dll;...boost_system-vc143-mt-x64-1_85.dll
 -- zzacommon: Will copy zlib1.dll (Release) to myapp output directory
--- zzacommon: Will copy Boost release DLLs to myapp output directory
 ```
 
 ## FetchContent Support
@@ -173,7 +160,7 @@ When using FetchContent, the DLL paths are exported to parent scope, allowing yo
 
 #### zzacommon_copy_runtime_dlls(target_name)
 
-Copies all required runtime DLLs (zlib + Boost) to the target's output directory during build.
+Copies required runtime DLLs (such as zlib) to the target's output directory during build.
 
 **Parameters:**
 - `target_name` - The name of your executable or library target
@@ -202,23 +189,11 @@ zzacommon_copy_zlib_dll(myapp)
 
 ---
 
-#### zzacommon_copy_boost_dlls(target_name)
-
-Copies only Boost DLL(s) to the target's output directory.
-
-**Parameters:**
-- `target_name` - The name of your executable or library target
-
-**Example:**
-```cmake
-zzacommon_copy_boost_dlls(myapp)
-```
-
 ### Install-Time Functions
 
 #### zzacommon_install_runtime_dlls([DESTINATION dir] [COMPONENT name])
 
-Installs all required runtime DLLs (zlib + Boost) to the specified installation directory.
+Installs required runtime DLLs (such as zlib) to the specified installation directory.
 
 **Parameters:**
 - `DESTINATION` (optional) - Installation directory. Default: `bin`
@@ -257,7 +232,7 @@ cmake_minimum_required(VERSION 3.21)
 project(MyApplication)
 
 # Find zzacommon
-find_package(zzacommon REQUIRED COMPONENTS zzax zzab)
+find_package(zzacommon REQUIRED COMPONENTS zzax)
 
 # Create executable
 add_executable(myapp
@@ -268,7 +243,6 @@ add_executable(myapp
 # Link zzacommon components
 target_link_libraries(myapp PRIVATE
     zzacommon::zzax
-    zzacommon::zzab
 )
 
 # Copy DLLs to build directory for development

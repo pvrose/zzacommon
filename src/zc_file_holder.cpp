@@ -22,11 +22,14 @@
 #include "zc_utils.h"
 
 #include <chrono>
+#include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <string>
+#include <system_error>
 
 #include <FL/fl_utf8.h>
 #include <FL/Fl_PNG_Image.H>
@@ -34,10 +37,16 @@
 #include <FL/Fl_SVG_Image.H>
 #include <FL/Fl_Window.H>
 
-#include <boost/filesystem.hpp>
-#define BOOST_NO_CXX11_SCOPED_ENUMS
-#include <boost/dll/runtime_symbol_info.hpp>
-#undef BOOST_NO_CXX11_SCOPED_ENUMS
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+#else
+#include <unistd.h>
+#endif
 
 zc_file_holder* file_holder_ = nullptr;
 uint32_t DEBUG_RESET_CONFIG = 0;
@@ -50,14 +59,61 @@ extern debug_flag DEBUG_DEVELOPMENT;
 extern debug_flag DEBUG_TEST_PRODUCT;
 //! File control datra
 
+namespace {
+std::filesystem::path executable_path() {
+#ifdef _WIN32
+	std::string path(32768, '\0');
+	DWORD length = GetModuleFileNameA(nullptr, path.data(), static_cast<DWORD>(path.size()));
+	if (length == 0 || length >= path.size()) {
+		DWORD error = GetLastError();
+		if (length >= path.size()) error = ERROR_INSUFFICIENT_BUFFER;
+		throw std::system_error(static_cast<int>(error), std::system_category(), "GetModuleFileNameA");
+	}
+	path.resize(length);
+	return std::filesystem::path(path);
+#elif defined(__APPLE__)
+	uint32_t size = 0;
+	_NSGetExecutablePath(nullptr, &size);
+	std::string path(size, '\0');
+	if (_NSGetExecutablePath(path.data(), &size) != 0) {
+		throw std::system_error(errno, std::system_category(), "_NSGetExecutablePath");
+	}
+	path.resize(std::char_traits<char>::length(path.c_str()));
+	return std::filesystem::path(path);
+#else
+	std::string path(4096, '\0');
+	for (;;) {
+		ssize_t length = readlink("/proc/self/exe", path.data(), path.size());
+		if (length < 0) {
+			throw std::system_error(errno, std::system_category(), "readlink /proc/self/exe");
+		}
+		if (static_cast<size_t>(length) < path.size()) {
+			path.resize(static_cast<size_t>(length));
+			return std::filesystem::path(path);
+		}
+		path.resize(path.size() * 2);
+	}
+#endif
+}
+
+bool get_file_timestamp(const std::string& filename,
+	std::chrono::system_clock::time_point& timestamp, std::error_code& error) {
+	const auto file_time = std::filesystem::last_write_time(filename, error);
+	if (error) return false;
+	using file_clock = std::filesystem::file_time_type::clock;
+	timestamp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+		file_time - file_clock::now() + std::chrono::system_clock::now());
+	return true;
+}
+}
 
 zc_file_holder::zc_file_holder(const char* arg0, 
 	const std::map<uint8_t, file_control_t>& control
 ) : control_data_(control) {
+	(void)arg0;
 	char pwd[1024];
 	fl_getcwd(pwd, sizeof(pwd));
-	std::string run_dir = zc::directory(arg0);
-	auto exe_path = boost::dll::program_location();
+	auto exe_path = executable_path();
 	std::string s_exe_path = exe_path.string();
 	exec_directory_ = zc::directory(s_exe_path);
 	std::string app_name = zc::terminal(s_exe_path);
@@ -227,20 +283,20 @@ bool zc_file_holder::copy_source_to_working(uint8_t type) {
 	// Copy source to working
 	std::string source = default_source_directory_ + ctrl.filename;
 	std::string filename = default_ref_directory_ + ctrl.filename;
-// #ifdef _WIN32
-// 	std::string command = "copy " + source + " " + filename;
-// #else
-// 	std::string command = "cp " + source + " " + filename;
-// #endif
-// 	int result = system(command.c_str());
-	boost::system::error_code ec;
-	if (boost::filesystem::remove(filename.c_str())) {
+	std::error_code ec;
+	if (std::filesystem::remove(filename, ec)) {
 		if (status_) {
 			status_->misc_status(ST_NOTE, "FILE: Existing %s removed.", filename.c_str());
 		}
 	}
-	boost::filesystem::path dest_path(filename);
-	boost::filesystem::create_directories(dest_path.parent_path(), ec);
+	if (ec) {
+		char msg[256];
+		snprintf(msg, sizeof(msg), "FILE: Failed to remove %s: %s", filename.c_str(), ec.message().c_str());
+		if (status_) status_->misc_status(ST_ERROR, msg);
+		return false;
+	}
+	std::filesystem::path dest_path(filename);
+	std::filesystem::create_directories(dest_path.parent_path(), ec);
 	if (ec) {
 		char msg[256];
 		snprintf(msg, sizeof(msg), "FILE: Failed to create directories for %s: %s", 
@@ -249,13 +305,7 @@ bool zc_file_holder::copy_source_to_working(uint8_t type) {
 		if (status_) status_->misc_status(ST_ERROR, msg);
 		return false;
 	}
-	boost::filesystem::copy(
-		source.c_str(),
-		filename.c_str(),
-		boost::filesystem::copy_options::update_existing |
-		boost::filesystem::copy_options::synchronize,
-		ec
-	);
+	std::filesystem::copy_file(source, filename, std::filesystem::copy_options::update_existing, ec);
 	char msg[256];
 	if (ec) {
 		snprintf(msg, sizeof(msg), "FILE: Copy %s to %s failed %s", 
@@ -298,14 +348,8 @@ bool zc_file_holder::copy_source_to_git(uint8_t type) const {
 	// Copy source to working
 	std::string source = default_source_directory_ + ctrl.filename;
 	std::string git = default_git_directory_ + ctrl.filename;
-	boost::system::error_code ec;
-	boost::filesystem::copy(
-		source.c_str(),
-		git.c_str(),
-		boost::filesystem::copy_options::update_existing |
-		boost::filesystem::copy_options::synchronize,
-		ec
-	);
+	std::error_code ec;
+	std::filesystem::copy_file(source, git, std::filesystem::copy_options::update_existing, ec);
 	char msg[256];
 	if (ec) {
 		snprintf(msg, sizeof(msg), "FILE: Copy failed %s", ec.message().c_str());
@@ -326,14 +370,8 @@ bool zc_file_holder::copy_working_to_source(uint8_t type) const {
 	// Copy source to working
 	std::string source = default_source_directory_ + ctrl.filename;
 	std::string working = default_ref_directory_ + ctrl.filename;
-	boost::system::error_code ec;
-	boost::filesystem::copy(
-		working.c_str(),
-		source.c_str(),
-		boost::filesystem::copy_options::update_existing |
-		boost::filesystem::copy_options::synchronize,
-		ec
-	);
+	std::error_code ec;
+	std::filesystem::copy_file(working, source, std::filesystem::copy_options::update_existing, ec);
 	char msg[256];
 	if (ec) {
 		snprintf(msg, sizeof(msg), "FILE: Copy failed %s", ec.message().c_str());
@@ -377,13 +415,13 @@ std::chrono::system_clock::time_point zc_file_holder::timestamp(uint8_t type) {
 	} else {
 		// This may be because we haven't read it
 		std::string filename = get_filename(type);
-		boost::system::error_code ec;
-		std::time_t ts = boost::filesystem::last_write_time(filename.c_str(), ec);
-		if (!ec) {
-			timestamps_[type] = std::chrono::system_clock::from_time_t(ts);
+		std::error_code ec;
+		std::chrono::system_clock::time_point timestamp;
+		if (get_file_timestamp(filename, timestamp, ec)) {
+			timestamps_[type] = timestamp;
 		}
 		else {
-			status_->misc_status(ST_WARNING, "FILE: Cannot get timestamp for %s - error %s", filename.c_str(), ec.message().c_str());
+			if (status_) status_->misc_status(ST_WARNING, "FILE: Cannot get timestamp for %s - error %s", filename.c_str(), ec.message().c_str());
 		}
 		if (timestamps_.find(type) != timestamps_.end()) {
 			return timestamps_.at(type);
@@ -397,27 +435,29 @@ void zc_file_holder::remember_timestamp(uint8_t type, const std::string& filenam
 	if (!overwrite && timestamps_.find(type) != timestamps_.end()) {
 		return;
 	} else {
-		boost::system::error_code ec;
-		std::time_t ts = boost::filesystem::last_write_time(filename.c_str(), ec);
-		if (!ec) {
-			timestamps_[type] = std::chrono::system_clock::from_time_t(ts);
+		std::error_code ec;
+		std::chrono::system_clock::time_point timestamp;
+		if (get_file_timestamp(filename, timestamp, ec)) {
+			timestamps_[type] = timestamp;
 		}
 	}
 }
 
 // Return the true top-level storage root for Windows or Linux. This is used to determine if a file is on a different drive.
-boost::filesystem::path zc_file_holder::storage_root(const boost::filesystem::path& path) const {
-	boost::system::error_code ec;
+std::filesystem::path zc_file_holder::storage_root(const std::filesystem::path& path) const {
+	std::error_code ec;
 	
 	// Resolve absolute path, symlinks, and relative dots (e.g. "./")
-	boost::filesystem::path abs_path = boost::filesystem::canonical(path, ec);
+	std::filesystem::path abs_path = std::filesystem::canonical(path, ec);
 	if (ec) {
-		abs_path = boost::filesystem::absolute(path, ec);
+		abs_path = std::filesystem::absolute(path, ec);
 	}
+	if (ec) return {};
 
 	// Grab the first element (e.g., "C:" on Windows, or "/" on Linux)
-	boost::filesystem::path::iterator it = abs_path.begin();
-	boost::filesystem::path root = *it;
+	std::filesystem::path::iterator it = abs_path.begin();
+	if (it == abs_path.end()) return {};
+	std::filesystem::path root = *it;
 
 	// On Linux/POSIX, "/" is universal. We need the next layer (e.g., "/home" vs "/cloud")
 #ifndef _WIN32
@@ -433,7 +473,7 @@ boost::filesystem::path zc_file_holder::storage_root(const boost::filesystem::pa
 
 // File is on a different drive than the executable
 bool zc_file_holder::on_different_drive(const std::string& filename) const {
-	boost::filesystem::path exec_path = boost::filesystem::current_path();
-	boost::filesystem::path file_path(filename);
+	std::filesystem::path exec_path = std::filesystem::current_path();
+	std::filesystem::path file_path(filename);
 	return storage_root(exec_path) != storage_root(file_path);
 }

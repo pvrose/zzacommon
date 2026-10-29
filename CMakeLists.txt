@@ -64,21 +64,44 @@ set(USER_HOME_PATH ${USER_HOME_PATH} PARENT_SCOPE)
 message(STATUS "Setting home path to ${USER_HOME_PATH}")
 
 ## Detect vcpkg root if not already set
-if(NOT DEFINED VCPKG_ROOT AND DEFINED ENV{VCPKG_ROOT})
-  set(VCPKG_ROOT $ENV{VCPKG_ROOT})
-  message(STATUS "Using VCPKG_ROOT from environment: ${VCPKG_ROOT}")
-elseif(NOT DEFINED VCPKG_ROOT)
+if(NOT DEFINED VCPKG_ROOT)
   # Try common locations
   if(MSVC)
     if(EXISTS "${USER_HOME_PATH}/source/repos/vcpkg")
       set(VCPKG_ROOT "${USER_HOME_PATH}/source/repos/vcpkg")
-      message(STATUS "Auto-detected VCPKG_ROOT: ${VCPKG_ROOT}")
+      message(STATUS "Using repository vcpkg checkout: ${VCPKG_ROOT}")
     elseif(EXISTS "C:/vcpkg")
       set(VCPKG_ROOT "C:/vcpkg")
       message(STATUS "Auto-detected VCPKG_ROOT: ${VCPKG_ROOT}")
+    elseif(DEFINED ENV{VCPKG_ROOT})
+      set(VCPKG_ROOT "$ENV{VCPKG_ROOT}")
+      message(STATUS "Using VCPKG_ROOT from environment: ${VCPKG_ROOT}")
     endif()
+  elseif(DEFINED ENV{VCPKG_ROOT})
+    set(VCPKG_ROOT "$ENV{VCPKG_ROOT}")
+    message(STATUS "Using VCPKG_ROOT from environment: ${VCPKG_ROOT}")
   endif()
 endif()
+
+# Prefer the repository checkout when it is the one containing the requested
+# zlib triplet. This also repairs stale VCPKG_ROOT values in an existing build.
+if(MSVC AND EXISTS "${USER_HOME_PATH}/source/repos/vcpkg")
+  if(VCPKG_TARGET_TRIPLET)
+    set(_ZZACOMMON_VCPKG_TRIPLET "${VCPKG_TARGET_TRIPLET}")
+  elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(_ZZACOMMON_VCPKG_TRIPLET "x64-windows")
+  else()
+    set(_ZZACOMMON_VCPKG_TRIPLET "x86-windows")
+  endif()
+
+  set(_ZZACOMMON_REPO_VCPKG_ROOT "${USER_HOME_PATH}/source/repos/vcpkg")
+  if(EXISTS "${_ZZACOMMON_REPO_VCPKG_ROOT}/installed/${_ZZACOMMON_VCPKG_TRIPLET}/include/zlib.h"
+      AND (NOT VCPKG_ROOT OR NOT EXISTS "${VCPKG_ROOT}/installed/${_ZZACOMMON_VCPKG_TRIPLET}/include/zlib.h"))
+    set(VCPKG_ROOT "${_ZZACOMMON_REPO_VCPKG_ROOT}")
+    message(STATUS "Using repository vcpkg checkout with zlib: ${VCPKG_ROOT}")
+  endif()
+endif()
+
 file(TO_CMAKE_PATH "${VCPKG_ROOT}" VCPKG_ROOT)
 
 
@@ -92,7 +115,7 @@ configure_file(
 
 # Source files - keep separate for the separate targets.
 
-# FLTK-based components (without Boost dependency)
+# FLTK-based components
 set(ZZAF_CPPFILES 
   ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_calendar_input.cpp
@@ -117,12 +140,12 @@ set(ZZAX_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_url_handler.cpp
 )
 
-# Components requiring Boost (filesystem, asio)
+# Serial-port component (uses platform APIs)
 set(ZZAB_CPPFILES 
   ${ZZACOMMON_SOURCE_DIR}/src/zc_serial.cpp
 )
 
-# Components requiring both FLTK and Boost 
+# Components requiring FLTK
 set(ZZAFB_CPPFILES
   ${ZZACOMMON_SOURCE_DIR}/src/zc_banner.cpp
   ${ZZACOMMON_SOURCE_DIR}/src/zc_file_holder.cpp
@@ -241,9 +264,9 @@ list(FIND ZZACOMMON_BUILD_COMPONENTS "zzap" ZZAP_INDEX)
 
 # Find dependencies only for requested components
 
-# FLTK is required by zzaf and zzax
+# FLTK is required by zzaf, zzafb, and zzax
 if(NOT ZZAF_INDEX EQUAL -1 OR NOT ZZAX_INDEX EQUAL -1 OR NOT ZZAFB_INDEX EQUAL -1)
-  message(STATUS "Component zzaf or zzax requested - finding FLTK")
+  message(STATUS "Component zzaf, zzafb, or zzax requested - finding FLTK")
   # MSVC work-round as FLTK built in user.
   if(MSVC)
     if (NOT FLTK_DIR)
@@ -260,51 +283,6 @@ if(NOT ZZAF_INDEX EQUAL -1 OR NOT ZZAX_INDEX EQUAL -1 OR NOT ZZAFB_INDEX EQUAL -
     message(STATUS "FLTK libraries: ${FLTK_LIBRARIES}")
   else()
     message(FATAL_ERROR "FLTK not found")
-  endif()
-endif()
-
-# zzab and zzafb require Boost
-if(NOT ZZAB_INDEX EQUAL -1 OR NOT ZZAFB_INDEX EQUAL -1)
-  message(STATUS "Component zzab or zzafb requested - finding Boost")
-
-  # If using vcpkg, add Boost-specific paths
-  if(MSVC)
-  if (DEFINED VCPKG_ROOT)
-    list(APPEND CMAKE_PREFIX_PATH "${VCPKG_ROOT}/installed/x64-windows")
-    message(STATUS "Added vcpkg Boost path: ${VCPKG_ROOT}/installed/x64-windows")
-    message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
-  else()
-    message(WARNING "VCPKG_ROOT is not set. If Boost is installed via vcpkg, please set VCPKG_ROOT environment variable or CMake variable.")
-  endif()
-  endif()
-
-  if (MSVC)
-    find_package(Boost 1.85.0 CONFIG COMPONENTS filesystem asio)
-  else()
-    find_package(Boost 1.83.0 CONFIG COMPONENTS filesystem)
-  endif()
-
-  foreach(_bgt Boost::headers Boost::filesystem Boost::system Boost::asio)
-    if(TARGET ${_bgt})
-      set_target_properties(${_bgt} PROPERTIES
-        MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release
-      )
-    endif()
-  endforeach()
-
-  if (Boost_FOUND)
-    message(STATUS "Boost found: ${Boost_VERSION}")
-    message(STATUS "Boost libraries: ${Boost_LIBRARIES}")
-    message(STATUS "Boost includes: ${Boost_INCLUDE_DIRS}")
-
-    # Find and export Boost DLL locations for user applications
-    zzacommon_find_boost_dlls("${VCPKG_ROOT}")
-  else()
-    message(FATAL_ERROR "Boost not found. To resolve this:\n"
-      "  1. Install Boost via vcpkg: vcpkg install boost-filesystem:x64-windows boost-asio:x64-windows\n"
-      "  2. Set VCPKG_ROOT environment variable to your vcpkg installation directory\n"
-      "  3. Or set CMAKE_PREFIX_PATH to include your Boost installation directory\n"
-      "  4. Or set Boost_DIR to point to BoostConfig.cmake location")
   endif()
 endif()
 
@@ -508,7 +486,7 @@ if(NOT ZZAD_INDEX EQUAL -1)
   message(STATUS "Created target: zzad")
 endif()
 
-# zzafb depends on zzad, Boost, FLTK, and nlohmann_json (must be before zzaf since they use file_holder)
+# zzafb depends on zzad, FLTK, and nlohmann_json (must be before zzaf since they use file_holder)
 if(NOT ZZAFB_INDEX EQUAL -1)
   # Find nlohmann_json first (required by zc_banner which uses zc_settings.h)
   if(MSVC)
@@ -550,12 +528,7 @@ if(NOT ZZAFB_INDEX EQUAL -1)
     PUBLIC ${ZZACOMMON_INCLUDE_DIR}
     PRIVATE ${FLTK_INCLUDE_DIR}
   )
-  # Use modern Boost and FLTK targets
-  if(MSVC)
-    target_link_libraries(zzafb PUBLIC Boost::filesystem Boost::asio ${FLTK_LIBRARIES})
-  else()
-    target_link_libraries(zzafb PUBLIC Boost::filesystem Boost::headers ${FLTK_LIBRARIES})
-  endif()
+  target_link_libraries(zzafb PUBLIC ${FLTK_LIBRARIES})
   if(NOT ZZAD_INDEX EQUAL -1)
     target_link_libraries(zzafb PUBLIC zzad)
   endif()
@@ -596,13 +569,6 @@ if(NOT ZZAB_INDEX EQUAL -1)
   add_library(zzab STATIC ${ZZACOMMON_COMPONENT_LIB_EXCLUDE_FROM_ALL})
   target_sources(zzab PRIVATE ${ZZAB_CPPFILES})
   target_include_directories(zzab PUBLIC ${ZZACOMMON_INCLUDE_DIR})
-  # Use modern Boost imported targets
-  if (MSVC)
-    target_link_libraries(zzab PUBLIC Boost::filesystem Boost::asio)
-  else()
-    target_link_libraries(zzab PUBLIC Boost::filesystem Boost::headers)
-  endif()
-  target_compile_definitions(zzab PUBLIC _WIN32_WINNT=0x0601)
   message(STATUS "Created target: zzab")
 endif()
 
@@ -677,6 +643,14 @@ if(NOT ZZAM_INDEX EQUAL -1)
     # zzam uses file_holder_ which is defined in zzafb
     if(NOT ZZAFB_INDEX EQUAL -1)
       target_link_libraries(zzam PUBLIC zzafb)
+    endif()
+
+    # zc_socket_server uses zc_app::debug (zzad) and Winsock
+    if(NOT ZZAD_INDEX EQUAL -1)
+      target_link_libraries(zzam PUBLIC zzad)
+    endif()
+    if(WIN32)
+      target_link_libraries(zzam PUBLIC ws2_32)
     endif()
 
     message(STATUS "Created target: zzam")
@@ -824,12 +798,6 @@ if (NOT PROJECT_IS_TOP_LEVEL)
     set(ZZACOMMON_CURL_DLL_DEBUG ${ZZACOMMON_CURL_DLL_DEBUG} PARENT_SCOPE)
 endif()
 
-  # Export Boost DLL paths for user applications (if zzab or zzafb component is used)
-  if(NOT ZZAB_INDEX EQUAL -1 OR NOT ZZAFB_INDEX EQUAL -1)
-    set(ZZACOMMON_BOOST_DLLS_RELEASE ${ZZACOMMON_BOOST_DLLS_RELEASE} PARENT_SCOPE)
-    set(ZZACOMMON_BOOST_DLLS_DEBUG ${ZZACOMMON_BOOST_DLLS_DEBUG} PARENT_SCOPE)
-  endif()
-
   # Export PortAudio include directory for user applications (if zzap component is used)
   if(NOT ZZAP_INDEX EQUAL -1)
     set(ZZACOMMON_PORTAUDIO_INCLUDE_DIR ${PORTAUDIO_INCLUDE_DIR} PARENT_SCOPE)
@@ -863,21 +831,6 @@ if(NOT COMMAND zzacommon_copy_runtime_dlls)
       list(APPEND _ZZA_RUNTIME_DLLS "${ZZACOMMON_ZLIB_DLL_DEBUG}")
     endif()
 
-    if(ZZACOMMON_BOOST_DLLS_RELEASE)
-      foreach(_BOOST_DLL ${ZZACOMMON_BOOST_DLLS_RELEASE})
-        if(EXISTS "${_BOOST_DLL}")
-          list(APPEND _ZZA_RUNTIME_DLLS "${_BOOST_DLL}")
-        endif()
-      endforeach()
-    endif()
-    if(ZZACOMMON_BOOST_DLLS_DEBUG)
-      foreach(_BOOST_DLL ${ZZACOMMON_BOOST_DLLS_DEBUG})
-        if(EXISTS "${_BOOST_DLL}")
-          list(APPEND _ZZA_RUNTIME_DLLS "${_BOOST_DLL}")
-        endif()
-      endforeach()
-    endif()
-
     if(_ZZA_RUNTIME_DLLS)
       list(REMOVE_DUPLICATES _ZZA_RUNTIME_DLLS)
       foreach(_RUNTIME_DLL ${_ZZA_RUNTIME_DLLS})
@@ -890,7 +843,7 @@ if(NOT COMMAND zzacommon_copy_runtime_dlls)
       endforeach()
       message(STATUS "zzacommon: Will copy runtime DLLs to ${TARGET_NAME} output directory")
     else()
-      message(WARNING "zzacommon: No runtime DLL paths available. Build zzax/zzab/zzafb with vcpkg on Windows.")
+      message(WARNING "zzacommon: No runtime DLL paths available. Build zzax with vcpkg on Windows.")
     endif()
   endfunction()
 endif()
@@ -924,21 +877,6 @@ if(NOT COMMAND zzacommon_install_runtime_dlls)
     endif()
     if(ZZACOMMON_ZLIB_DLL_DEBUG AND EXISTS "${ZZACOMMON_ZLIB_DLL_DEBUG}")
       list(APPEND _ZZA_DLLS_TO_INSTALL "${ZZACOMMON_ZLIB_DLL_DEBUG}")
-    endif()
-
-    if(ZZACOMMON_BOOST_DLLS_RELEASE)
-      foreach(_BOOST_DLL ${ZZACOMMON_BOOST_DLLS_RELEASE})
-        if(EXISTS "${_BOOST_DLL}")
-          list(APPEND _ZZA_DLLS_TO_INSTALL "${_BOOST_DLL}")
-        endif()
-      endforeach()
-    endif()
-    if(ZZACOMMON_BOOST_DLLS_DEBUG)
-      foreach(_BOOST_DLL ${ZZACOMMON_BOOST_DLLS_DEBUG})
-        if(EXISTS "${_BOOST_DLL}")
-          list(APPEND _ZZA_DLLS_TO_INSTALL "${_BOOST_DLL}")
-        endif()
-      endforeach()
     endif()
 
     if(_ZZA_DLLS_TO_INSTALL)
@@ -997,4 +935,3 @@ endif()
   if (NOT PROJECT_IS_TOP_LEVEL)
     set(ZZACOMMON_API_HTML_DIR ${ZZACOMMON_API_HTML_DIR} PARENT_SCOPE)
   endif()
-

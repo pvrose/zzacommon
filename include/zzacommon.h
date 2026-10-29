@@ -121,8 +121,7 @@ data structure zc_rpc_data_item.
 This class provides a simple FIFO/Implementer to provide a running arithmetic mean
 over a fixed number of values.
 - zc_serial
-Thos class provides a lightweight wrapper around the boost::asio::serial_port library
-to provide simple read/write access to a serial port.
+This class provides a lightweight cross-platform wrapper for simple serial-port read/write access.
 - zc_settings
 This class provides a JSON based settings file.
 - zc_socket_server

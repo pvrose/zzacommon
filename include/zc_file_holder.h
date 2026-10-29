@@ -24,7 +24,7 @@
 #include <map>
 #include <ostream>
 #include <string>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
 //! Reset configuration files
 extern uint32_t DEBUG_RESET_CONFIG;
@@ -198,7 +198,7 @@ protected:
 	void remember_timestamp(uint8_t type, const std::string& filename, bool overwrite = false);
 
 	//! Return the true top-level storage root for Windows or Linux. This is used to determine if a file is on a different drive.
-	boost::filesystem::path storage_root(const boost::filesystem::path& path) const;
+	std::filesystem::path storage_root(const std::filesystem::path& path) const;
 	
 	//! Default location for configuration files, and HTML files.
 	std::string default_ref_directory_;

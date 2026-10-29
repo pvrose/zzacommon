@@ -23,7 +23,7 @@
 # Copy vcpkg runtime DLLs to the install directory, 
 # so that the installed application can find them at runtime.
 function (install_vcpkg_dlls)
-    # Install vcpkg runtime DLLs (boost, curl, zlib)
+    # Install vcpkg runtime DLLs (curl, zlib)
     set(VCPKG_INSTALL_BIN_DIR "")
     set(VCPKG_INSTALL_DEBUG_BIN_DIR "")
 
@@ -48,7 +48,6 @@ function (install_vcpkg_dlls)
 
     if(VCPKG_INSTALL_BIN_DIR AND EXISTS "${VCPKG_INSTALL_BIN_DIR}")
       file(GLOB RELEASE_RUNTIME_DLLS 
-        "${VCPKG_INSTALL_BIN_DIR}/boost_filesystem*.dll"
         "${VCPKG_INSTALL_BIN_DIR}/libcurl*.dll"
         "${VCPKG_INSTALL_BIN_DIR}/zlib*.dll"
       )
@@ -57,7 +56,6 @@ function (install_vcpkg_dlls)
 
     if(VCPKG_INSTALL_DEBUG_BIN_DIR AND EXISTS "${VCPKG_INSTALL_DEBUG_BIN_DIR}")
       file(GLOB DEBUG_RUNTIME_DLLS 
-        "${VCPKG_INSTALL_DEBUG_BIN_DIR}/boost_filesystem*.dll"
         "${VCPKG_INSTALL_DEBUG_BIN_DIR}/libcurl*.dll"
         "${VCPKG_INSTALL_DEBUG_BIN_DIR}/zlib*.dll"
       )
